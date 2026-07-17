@@ -80,6 +80,9 @@ export default function LoginPage() {
           <button className="btn primary" style={{ width: '100%', justifyContent: 'center' }} disabled={loading}>
             {loading ? 'Memproses...' : 'Masuk'}
           </button>
+          <div style={{ textAlign: 'center', marginTop: 14 }}>
+            <a href="/forgot-password" style={{ color: 'var(--violet)', fontWeight: 600, fontSize: 13 }}>Lupa Password?</a>
+          </div>
         </form>
       </div>
     </div>

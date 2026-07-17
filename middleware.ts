@@ -5,7 +5,7 @@ function getAnonKey() {
   return process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 }
 
-const PUBLIC_ROUTES = ['/login', '/invite', '/']
+const PUBLIC_ROUTES = ['/login', '/invite', '/forgot-password', '/reset-password', '/']
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -72,5 +72,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/hr/:path*', '/candidate/:path*', '/login', '/invite/:path*'],
+  matcher: ['/hr/:path*', '/candidate/:path*', '/login', '/invite/:path*', '/forgot-password', '/reset-password'],
 }
