@@ -4,6 +4,7 @@ import "./globals.css"
 export const metadata: Metadata = {
   title: "HR Recruitment Toolkit",
   description: "Screening hingga Onboarding",
+  icons: { icon: '/favicon.png', apple: '/logo.png' },
 }
 
 export default function RootLayout({

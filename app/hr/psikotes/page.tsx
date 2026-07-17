@@ -319,7 +319,7 @@ function ExamModal({ candidate, positions, questions, onClose, onSave }: {
     return (
       <div className="exam-bg show">
         <div className="exam-top">
-          <div className="et-brand"><div className="mark">HR</div><span>Lembar Psikotes Kandidat</span></div>
+          <div className="et-brand"><img src="/logo.png" className="mark" alt="" /><span>Lembar Psikotes Kandidat</span></div>
           <button className="btn sm" style={{ background: 'rgba(255,255,255,.15)', color: '#fff', border: 'none' }} onClick={onClose}>Tutup</button>
         </div>
         <div className="exam-wrap">
@@ -388,7 +388,7 @@ function ExamModal({ candidate, positions, questions, onClose, onSave }: {
   return (
     <div className="exam-bg show">
       <div className="exam-top">
-        <div className="et-brand"><div className="mark">HR</div><span>Lembar Psikotes Kandidat</span></div>
+        <div className="et-brand"><img src="/logo.png" className="mark" alt="" /><span>Lembar Psikotes Kandidat</span></div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <span className={`exam-timer ${timeLeft <= 120 ? 'warn' : ''}`} style={{ display: screen === 'test' ? '' : 'none' }}>
             {String(m).padStart(2, '0')}:{String(s).padStart(2, '0')}

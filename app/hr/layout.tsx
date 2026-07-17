@@ -72,7 +72,7 @@ export default function HrLayout({ children }: { children: React.ReactNode }) {
       <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="brand">
           <div className="logo">
-            <div className="mark">HR</div>
+            <img src="/logo.png" className="mark" alt="" />
             <div><h1>Recruitment Toolkit</h1><p>Screening → Onboarding</p></div>
           </div>
         </div>

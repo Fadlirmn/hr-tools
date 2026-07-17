@@ -50,7 +50,7 @@ export default function CandidateLayout({ children }: { children: React.ReactNod
       <aside className="sidebar">
         <div className="brand">
           <div className="logo">
-            <div className="mark">HR</div>
+            <img src="/logo.png" className="mark" alt="" />
             <div><h1>Recruitment Toolkit</h1><p>{role === 'dev' ? 'Developer Mode' : 'Portal Kandidat'}</p></div>
           </div>
         </div>

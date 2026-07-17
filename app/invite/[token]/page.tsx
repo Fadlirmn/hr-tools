@@ -103,7 +103,7 @@ export default function InvitePage() {
     <div className="login-bg">
       <div className="login-card">
         <div className="logo">
-          <div className="mark">HR</div>
+          <img src="/logo.png" className="mark" alt="" />
           <div>
             <h1>Recruitment Toolkit</h1>
             <div className="sub" style={{ marginBottom: 0 }}>Undangan Kandidat</div>
