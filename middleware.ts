@@ -5,11 +5,17 @@ function getAnonKey() {
   return process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 }
 
+const PUBLIC_ROUTES = ['/login', '/invite', '/']
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
+  const isPublic = PUBLIC_ROUTES.some(p => pathname === p || pathname.startsWith(p + '/'))
 
-  const publicPaths = ['/login', '/invite', '/']
-  const isPublic = publicPaths.some(p => pathname.startsWith(p))
+  // Early exit: no Supabase auth cookie → no session possible
+  const hasSbCookie = request.cookies.getAll().some(c => c.name.startsWith('sb-'))
+  if (!hasSbCookie && !isPublic) {
+    return NextResponse.redirect(new URL('/login', request.url))
+  }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const anonKey = getAnonKey()
@@ -19,57 +25,52 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  let supabaseResponse = NextResponse.next({ request })
+  let response = NextResponse.next({ request })
 
   const supabase = createServerClient(supabaseUrl, anonKey, {
     cookies: {
       getAll() { return request.cookies.getAll() },
       setAll(cookiesToSet) {
         cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-        supabaseResponse = NextResponse.next({ request })
+        response = NextResponse.next({ request })
         cookiesToSet.forEach(({ name, value, options }) =>
-          supabaseResponse.cookies.set(name, value, options)
+          response.cookies.set(name, value, options)
         )
       },
     },
   })
 
-  let user = null
+  let session = null
   try {
-    const { data } = await supabase.auth.getUser()
-    user = data.user
+    const { data } = await supabase.auth.getSession()
+    session = data.session
   } catch {
-    if (!isPublic) return NextResponse.redirect(new URL('/login', request.url))
-    return supabaseResponse
+    session = null
   }
 
-  if (!user && !isPublic) {
+  if (!session) {
+    if (isPublic) return response
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  if (user && pathname === '/login') {
-    const role = user.user_metadata?.role
-    if (role === 'hr' || role === 'dev') {
-      return NextResponse.redirect(new URL('/hr/dashboard', request.url))
-    }
-    if (role === 'candidate') {
-      return NextResponse.redirect(new URL('/candidate/dashboard', request.url))
-    }
+  if (pathname === '/login') {
+    const role = session.user.user_metadata?.role
+    if (role === 'hr' || role === 'dev') return NextResponse.redirect(new URL('/hr/dashboard', request.url))
+    if (role === 'candidate') return NextResponse.redirect(new URL('/candidate/dashboard', request.url))
+    return response
   }
 
-  if (user && !isPublic) {
-    const role = user.user_metadata?.role
-    if (pathname.startsWith('/hr') && role !== 'hr' && role !== 'dev') {
-      return NextResponse.redirect(new URL('/candidate/dashboard', request.url))
-    }
-    if (pathname.startsWith('/candidate') && role !== 'candidate' && role !== 'dev') {
-      return NextResponse.redirect(new URL('/hr/dashboard', request.url))
-    }
+  const role = session.user.user_metadata?.role
+  if (pathname.startsWith('/hr') && role !== 'hr' && role !== 'dev') {
+    return NextResponse.redirect(new URL('/candidate/dashboard', request.url))
+  }
+  if (pathname.startsWith('/candidate') && role !== 'candidate' && role !== 'dev') {
+    return NextResponse.redirect(new URL('/hr/dashboard', request.url))
   }
 
-  return supabaseResponse
+  return response
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+  matcher: ['/hr/:path*', '/candidate/:path*', '/login', '/invite/:path*'],
 }
