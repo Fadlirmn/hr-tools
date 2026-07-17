@@ -66,17 +66,14 @@ DROP POLICY IF EXISTS "candidate_exam_read" ON exam_questions;
 
 -- Positions: everyone can read, only HR/dev can write
 CREATE POLICY "positions_read" ON positions FOR SELECT USING (true);
-CREATE POLICY "positions_write_hr" ON positions FOR INSERT
-  WITH CHECK (auth.jwt() -> 'user_metadata' ->> 'role' IN ('hr', 'dev'));
-CREATE POLICY "positions_write_hr" ON positions FOR UPDATE
+CREATE POLICY "positions_write_hr" ON positions FOR ALL
   USING (auth.jwt() -> 'user_metadata' ->> 'role' IN ('hr', 'dev'))
   WITH CHECK (auth.jwt() -> 'user_metadata' ->> 'role' IN ('hr', 'dev'));
-CREATE POLICY "positions_write_hr" ON positions FOR DELETE
-  USING (auth.jwt() -> 'user_metadata' ->> 'role' IN ('hr', 'dev'));
 
 -- Candidates: HR/dev full access
 CREATE POLICY "hr_candidates_all" ON candidates FOR ALL
-  USING (auth.jwt() -> 'user_metadata' ->> 'role' IN ('hr', 'dev'));
+  USING (auth.jwt() -> 'user_metadata' ->> 'role' IN ('hr', 'dev'))
+  WITH CHECK (auth.jwt() -> 'user_metadata' ->> 'role' IN ('hr', 'dev'));
 -- Candidates: read own record
 CREATE POLICY "candidate_candidates_read_own" ON candidates FOR SELECT
   USING (user_id = auth.uid());
@@ -103,7 +100,8 @@ CREATE TABLE IF NOT EXISTS exam_questions (
 ALTER TABLE exam_questions ENABLE ROW LEVEL SECURITY;
 -- HR/dev full access
 CREATE POLICY "hr_exam_all" ON exam_questions FOR ALL
-  USING (auth.jwt() -> 'user_metadata' ->> 'role' IN ('hr', 'dev'));
+  USING (auth.jwt() -> 'user_metadata' ->> 'role' IN ('hr', 'dev'))
+  WITH CHECK (auth.jwt() -> 'user_metadata' ->> 'role' IN ('hr', 'dev'));
 -- Candidates can only read (need to take the test)
 CREATE POLICY "candidate_exam_read" ON exam_questions FOR SELECT
   USING (auth.jwt() -> 'user_metadata' ->> 'role' = 'candidate');
