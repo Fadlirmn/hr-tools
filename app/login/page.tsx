@@ -30,7 +30,7 @@ export default function LoginPage() {
     }
 
     const role = data.user?.user_metadata?.role
-    if (role === 'hr') router.push('/hr/dashboard')
+    if (role === 'hr' || role === 'dev') router.push('/hr/dashboard')
     else if (role === 'candidate') router.push('/candidate/dashboard')
     else router.push('/hr/dashboard')
   }

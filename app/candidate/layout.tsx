@@ -4,19 +4,21 @@ import { useRouter, usePathname } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase'
 import { getCandidateByUserId } from '@/lib/db'
-import type { Candidate } from '@/lib/types'
+import type { Candidate, UserRole } from '@/lib/types'
 
 export default function CandidateLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
   const supabase = createClient()
   const [candidate, setCandidate] = useState<Candidate | null>(null)
+  const [role, setRole] = useState<UserRole | ''>('')
   const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
     ;(async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
+        setRole((user.user_metadata?.role as UserRole) || '')
         const c = await getCandidateByUserId(user.id)
         setCandidate(c)
       }
@@ -47,10 +49,16 @@ export default function CandidateLayout({ children }: { children: React.ReactNod
         <div className="brand">
           <div className="logo">
             <div className="mark">HR</div>
-            <div><h1>Recruitment Toolkit</h1><p>Portal Kandidat</p></div>
+            <div><h1>Recruitment Toolkit</h1><p>{role === 'dev' ? 'Developer Mode' : 'Portal Kandidat'}</p></div>
           </div>
         </div>
         <nav className="nav">
+          {role === 'dev' && (
+            <button onClick={() => router.push('/hr/dashboard')}
+              style={{ background: 'rgba(255,255,255,.08)', color: '#fff', marginBottom: 6 }}>
+              <span className="ico">←</span> Ke Dashboard HR
+            </button>
+          )}
           {nav.map(item => (
             <button key={item.tab} className={active === item.tab ? 'active' : ''}
               onClick={() => router.push('/' + item.tab)}>
@@ -59,6 +67,7 @@ export default function CandidateLayout({ children }: { children: React.ReactNod
           ))}
         </nav>
         <div className="side-foot" style={{ cursor: 'pointer' }} onClick={handleLogout}>
+          {role === 'dev' && <span style={{ color: 'var(--accent)', fontWeight: 700, marginRight: 8 }}>DEV</span>}
           Keluar
         </div>
       </aside>

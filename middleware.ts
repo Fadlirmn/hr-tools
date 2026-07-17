@@ -36,16 +36,16 @@ export async function middleware(request: NextRequest) {
 
   if (session && pathname === '/login') {
     const role = session.user.user_metadata?.role
-    if (role === 'hr') return NextResponse.redirect(new URL('/hr/dashboard', request.url))
+    if (role === 'hr' || role === 'dev') return NextResponse.redirect(new URL('/hr/dashboard', request.url))
     if (role === 'candidate') return NextResponse.redirect(new URL('/candidate/dashboard', request.url))
   }
 
   if (session && !isPublic) {
     const role = session.user.user_metadata?.role
-    if (pathname.startsWith('/hr') && role !== 'hr') {
+    if (pathname.startsWith('/hr') && role !== 'hr' && role !== 'dev') {
       return NextResponse.redirect(new URL('/candidate/dashboard', request.url))
     }
-    if (pathname.startsWith('/candidate') && role !== 'candidate') {
+    if (pathname.startsWith('/candidate') && role !== 'candidate' && role !== 'dev') {
       return NextResponse.redirect(new URL('/hr/dashboard', request.url))
     }
   }

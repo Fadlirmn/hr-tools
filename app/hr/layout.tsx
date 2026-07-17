@@ -1,8 +1,9 @@
 'use client'
 
-import { useRouter, usePathname, useParams } from 'next/navigation'
-import { useCallback, useState } from 'react'
+import { useRouter, usePathname } from 'next/navigation'
+import { useCallback, useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase'
+import type { UserRole } from '@/lib/types'
 
 const NAV_ITEMS = [
   { sep: 'Pipeline' },
@@ -22,6 +23,14 @@ export default function HrLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const supabase = createClient()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [role, setRole] = useState<UserRole | ''>('')
+
+  useEffect(() => {
+    ;(async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) setRole((user.user_metadata?.role as UserRole) || '')
+    })()
+  }, [])
 
   const activeTab = pathname.replace('/hr/', '') || 'dashboard'
 
@@ -71,6 +80,8 @@ export default function HrLayout({ children }: { children: React.ReactNode }) {
           )}
         </nav>
         <div className="side-foot" style={{ cursor: 'pointer' }} onClick={handleLogout}>
+          {role === 'dev' && <span style={{ color: 'var(--accent)', fontWeight: 700, marginRight: 8 }}>DEV</span>}
+          {role === 'candidate' && <span style={{ color: 'var(--hold)', fontWeight: 700, marginRight: 8 }}>CANDIDATE</span>}
           Keluar
         </div>
       </aside>
