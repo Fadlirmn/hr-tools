@@ -49,6 +49,16 @@ DROP POLICY IF EXISTS "hr_all_positions" ON positions;
 DROP POLICY IF EXISTS "hr_all_candidates" ON candidates;
 DROP POLICY IF EXISTS "candidate_read_own" ON candidates;
 DROP POLICY IF EXISTS "hr_all_exam" ON exam_questions;
+-- Drop any previous instance of new policies (safe re-run)
+DROP POLICY IF EXISTS "positions_read" ON positions;
+DROP POLICY IF EXISTS "positions_write_hr" ON positions;
+DROP POLICY IF EXISTS "hr_candidates_all" ON candidates;
+DROP POLICY IF EXISTS "candidate_candidates_read_own" ON candidates;
+DROP POLICY IF EXISTS "candidate_candidates_update_own" ON candidates;
+DROP POLICY IF EXISTS "anon_candidates_read_invite" ON candidates;
+DROP POLICY IF EXISTS "candidate_candidates_claim_invite" ON candidates;
+DROP POLICY IF EXISTS "hr_exam_all" ON exam_questions;
+DROP POLICY IF EXISTS "candidate_exam_read" ON exam_questions;
 
 -- Helper: check role from JWT user_metadata
 -- Usage: auth.jwt() -> 'user_metadata' ->> 'role'
