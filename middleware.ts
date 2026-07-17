@@ -7,21 +7,24 @@ function getAnonKey() {
 
 const PUBLIC_ROUTES = ['/login', '/invite', '/forgot-password', '/reset-password', '/']
 
+const API_UNAUTH = (msg: string, status: number) =>
+  NextResponse.json({ error: msg }, { status })
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
+  const isApi = pathname.startsWith('/api/')
   const isPublic = PUBLIC_ROUTES.some(p => pathname === p || pathname.startsWith(p + '/'))
-
-  // Early exit: no Supabase auth cookie → no session possible
-  const hasSbCookie = request.cookies.getAll().some(c => c.name.startsWith('sb-'))
-  if (!hasSbCookie && !isPublic) {
-    return NextResponse.redirect(new URL('/login', request.url))
-  }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const anonKey = getAnonKey()
-
   if (!supabaseUrl || !anonKey) {
+    return isPublic || isApi ? NextResponse.next() : NextResponse.redirect(new URL('/login', request.url))
+  }
+
+  const hasSbCookie = request.cookies.getAll().some(c => c.name.startsWith('sb-'))
+  if (!hasSbCookie) {
     if (isPublic) return NextResponse.next()
+    if (isApi) return API_UNAUTH('Unauthorized', 401)
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
@@ -44,14 +47,16 @@ export async function middleware(request: NextRequest) {
   try {
     const { data } = await supabase.auth.getSession()
     session = data.session
-  } catch {
-    session = null
-  }
+  } catch { session = null }
 
   if (!session) {
     if (isPublic) return response
+    if (isApi) return API_UNAUTH('Unauthorized', 401)
     return NextResponse.redirect(new URL('/login', request.url))
   }
+
+  // API routes: just ensure auth; role check done inside each handler
+  if (isApi) return response
 
   if (pathname === '/login') {
     const role = session.user.user_metadata?.role
@@ -72,5 +77,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/hr/:path*', '/candidate/:path*', '/login', '/invite/:path*', '/forgot-password', '/reset-password'],
+  matcher: ['/hr/:path*', '/candidate/:path*', '/login', '/invite/:path*', '/forgot-password', '/reset-password', '/api/:path*'],
 }

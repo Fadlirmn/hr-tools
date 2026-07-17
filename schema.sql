@@ -44,15 +44,45 @@ ON CONFLICT (id) DO NOTHING;
 ALTER TABLE positions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE candidates ENABLE ROW LEVEL SECURITY;
 
--- RLS: HR can do everything
-CREATE POLICY "hr_all_positions" ON positions FOR ALL USING (true);
-CREATE POLICY "hr_all_candidates" ON candidates FOR ALL USING (true);
+-- Drop old insecure policies
+DROP POLICY IF EXISTS "hr_all_positions" ON positions;
+DROP POLICY IF EXISTS "hr_all_candidates" ON candidates;
+DROP POLICY IF EXISTS "candidate_read_own" ON candidates;
+DROP POLICY IF EXISTS "hr_all_exam" ON exam_questions;
 
--- RLS: Candidates can only read their own data
-CREATE POLICY "candidate_read_own" ON candidates FOR SELECT
+-- Helper: check role from JWT user_metadata
+-- Usage: auth.jwt() -> 'user_metadata' ->> 'role'
+-- Stores: 'hr', 'candidate', or 'dev'
+
+-- Positions: everyone can read, only HR/dev can write
+CREATE POLICY "positions_read" ON positions FOR SELECT USING (true);
+CREATE POLICY "positions_write_hr" ON positions FOR INSERT
+  WITH CHECK (auth.jwt() -> 'user_metadata' ->> 'role' IN ('hr', 'dev'));
+CREATE POLICY "positions_write_hr" ON positions FOR UPDATE
+  USING (auth.jwt() -> 'user_metadata' ->> 'role' IN ('hr', 'dev'))
+  WITH CHECK (auth.jwt() -> 'user_metadata' ->> 'role' IN ('hr', 'dev'));
+CREATE POLICY "positions_write_hr" ON positions FOR DELETE
+  USING (auth.jwt() -> 'user_metadata' ->> 'role' IN ('hr', 'dev'));
+
+-- Candidates: HR/dev full access
+CREATE POLICY "hr_candidates_all" ON candidates FOR ALL
+  USING (auth.jwt() -> 'user_metadata' ->> 'role' IN ('hr', 'dev'));
+-- Candidates: read own record
+CREATE POLICY "candidate_candidates_read_own" ON candidates FOR SELECT
   USING (user_id = auth.uid());
+-- Candidates: update own record
+CREATE POLICY "candidate_candidates_update_own" ON candidates FOR UPDATE
+  USING (user_id = auth.uid())
+  WITH CHECK (user_id = auth.uid());
+-- Anyone (incl. anon) can read unclaimed invite records (for invite page)
+CREATE POLICY "anon_candidates_read_invite" ON candidates FOR SELECT
+  USING (invite_token IS NOT NULL AND user_id IS NULL);
+-- Candidate can claim invite after signup
+CREATE POLICY "candidate_candidates_claim_invite" ON candidates FOR UPDATE
+  USING (invite_token IS NOT NULL AND user_id IS NULL)
+  WITH CHECK (user_id = auth.uid());
 
--- Exam questions: satu baris per tipe soal, data sebagai JSON
+-- Exam questions
 CREATE TABLE IF NOT EXISTS exam_questions (
   id TEXT PRIMARY KEY,
   type TEXT NOT NULL CHECK (type IN ('cog','trait','sjt')),
@@ -61,7 +91,12 @@ CREATE TABLE IF NOT EXISTS exam_questions (
 );
 
 ALTER TABLE exam_questions ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "hr_all_exam" ON exam_questions FOR ALL USING (true);
+-- HR/dev full access
+CREATE POLICY "hr_exam_all" ON exam_questions FOR ALL
+  USING (auth.jwt() -> 'user_metadata' ->> 'role' IN ('hr', 'dev'));
+-- Candidates can only read (need to take the test)
+CREATE POLICY "candidate_exam_read" ON exam_questions FOR SELECT
+  USING (auth.jwt() -> 'user_metadata' ->> 'role' = 'candidate');
 
 -- Insert default questions from constants (dijalankan sekali)
 INSERT INTO exam_questions (id, type, label, data) VALUES

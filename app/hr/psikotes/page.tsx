@@ -71,9 +71,7 @@ export default function HrPsikotesPage() {
     const cogLvl = cTotal >= Math.round(PSI_COG.length * 0.73) ? 'baik' : cTotal >= Math.round(PSI_COG.length * 0.47) ? 'cukup' : 'perlu perhatian'
     const sjtLvl = sTotal >= Math.round(PSI_SJT.length * 0.73) ? 'tinggi' : sTotal >= Math.round(PSI_SJT.length * 0.47) ? 'sedang' : 'perlu perhatian'
     const top = Object.entries(tAvg).sort((a, b) => b[1] - a[1])[0]
-    const interpret = `Kemampuan kognitif <b>${cogLvl}</b> (${cTotal}/${PSI_COG.length}). Integritas/situasional <b>${sjtLvl}</b> (${sTotal}/${PSI_SJT.length}).` +
-      (top && top[1] > 0 ? ` Trait paling menonjol: <b>${top[0]}</b>.` : '')
-    return { cogTotal: cTotal, sjtTotal: sTotal, traits: tAvg, interpret }
+    return { cogTotal: cTotal, sjtTotal: sTotal, traits: tAvg, cogLvl, sjtLvl, topTrait: top }
   }
 
   const r = calc()
@@ -201,7 +199,10 @@ export default function HrPsikotesPage() {
             <span className="pct">{val.toFixed(1)}</span>
           </div>
         ))}
-        <div className="verdict-line" style={{ marginTop: 12 }} dangerouslySetInnerHTML={{ __html: r.interpret }} />
+        <div className="verdict-line" style={{ marginTop: 12 }}>
+          Kemampuan kognitif <b>{r.cogLvl}</b> ({r.cogTotal}/{PSI_COG.length}). Integritas/situasional <b>{r.sjtLvl}</b> ({r.sjtTotal}/{PSI_SJT.length}).
+          {r.topTrait && r.topTrait[1] > 0 && <> Trait paling menonjol: <b>{r.topTrait[0]}</b>.</>}
+        </div>
         {c ? (
           <button className="btn primary no-print" style={{ marginTop: 14 }} onClick={save}>💾 Simpan hasil ke {c.nama}</button>
         ) : (

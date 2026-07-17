@@ -25,7 +25,7 @@ export default function InvitePage() {
       try {
         const c = await getCandidateByInviteToken(token)
         if (c && !c.user_id) { setCandidate(c); setEmail(c.email || '') }
-        else setError('Undangan tidak valid atau sudah digunakan.')
+        else setError('Undangan tidak valid.')
       } catch { setError('Undangan tidak valid.') }
       setChecked(true)
     })()
