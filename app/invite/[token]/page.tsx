@@ -12,7 +12,9 @@ export default function InvitePage() {
   const supabase = createClient()
 
   const [candidate, setCandidate] = useState<Candidate | null>(null)
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPw, setShowPw] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [done, setDone] = useState(false)
@@ -22,7 +24,7 @@ export default function InvitePage() {
     ;(async () => {
       try {
         const c = await getCandidateByInviteToken(token)
-        if (c && !c.user_id) setCandidate(c)
+        if (c && !c.user_id) { setCandidate(c); setEmail(c.email || '') }
         else setError('Undangan tidak valid atau sudah digunakan.')
       } catch { setError('Undangan tidak valid.') }
       setChecked(true)
@@ -35,11 +37,16 @@ export default function InvitePage() {
       setError('Password minimal 6 karakter.')
       return
     }
+    if (!email.trim()) {
+      setError('Email harus diisi.')
+      return
+    }
     setLoading(true)
     setError('')
 
+    const signUpEmail = email.trim()
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-      email: candidate.email || `${candidate.nama.toLowerCase().replace(/\s/g, '')}@kandidat.hr`,
+      email: signUpEmail,
       password,
       options: {
         data: { role: 'candidate', candidate_id: candidate.id },
@@ -54,7 +61,7 @@ export default function InvitePage() {
 
     const { error: updateError } = await supabase
       .from('candidates')
-      .update({ user_id: signUpData.user!.id, invite_token: null })
+      .update({ user_id: signUpData.user!.id, email: signUpEmail, invite_token: null })
       .eq('id', candidate.id)
 
     if (updateError) {
@@ -78,7 +85,8 @@ export default function InvitePage() {
             <h1>Akun Berhasil Dibuat!</h1>
           </div>
           <p style={{ color: 'var(--ink-soft)', margin: '16px 0 24px' }}>
-            Silakan login dengan email dan password yang sudah dibuat.
+            Akun dengan email <b>{email}</b> berhasil dibuat.<br />
+            Silakan login dengan email dan password tersebut.
           </p>
           <button className="btn primary" style={{ width: '100%', justifyContent: 'center' }}
             onClick={() => router.push('/login')}>Login Sekarang</button>
@@ -113,13 +121,29 @@ export default function InvitePage() {
           <div style={{ fontSize: 14, fontWeight: 700 }}>{candidate?.nama}</div>
           <div style={{ fontSize: 13, color: 'var(--ink-soft)', marginTop: 2 }}>Anda diundang untuk mengikuti proses rekrutmen.</div>
         </div>
-        <div className="sub" style={{ marginTop: 18, marginBottom: 6 }}>Buat password untuk akun Anda</div>
+        <div className="sub" style={{ marginTop: 18, marginBottom: 6 }}>Lengkapi data akun Anda</div>
         <div className={`error ${error ? 'show' : ''}`}>{error}</div>
         <form onSubmit={handleAccept}>
           <div className="field">
+            <label className="fld">Email</label>
+            <input type="email" placeholder="email@contoh.com" value={email}
+              onChange={e => setEmail(e.target.value)} required autoComplete="email" />
+          </div>
+          <div className="field">
             <label className="fld">Password</label>
-            <input type="password" placeholder="Minimal 6 karakter" value={password}
-              onChange={e => setPassword(e.target.value)} required minLength={6} />
+            <div style={{ position: 'relative' }}>
+              <input type={showPw ? 'text' : 'password'} placeholder="Minimal 6 karakter" value={password}
+                onChange={e => setPassword(e.target.value)} required minLength={6} autoComplete="new-password"
+                style={{ paddingRight: 44 }} />
+              <button type="button" onClick={() => setShowPw(!showPw)}
+                style={{
+                  position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
+                  background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, padding: '6px 8px',
+                  color: 'var(--muted)', lineHeight: 1,
+                }}>
+                {showPw ? '🙈' : '👁️'}
+              </button>
+            </div>
           </div>
           <button className="btn primary" style={{ width: '100%', justifyContent: 'center' }} disabled={loading}>
             {loading ? 'Memproses...' : 'Buat Akun & Masuk'}
