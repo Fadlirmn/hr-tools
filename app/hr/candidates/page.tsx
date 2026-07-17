@@ -73,12 +73,16 @@ export default function HrCandidatesPage() {
   }
 
   const generateInvite = async (c: Candidate) => {
-    const token = uuidv4()
-    const { error } = await supabase.from('candidates').update({ invite_token: token } as any).eq('id', c.id)
-    if (error) { alert('Gagal: ' + error.message); return }
+    if (c.user_id) return
+    let token = c.invite_token
+    if (!token) {
+      token = uuidv4()
+      const { error } = await supabase.from('candidates').update({ invite_token: token } as any).eq('id', c.id)
+      if (error) { alert('Gagal: ' + error.message); return }
+    }
     const link = `${window.location.origin}/invite/${token}`
     await navigator.clipboard.writeText(link)
-    alert(`Link undangan disalin:\n${link}`)
+    alert(c.invite_token ? `Link undangan disalin ulang:\n${link}` : `Link undangan disalin:\n${link}`)
     await load()
   }
 
@@ -121,12 +125,12 @@ export default function HrCandidatesPage() {
                   <td>{c.psikotes ? <b>{c.psikotes.cogTotal}/15</b> : <span className="hint">—</span>}</td>
                   <td>{c.interview ? scoreChip(c.interview.verdict, c.interview.avg.toFixed(1)) : <span className="hint">—</span>}</td>
                   <td>
-                    {c.invite_token ? (
-                      <span className="chip violet">Terkirim</span>
-                    ) : c.user_id ? (
+                    {c.user_id ? (
                       <span className="chip ok">Terdaftar</span>
                     ) : (
-                      <button className="btn sm ghost" onClick={() => generateInvite(c)}>Kirim</button>
+                      <button className="btn sm ghost" onClick={() => generateInvite(c)}>
+                        {c.invite_token ? 'Kirim Ulang' : 'Kirim'}
+                      </button>
                     )}
                   </td>
                   <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
