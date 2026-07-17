@@ -12,8 +12,8 @@ export default function ForgotPasswordPage() {
   const [cooldown, setCooldown] = useState(0)
   const timer = useRef<ReturnType<typeof setInterval> | undefined>(undefined)
 
-  const startCooldown = () => {
-    setCooldown(60)
+  const startCooldown = (sec: number) => {
+    setCooldown(sec)
     timer.current = setInterval(() => {
       setCooldown(prev => {
         if (prev <= 1) { clearInterval(timer.current); return 0 }
@@ -33,12 +33,18 @@ export default function ForgotPasswordPage() {
     })
 
     setLoading(false)
+
     if (err) {
-      if (err.message.toLowerCase().includes('rate limit') || err.message.toLowerCase().includes('too many')) {
-        setError('Terlalu banyak permintaan. Tunggu 60 detik sebelum mencoba lagi.')
-        startCooldown()
+      const msg = err.message.toLowerCase()
+      if (msg.includes('rate limit') || msg.includes('too many')) {
+        setError('Terlalu banyak permintaan. Tunggu 2 menit sebelum mencoba lagi.')
+        startCooldown(120)
+      } else if (err.message.includes('400') || msg.includes('email') || msg.includes('not found') || msg.includes('invalid')) {
+        // Jangan bedakan email exist / tidak — tetap kasih success
+        setDone(true)
       } else {
         setError(err.message)
+        startCooldown(30)
       }
     } else {
       setDone(true)
