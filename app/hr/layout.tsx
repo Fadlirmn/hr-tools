@@ -15,6 +15,7 @@ const NAV_ITEMS = [
   { tab: 'interview', ico: '◔', label: 'Interview' },
   { tab: 'onboarding', ico: '✦', label: 'Onboarding' },
   { sep: 'Pengaturan' },
+  { tab: 'questions', ico: '?', label: 'Pertanyaan Psikotes' },
   { tab: 'settings', ico: '◇', label: 'Posisi & Bobot' },
 ]
 
@@ -52,6 +53,7 @@ export default function HrLayout({ children }: { children: React.ReactNode }) {
       'psikotes': ['Psikotes', 'Tes kognitif, kepribadian & integritas'],
       'interview': ['Penilaian Interview', 'Form kompetensi terstruktur'],
       'onboarding': ['Onboarding', 'Checklist karyawan baru'],
+      'questions': ['Pertanyaan Psikotes', 'Kelola soal kognitif, kepribadian & situasional'],
       'settings': ['Posisi & Bobot Penilaian', 'Atur posisi dan bobot kriteria CV'],
     }
     return map[activeTab] || ['Dashboard', '']

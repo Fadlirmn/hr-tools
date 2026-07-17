@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
-import type { Candidate, Position, PsikotesResult } from '@/lib/types'
-import { PSI_COG, PSI_TRAIT, PSI_SJT, POSITIONS_DEFAULT } from '@/lib/constants'
+import { loadQuestions } from '@/lib/questions'
+import type { Candidate, Position, PsikotesResult, PsiCogQuestion, PsiTraitQuestion, PsiSjtQuestion } from '@/lib/types'
+import { POSITIONS_DEFAULT } from '@/lib/constants'
 
 export default function HrPsikotesPage() {
   const supabase = createClient()
@@ -14,12 +15,17 @@ export default function HrPsikotesPage() {
   const [trait, setTrait] = useState<Record<number, number>>({})
   const [sjt, setSjt] = useState<Record<number, number>>({})
   const [examOpen, setExamOpen] = useState(false)
+  const [questions, setQuestions] = useState<{ cog: PsiCogQuestion[]; trait: PsiTraitQuestion[]; sjt: PsiSjtQuestion[] } | null>(null)
 
   const load = async () => {
-    const { data: c } = await supabase.from('candidates').select('*').order('tanggal', { ascending: false })
-    const { data: p } = await supabase.from('positions').select('*')
-    setCandidates((c || []) as Candidate[])
-    setPositions((p && p.length > 0 ? p : JSON.parse(JSON.stringify(POSITIONS_DEFAULT))) as Position[])
+    const [cRes, pRes, q] = await Promise.all([
+      supabase.from('candidates').select('*').order('tanggal', { ascending: false }),
+      supabase.from('positions').select('*'),
+      loadQuestions(),
+    ])
+    setCandidates((cRes.data || []) as Candidate[])
+    setPositions((pRes.data && pRes.data.length > 0 ? pRes.data : JSON.parse(JSON.stringify(POSITIONS_DEFAULT))) as Position[])
+    setQuestions(q)
   }
 
   useEffect(() => { load() }, [])
@@ -42,6 +48,10 @@ export default function HrPsikotesPage() {
   const setTraitFn = (i: number, n: number) => setTrait(prev => ({ ...prev, [i]: n }))
   const setSjtFn = (i: number, j: number) => setSjt(prev => ({ ...prev, [i]: j }))
 
+  const PSI_COG = questions?.cog || []
+  const PSI_TRAIT = questions?.trait || []
+  const PSI_SJT = questions?.sjt || []
+
   const calc = () => {
     let cTotal = 0
     PSI_COG.forEach((it, i) => { if (cog[i] === it.a) cTotal++ })
@@ -57,10 +67,10 @@ export default function HrPsikotesPage() {
     })
     const tAvg: Record<string, number> = {}
     Object.entries(traits).forEach(([k, v]) => { tAvg[k] = v.cnt ? v.sum / v.cnt : 0 })
-    const cogLvl = cTotal >= 11 ? 'baik' : cTotal >= 7 ? 'cukup' : 'perlu perhatian'
-    const sjtLvl = sTotal >= 11 ? 'tinggi' : sTotal >= 7 ? 'sedang' : 'perlu perhatian'
+    const cogLvl = cTotal >= Math.round(PSI_COG.length * 0.73) ? 'baik' : cTotal >= Math.round(PSI_COG.length * 0.47) ? 'cukup' : 'perlu perhatian'
+    const sjtLvl = sTotal >= Math.round(PSI_SJT.length * 0.73) ? 'tinggi' : sTotal >= Math.round(PSI_SJT.length * 0.47) ? 'sedang' : 'perlu perhatian'
     const top = Object.entries(tAvg).sort((a, b) => b[1] - a[1])[0]
-    const interpret = `Kemampuan kognitif <b>${cogLvl}</b> (${cTotal}/15). Integritas/situasional <b>${sjtLvl}</b> (${sTotal}/15).` +
+    const interpret = `Kemampuan kognitif <b>${cogLvl}</b> (${cTotal}/${PSI_COG.length}). Integritas/situasional <b>${sjtLvl}</b> (${sTotal}/${PSI_SJT.length}).` +
       (top && top[1] > 0 ? ` Trait paling menonjol: <b>${top[0]}</b>.` : '')
     return { cogTotal: cTotal, sjtTotal: sTotal, traits: tAvg, interpret }
   }
@@ -81,7 +91,9 @@ export default function HrPsikotesPage() {
     await load()
   }
 
-  const cogColor = (v: number) => v >= 11 ? 'var(--ok)' : v >= 7 ? 'var(--hold)' : 'var(--no)'
+  const cogColor = (v: number) => v >= PSI_COG.length * 0.73 ? 'var(--ok)' : v >= PSI_COG.length * 0.47 ? 'var(--hold)' : 'var(--no)'
+
+  if (!questions) return <div className="hint">Memuat soal...</div>
 
   return (
     <>
@@ -111,7 +123,7 @@ export default function HrPsikotesPage() {
 
       <div className="card card-p">
         <div className="section-head" style={{ marginTop: 0 }}>
-          <span className="tag">Bagian 1</span><h3>Tes Kognitif</h3><span className="meta">15 soal · skor benar/salah</span>
+          <span className="tag">Bagian 1</span><h3>Tes Kognitif</h3><span className="meta">{PSI_COG.length} soal · skor benar/salah</span>
         </div>
         {PSI_COG.map((it, i) => (
           <div className="q" key={i}>
@@ -167,17 +179,17 @@ export default function HrPsikotesPage() {
             <svg width="128" height="128">
               <circle cx="64" cy="64" r="54" fill="none" stroke="var(--line)" strokeWidth="12" />
               <circle cx="64" cy="64" r="54" fill="none" stroke={cogColor(r.cogTotal)} strokeWidth="12" strokeLinecap="round"
-                strokeDasharray={2 * Math.PI * 54} strokeDashoffset={2 * Math.PI * 54 * (1 - r.cogTotal / 15)} />
+                strokeDasharray={2 * Math.PI * 54} strokeDashoffset={2 * Math.PI * 54 * (1 - r.cogTotal / PSI_COG.length)} />
             </svg>
-            <div className="val"><b>{r.cogTotal}/15</b><span>Kognitif</span></div>
+            <div className="val"><b>{r.cogTotal}/{PSI_COG.length}</b><span>Kognitif</span></div>
           </div>
           <div className="gauge">
             <svg width="128" height="128">
               <circle cx="64" cy="64" r="54" fill="none" stroke="var(--line)" strokeWidth="12" />
               <circle cx="64" cy="64" r="54" fill="none" stroke={cogColor(r.sjtTotal)} strokeWidth="12" strokeLinecap="round"
-                strokeDasharray={2 * Math.PI * 54} strokeDashoffset={2 * Math.PI * 54 * (1 - r.sjtTotal / 15)} />
+                strokeDasharray={2 * Math.PI * 54} strokeDashoffset={2 * Math.PI * 54 * (1 - r.sjtTotal / PSI_SJT.length)} />
             </svg>
-            <div className="val"><b>{r.sjtTotal}/15</b><span>Integritas</span></div>
+            <div className="val"><b>{r.sjtTotal}/{PSI_SJT.length}</b><span>Integritas</span></div>
           </div>
         </div>
         <h4 className="blk">Profil Kepribadian (rata-rata 1–5)</h4>
@@ -196,9 +208,10 @@ export default function HrPsikotesPage() {
         )}
       </div>
 
-      {examOpen && <ExamModal
+      {examOpen && questions && <ExamModal
         candidate={c}
         positions={positions}
+        questions={questions}
         onClose={() => setExamOpen(false)}
         onSave={async (res) => {
           if (res) {
@@ -215,12 +228,17 @@ export default function HrPsikotesPage() {
   )
 }
 
-function ExamModal({ candidate, positions, onClose, onSave }: {
+function ExamModal({ candidate, positions, questions, onClose, onSave }: {
   candidate: Candidate | null
   positions: Position[]
+  questions: { cog: PsiCogQuestion[]; trait: PsiTraitQuestion[]; sjt: PsiSjtQuestion[] }
   onClose: () => void
   onSave: (res: any) => Promise<void>
 }) {
+  const PSI_COG = questions.cog
+  const PSI_TRAIT = questions.trait
+  const PSI_SJT = questions.sjt
+
   const [screen, setScreen] = useState<'intro' | 'test' | 'done'>('intro')
   const [sec, setSec] = useState(0)
   const [ans, setAns] = useState<{ cog: Record<number, number>; trait: Record<number, number>; sjt: Record<number, number> }>({ cog: {}, trait: {}, sjt: {} })
@@ -228,6 +246,8 @@ function ExamModal({ candidate, positions, onClose, onSave }: {
   const [posId, setPosId] = useState(candidate?.posisi || positions[0]?.id || '')
   const [timeLeft, setTimeLeft] = useState(1800)
   const [timerActive, setTimerActive] = useState(false)
+
+  const supabase = createClient()
 
   useEffect(() => {
     if (!timerActive || screen !== 'test') return
@@ -280,7 +300,6 @@ function ExamModal({ candidate, positions, onClose, onSave }: {
     const res = score(ans)
     if (!candidate && name.trim()) {
       const { v4: uuidv4 } = await import('uuid')
-      const supabase = createClient()
       const newC = {
         id: uuidv4(), user_id: null, nama: name.trim(), posisi: posId,
         sumber: '—', email: '', telepon: '', catatan: '',
@@ -397,7 +416,7 @@ function ExamModal({ candidate, positions, onClose, onSave }: {
             <div className="exam-rules">
               <b>Petunjuk pengerjaan:</b>
               <ul>
-                <li>Tes terdiri dari <b>3 bagian</b>: Kemampuan Kognitif (15 soal), Profil Kepribadian (10 pernyataan), dan Situasional (5 skenario).</li>
+                <li>Tes terdiri dari <b>3 bagian</b>: Kemampuan Kognitif ({PSI_COG.length} soal), Profil Kepribadian ({PSI_TRAIT.length} pernyataan), dan Situasional ({PSI_SJT.length} skenario).</li>
                 <li>Total waktu <b>30 menit</b>; timer berjalan otomatis setelah menekan "Mulai Tes".</li>
                 <li>Bagian kepribadian <b>tidak ada benar/salah</b>.</li>
                 <li>Pastikan semua soal terjawab sebelum mengumpulkan.</li>

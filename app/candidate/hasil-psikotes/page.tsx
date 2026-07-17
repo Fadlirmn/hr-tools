@@ -3,12 +3,13 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import { getCandidateByUserId } from '@/lib/db'
-import type { Candidate, PsikotesResult } from '@/lib/types'
-import { PSI_TRAIT } from '@/lib/constants'
+import { loadQuestions } from '@/lib/questions'
+import type { Candidate, PsikotesResult, PsiCogQuestion, PsiTraitQuestion, PsiSjtQuestion } from '@/lib/types'
 
 export default function CandidateHasilPsikotesPage() {
   const supabase = createClient()
   const [candidate, setCandidate] = useState<Candidate | null>(null)
+  const [questions, setQuestions] = useState<{ cog: PsiCogQuestion[]; trait: PsiTraitQuestion[]; sjt: PsiSjtQuestion[] } | null>(null)
 
   useEffect(() => {
     ;(async () => {
@@ -17,14 +18,18 @@ export default function CandidateHasilPsikotesPage() {
         const c = await getCandidateByUserId(user.id)
         setCandidate(c)
       }
+      const q = await loadQuestions()
+      setQuestions(q)
     })()
   }, [])
 
-  if (!candidate) return null
+  if (!candidate || !questions) return null
 
   const psi: PsikotesResult | null = candidate.psikotes
+  const cogLen = questions.cog.length || 15
+  const sjtLen = questions.sjt.length || 15
 
-  const cogColor = (v: number) => v >= 11 ? 'var(--ok)' : v >= 7 ? 'var(--hold)' : 'var(--no)'
+  const cogColor = (v: number) => v >= Math.round(cogLen * 0.73) ? 'var(--ok)' : v >= Math.round(cogLen * 0.47) ? 'var(--hold)' : 'var(--no)'
 
   return (
     <div className="profile-section">
@@ -38,17 +43,17 @@ export default function CandidateHasilPsikotesPage() {
               <svg width="128" height="128">
                 <circle cx="64" cy="64" r="54" fill="none" stroke="var(--line)" strokeWidth="12" />
                 <circle cx="64" cy="64" r="54" fill="none" stroke={cogColor(psi.cogTotal)} strokeWidth="12" strokeLinecap="round"
-                  strokeDasharray={2 * Math.PI * 54} strokeDashoffset={2 * Math.PI * 54 * (1 - psi.cogTotal / 15)} />
+                  strokeDasharray={2 * Math.PI * 54} strokeDashoffset={2 * Math.PI * 54 * (1 - psi.cogTotal / cogLen)} />
               </svg>
-              <div className="val"><b>{psi.cogTotal}/15</b><span>Kognitif</span></div>
+              <div className="val"><b>{psi.cogTotal}/{cogLen}</b><span>Kognitif</span></div>
             </div>
             <div className="gauge">
               <svg width="128" height="128">
                 <circle cx="64" cy="64" r="54" fill="none" stroke="var(--line)" strokeWidth="12" />
                 <circle cx="64" cy="64" r="54" fill="none" stroke={cogColor(psi.sjtTotal)} strokeWidth="12" strokeLinecap="round"
-                  strokeDasharray={2 * Math.PI * 54} strokeDashoffset={2 * Math.PI * 54 * (1 - psi.sjtTotal / 15)} />
+                  strokeDasharray={2 * Math.PI * 54} strokeDashoffset={2 * Math.PI * 54 * (1 - psi.sjtTotal / sjtLen)} />
               </svg>
-              <div className="val"><b>{psi.sjtTotal}/15</b><span>Integritas</span></div>
+              <div className="val"><b>{psi.sjtTotal}/{sjtLen}</b><span>Integritas</span></div>
             </div>
           </div>
 
@@ -66,7 +71,7 @@ export default function CandidateHasilPsikotesPage() {
           )}
 
           <div className="verdict-line" style={{ marginTop: 12 }}>
-            Kognitif: <b>{psi.cogTotal}/15</b> · Integritas: <b>{psi.sjtTotal}/15</b>
+            Kognitif: <b>{psi.cogTotal}/{cogLen}</b> · Integritas: <b>{psi.sjtTotal}/{sjtLen}</b>
             {psi.via === 'kandidat' && <span className="chip neutral" style={{ marginLeft: 8 }}>Dikerjakan mandiri</span>}
           </div>
         </>
