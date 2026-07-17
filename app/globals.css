@@ -263,6 +263,8 @@ h4.blk{font-size:13.5px;font-weight:800;margin:18px 0 8px;color:var(--ink)}
 .login-card .sub{color:var(--muted);font-size:13.5px;margin-bottom:26px}
 .login-card .error{background:var(--no-bg);color:var(--no);padding:10px 14px;border-radius:8px;font-size:13px;font-weight:600;margin-bottom:16px;display:none}
 .login-card .error.show{display:block}
+.login-card .pw-toggle{border:1px solid var(--line);border-radius:0 10px 10px 0;border-left:none;background:#fff;padding:0 14px;cursor:pointer;font-size:15px;color:var(--muted);display:flex;align-items:center;height:42px}
+.login-card .pw-toggle:hover{color:var(--ink-soft)}
 
 /* Candidate dashboard */
 .cand-dash{max-width:720px;margin:0 auto;padding:26px 16px 60px}

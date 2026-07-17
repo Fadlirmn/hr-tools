@@ -7,6 +7,8 @@ import { createClient } from '@/lib/supabase'
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPw, setShowPw] = useState(false)
+  const [remember, setRemember] = useState(true)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
@@ -16,17 +18,21 @@ export default function LoginPage() {
     e.preventDefault()
     setLoading(true)
     setError('')
-    const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
+
+    const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password })
+
     if (authError) {
-      setError(authError.message)
+      let msg = authError.message
+      if (authError.status === 400) msg = 'Email atau password salah. Pastikan akun sudah dibuat di Supabase Auth.'
+      setError(msg)
       setLoading(false)
       return
     }
-    const { data: { session } } = await supabase.auth.getSession()
-    const role = session?.user.user_metadata?.role
+
+    const role = data.user?.user_metadata?.role
     if (role === 'hr') router.push('/hr/dashboard')
     else if (role === 'candidate') router.push('/candidate/dashboard')
-    else router.push('/')
+    else router.push('/hr/dashboard')
   }
 
   return (
@@ -45,14 +51,33 @@ export default function LoginPage() {
           <div className="field">
             <label className="fld">Email</label>
             <input type="email" placeholder="email@contoh.com" value={email}
-              onChange={e => setEmail(e.target.value)} required />
+              onChange={e => setEmail(e.target.value)} required autoComplete="email" />
           </div>
           <div className="field">
             <label className="fld">Password</label>
-            <input type="password" placeholder="Password" value={password}
-              onChange={e => setPassword(e.target.value)} required />
+            <div style={{ position: 'relative' }}>
+              <input type={showPw ? 'text' : 'password'} placeholder="Password" value={password}
+                onChange={e => setPassword(e.target.value)} required autoComplete="current-password"
+                style={{ paddingRight: 44 }} />
+              <button type="button" onClick={() => setShowPw(!showPw)}
+                style={{
+                  position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
+                  background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, padding: '6px 8px',
+                  color: 'var(--muted)', lineHeight: 1,
+                }}>
+                {showPw ? '🙈' : '👁️'}
+              </button>
+            </div>
           </div>
-          <button className="btn primary" style={{ width: '100%', justifyContent: 'center', marginTop: 8 }} disabled={loading}>
+          <div className="field" style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: -4 }}>
+            <input type="checkbox" id="remember" checked={remember}
+              onChange={e => setRemember(e.target.checked)}
+              style={{ width: 16, height: 16, cursor: 'pointer' }} />
+            <label htmlFor="remember" style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink-soft)', cursor: 'pointer' }}>
+              Ingat saya
+            </label>
+          </div>
+          <button className="btn primary" style={{ width: '100%', justifyContent: 'center' }} disabled={loading}>
             {loading ? 'Memproses...' : 'Masuk'}
           </button>
         </form>
