@@ -41,10 +41,6 @@ export default function ExamModal({ mode, candidate, positionName, positions, ti
     return () => clearInterval(interval)
   }, [timerActive, screen])
 
-  useEffect(() => {
-    if (timeLeft === 0 && screen === 'test') handleSubmit(true)
-  }, [timeLeft])
-
   if (!questions) return null
 
   const PSI_COG = questions.cog
@@ -99,6 +95,10 @@ export default function ExamModal({ mode, candidate, positionName, positions, ti
     setScreen('done')
     await onSave(res)
   }
+
+  useEffect(() => {
+    if (timeLeft === 0 && screen === 'test') handleSubmit(true)
+  }, [timeLeft])
 
   const doneScreen = () => {
     if (mode === 'candidate') {
