@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase'
 
 export default function ForgotPasswordPage() {
@@ -9,9 +9,22 @@ export default function ForgotPasswordPage() {
   const [loading, setLoading] = useState(false)
   const [done, setDone] = useState(false)
   const [error, setError] = useState('')
+  const [cooldown, setCooldown] = useState(0)
+  const timer = useRef<ReturnType<typeof setInterval> | undefined>(undefined)
+
+  const startCooldown = () => {
+    setCooldown(60)
+    timer.current = setInterval(() => {
+      setCooldown(prev => {
+        if (prev <= 1) { clearInterval(timer.current); return 0 }
+        return prev - 1
+      })
+    }, 1000)
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (cooldown > 0) return
     setLoading(true)
     setError('')
 
@@ -20,8 +33,16 @@ export default function ForgotPasswordPage() {
     })
 
     setLoading(false)
-    if (err) setError(err.message)
-    else setDone(true)
+    if (err) {
+      if (err.message.toLowerCase().includes('rate limit') || err.message.toLowerCase().includes('too many')) {
+        setError('Terlalu banyak permintaan. Tunggu 60 detik sebelum mencoba lagi.')
+        startCooldown()
+      } else {
+        setError(err.message)
+      }
+    } else {
+      setDone(true)
+    }
   }
 
   if (done) {
@@ -62,8 +83,9 @@ export default function ForgotPasswordPage() {
             <input type="email" placeholder="email@contoh.com" value={email}
               onChange={e => setEmail(e.target.value)} required autoComplete="email" />
           </div>
-          <button className="btn primary" style={{ width: '100%', justifyContent: 'center' }} disabled={loading}>
-            {loading ? 'Mengirim...' : 'Kirim Link Reset'}
+          <button className="btn primary" style={{ width: '100%', justifyContent: 'center' }}
+            disabled={loading || cooldown > 0}>
+            {loading ? 'Mengirim...' : cooldown > 0 ? `Tunggu ${cooldown} detik` : 'Kirim Link Reset'}
           </button>
         </form>
         <div className="sub" style={{ marginTop: 18, textAlign: 'center' }}>
