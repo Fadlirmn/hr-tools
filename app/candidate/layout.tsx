@@ -37,6 +37,8 @@ export default function CandidateLayout({ children }: { children: React.ReactNod
     { tab: 'candidate/hasil-psikotes', label: 'Hasil Psikotes' },
     { tab: 'candidate/hasil-interview', label: 'Hasil Interview' },
     { tab: 'candidate/onboarding', label: 'Onboarding' },
+    { sep: 'Akun' },
+    { tab: 'candidate/profile', label: 'Profil Saya' },
   ]
 
   const active = pathname.replace('/', '')
@@ -59,16 +61,29 @@ export default function CandidateLayout({ children }: { children: React.ReactNod
               <span className="ico">←</span> Ke Dashboard HR
             </button>
           )}
-          {nav.map(item => (
-            <button key={item.tab} className={active === item.tab ? 'active' : ''}
-              onClick={() => router.push('/' + item.tab)}>
-              <span className="ico">{'▦'}</span> {item.label}
-            </button>
-          ))}
+          {nav.map((item, i) =>
+            'sep' in item ? (
+              <div className="sep" key={i}>{item.sep}</div>
+            ) : (
+              <button key={item.tab} className={active === item.tab ? 'active' : ''}
+                onClick={() => router.push('/' + item.tab)}>
+                <span className="ico">{'▦'}</span> {item.label}
+              </button>
+            )
+          )}
         </nav>
-        <div className="side-foot" style={{ cursor: 'pointer' }} onClick={handleLogout}>
-          {role === 'dev' && <span style={{ color: 'var(--accent)', fontWeight: 700, marginRight: 8 }}>DEV</span>}
-          Keluar
+        <div className="side-foot">
+          <div style={{ marginBottom: 6 }}>
+            <div style={{ fontWeight: 600, color: '#fff', fontSize: 12 }}>{candidate?.nama || 'Kandidat'}</div>
+            <div style={{ color: '#9c98bf', fontSize: 10.5, marginTop: 1 }}>{candidate?.email || ''}</div>
+          </div>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            {role === 'dev' && <span style={{ color: 'var(--accent)', fontWeight: 700, fontSize: 10 }}>DEV</span>}
+            <span style={{ flex: 1 }}></span>
+            <span style={{ cursor: 'pointer' }} onClick={() => router.push('/candidate/profile')}>Profil</span>
+            <span style={{ color: '#9c98bf' }}>·</span>
+            <span style={{ cursor: 'pointer' }} onClick={handleLogout}>Keluar</span>
+          </div>
         </div>
       </aside>
 

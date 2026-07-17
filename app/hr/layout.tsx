@@ -15,6 +15,7 @@ const NAV_ITEMS = [
   { tab: 'interview', ico: '◔', label: 'Interview' },
   { tab: 'onboarding', ico: '✦', label: 'Onboarding' },
   { sep: 'Pengaturan' },
+  { tab: 'profile', ico: '◎', label: 'Profil Saya' },
   { tab: 'questions', ico: '?', label: 'Pertanyaan Psikotes' },
   { tab: 'settings', ico: '◇', label: 'Posisi & Bobot' },
 ]
@@ -25,11 +26,17 @@ export default function HrLayout({ children }: { children: React.ReactNode }) {
   const supabase = createClient()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [role, setRole] = useState<UserRole | ''>('')
+  const [userEmail, setUserEmail] = useState('')
+  const [userName, setUserName] = useState('')
 
   useEffect(() => {
     ;(async () => {
       const { data: { user } } = await supabase.auth.getUser()
-      if (user) setRole((user.user_metadata?.role as UserRole) || '')
+      if (user) {
+        setRole((user.user_metadata?.role as UserRole) || '')
+        setUserEmail(user.email || '')
+        setUserName(user.user_metadata?.nama || '')
+      }
     })()
   }, [])
 
@@ -53,6 +60,7 @@ export default function HrLayout({ children }: { children: React.ReactNode }) {
       'psikotes': ['Psikotes', 'Tes kognitif, kepribadian & integritas'],
       'interview': ['Penilaian Interview', 'Form kompetensi terstruktur'],
       'onboarding': ['Onboarding', 'Checklist karyawan baru'],
+      'profile': ['Profil Saya', 'Kelola data akun Anda'],
       'questions': ['Pertanyaan Psikotes', 'Kelola soal kognitif, kepribadian & situasional'],
       'settings': ['Posisi & Bobot Penilaian', 'Atur posisi dan bobot kriteria CV'],
     }
@@ -81,10 +89,18 @@ export default function HrLayout({ children }: { children: React.ReactNode }) {
             )
           )}
         </nav>
-        <div className="side-foot" style={{ cursor: 'pointer' }} onClick={handleLogout}>
-          {role === 'dev' && <span style={{ color: 'var(--accent)', fontWeight: 700, marginRight: 8 }}>DEV</span>}
-          {role === 'candidate' && <span style={{ color: 'var(--hold)', fontWeight: 700, marginRight: 8 }}>CANDIDATE</span>}
-          Keluar
+        <div className="side-foot">
+          <div style={{ marginBottom: 6 }}>
+            <div style={{ fontWeight: 600, color: '#fff', fontSize: 12 }}>{userName || userEmail}</div>
+            <div style={{ color: '#9c98bf', fontSize: 10.5, marginTop: 1 }}>{userEmail}</div>
+          </div>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            {role === 'dev' && <span style={{ color: 'var(--accent)', fontWeight: 700, fontSize: 10 }}>DEV</span>}
+            <span style={{ flex: 1 }}></span>
+            <span style={{ cursor: 'pointer' }} onClick={() => navigate('profile')}>Profil</span>
+            <span style={{ color: '#9c98bf' }}>·</span>
+            <span style={{ cursor: 'pointer' }} onClick={handleLogout}>Keluar</span>
+          </div>
         </div>
       </aside>
 
