@@ -63,7 +63,11 @@ export default function HrCandidatesPage() {
 
   const deleteC = async (id: string) => {
     if (!confirm('Hapus kandidat ini beserta seluruh penilaiannya?')) return
-    await supabase.from('candidates').delete().eq('id', id)
+    await fetch('/api/delete-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ candidateId: id }),
+    })
     await load()
   }
 
