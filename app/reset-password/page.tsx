@@ -8,15 +8,29 @@ export default function ResetPasswordPage() {
   const router = useRouter()
   const supabase = createClient()
   const [password, setPassword] = useState('')
+  const [showPw, setShowPw] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [ready, setReady] = useState(false)
   const [done, setDone] = useState(false)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setReady(true)
+    const hash = window.location.hash
+    const isRecovery = hash.includes('type=recovery')
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setReady(true)
+      }
     })
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session || isRecovery) {
+        setReady(true)
+      }
+    })
+
+    return () => subscription.unsubscribe()
   }, [])
 
   const handleReset = async (e: React.FormEvent) => {
@@ -64,8 +78,19 @@ export default function ResetPasswordPage() {
         <form onSubmit={handleReset}>
           <div className="field">
             <label className="fld">Password baru</label>
-            <input type="password" placeholder="Minimal 6 karakter" value={password}
-              onChange={e => setPassword(e.target.value)} required minLength={6} autoComplete="new-password" />
+            <div style={{ position: 'relative' }}>
+              <input type={showPw ? 'text' : 'password'} placeholder="Minimal 6 karakter" value={password}
+                onChange={e => setPassword(e.target.value)} required minLength={6} autoComplete="new-password"
+                style={{ paddingRight: 44 }} />
+              <button type="button" onClick={() => setShowPw(!showPw)}
+                style={{
+                  position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
+                  background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, padding: '6px 8px',
+                  color: 'var(--muted)', lineHeight: 1,
+                }}>
+                {showPw ? '🙈' : '👁️'}
+              </button>
+            </div>
           </div>
           <button className="btn primary" style={{ width: '100%', justifyContent: 'center' }} disabled={loading}>
             {loading ? 'Menyimpan...' : 'Simpan Password Baru'}
