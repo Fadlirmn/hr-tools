@@ -7,41 +7,47 @@ function getAnonKey() {
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
+  let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     getAnonKey(),
     {
       cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
+        getAll() { return request.cookies.getAll() },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          supabaseResponse = NextResponse.next({ request })
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
           )
         },
       },
     }
   )
 
-  const { data: { session } } = await supabase.auth.getSession()
+  const { data: { user } } = await supabase.auth.getUser()
 
   const publicPaths = ['/login', '/invite', '/']
   const isPublic = publicPaths.some(p => pathname.startsWith(p))
 
-  if (!session && !isPublic) {
-    return NextResponse.redirect(new URL('/login', request.url))
+  if (!user && !isPublic) {
+    const url = new URL('/login', request.url)
+    return NextResponse.redirect(url)
   }
 
-  if (session && pathname === '/login') {
-    const role = session.user.user_metadata?.role
-    if (role === 'hr' || role === 'dev') return NextResponse.redirect(new URL('/hr/dashboard', request.url))
-    if (role === 'candidate') return NextResponse.redirect(new URL('/candidate/dashboard', request.url))
+  if (user && pathname === '/login') {
+    const role = user.user_metadata?.role
+    if (role === 'hr' || role === 'dev') {
+      return NextResponse.redirect(new URL('/hr/dashboard', request.url))
+    }
+    if (role === 'candidate') {
+      return NextResponse.redirect(new URL('/candidate/dashboard', request.url))
+    }
   }
 
-  if (session && !isPublic) {
-    const role = session.user.user_metadata?.role
+  if (user && !isPublic) {
+    const role = user.user_metadata?.role
     if (pathname.startsWith('/hr') && role !== 'hr' && role !== 'dev') {
       return NextResponse.redirect(new URL('/candidate/dashboard', request.url))
     }
@@ -50,7 +56,7 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  return NextResponse.next()
+  return supabaseResponse
 }
 
 export const config = {
