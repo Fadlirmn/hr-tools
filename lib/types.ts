@@ -49,6 +49,9 @@ export interface Candidate {
   invite_token: string | null
   cv: CvAssessment | null
   psikotes: PsikotesResult | null
+  psikotes_open_at: string | null
+  psikotes_close_at: string | null
+  psikotes_time_limit: number | null
   interview: InterviewAssessment | null
   onboarding: OnboardingProgress | null
 }
@@ -77,6 +80,7 @@ export interface PsikotesResult {
   traits: Record<string, number>
   date: string
   via?: string
+  candidateId?: string | null
 }
 
 export interface IntScores {

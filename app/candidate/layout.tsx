@@ -34,6 +34,7 @@ export default function CandidateLayout({ children }: { children: React.ReactNod
   const nav = [
     { tab: 'candidate/dashboard', label: 'Dashboard' },
     { tab: 'candidate/hasil-cv', label: 'Hasil CV' },
+    { tab: 'candidate/psikotes', label: 'Psikotes' },
     { tab: 'candidate/hasil-psikotes', label: 'Hasil Psikotes' },
     { tab: 'candidate/hasil-interview', label: 'Hasil Interview' },
     { tab: 'candidate/onboarding', label: 'Onboarding' },

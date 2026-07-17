@@ -45,8 +45,16 @@ export default function CandidateDashboardPage() {
     {
       label: '🧠 Psikotes',
       hint: 'Tes kognitif, kepribadian & integritas',
-      score: candidate.psikotes ? `Kognitif ${candidate.psikotes.cogTotal}/15` : 'Belum dites',
-      href: '/candidate/hasil-psikotes',
+      score: (() => {
+        if (candidate.psikotes) return `Kognitif ${candidate.psikotes.cogTotal}/15`
+        if (candidate.psikotes_open_at) {
+          const closeAt = new Date(candidate.psikotes_close_at!)
+          if (closeAt < new Date()) return 'Kadaluarsa'
+          return 'Tersedia — Kerjakan'
+        }
+        return 'Belum dibuka'
+      })(),
+      href: candidate.psikotes ? '/candidate/hasil-psikotes' : '/candidate/psikotes',
     },
     {
       label: '🎤 Interview',

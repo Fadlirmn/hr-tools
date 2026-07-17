@@ -53,7 +53,7 @@ export default function HrCandidatesPage() {
         sumber: form.sumber, email: form.email.trim(), telepon: form.telepon.trim(),
         catatan: form.catatan.trim(), stage: 'screening',
         tanggal: new Date().toISOString().slice(0, 10),
-        invite_token: null, cv: null, psikotes: null, interview: null, onboarding: null,
+        invite_token: null, cv: null, psikotes: null, psikotes_open_at: null, psikotes_close_at: null, psikotes_time_limit: null, interview: null, onboarding: null,
       }
       await supabase.from('candidates').insert(newC)
     }

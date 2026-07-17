@@ -23,6 +23,9 @@ CREATE TABLE IF NOT EXISTS candidates (
   invite_token TEXT UNIQUE DEFAULT NULL,
   cv JSONB DEFAULT NULL,
   psikotes JSONB DEFAULT NULL,
+  psikotes_open_at TIMESTAMPTZ DEFAULT NULL,
+  psikotes_close_at TIMESTAMPTZ DEFAULT NULL,
+  psikotes_time_limit INTEGER DEFAULT NULL,
   interview JSONB DEFAULT NULL,
   onboarding JSONB DEFAULT NULL
 );
