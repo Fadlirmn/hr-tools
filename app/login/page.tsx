@@ -22,8 +22,15 @@ export default function LoginPage() {
     const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password })
 
     if (authError) {
-      let msg = authError.message
-      if (authError.status === 400) msg = 'Email atau password salah. Pastikan akun sudah dibuat di Supabase Auth.'
+      const m = authError.message.toLowerCase()
+      let msg = 'Email atau password salah.'
+      if (m.includes('email not confirmed') || m.includes('email_not_confirmed')) {
+        msg = 'Email belum diverifikasi. Silakan cek inbox (atau folder spam) dan klik link verifikasi.'
+      } else if (m.includes('invalid login credentials')) {
+        msg = 'Email atau password salah. Pastikan akun sudah terdaftar di sistem.'
+      } else if (m.includes('rate limit') || m.includes('too many')) {
+        msg = 'Terlalu banyak percobaan. Tunggu beberapa saat sebelum mencoba lagi.'
+      }
       setError(msg)
       setLoading(false)
       return
