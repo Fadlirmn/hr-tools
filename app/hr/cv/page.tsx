@@ -1,12 +1,20 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import type { Candidate, Position, CvScores, CvAssessment } from '@/lib/types'
 import { CV_CRITERIA, POSITIONS_DEFAULT } from '@/lib/constants'
 
 export default function HrCvPage() {
+  return (
+    <Suspense fallback={<div className="hint">Memuat...</div>}>
+      <HrCvContent />
+    </Suspense>
+  )
+}
+
+function HrCvContent() {
   const searchParams = useSearchParams()
   const supabase = createClient()
   const [candidates, setCandidates] = useState<Candidate[]>([])
