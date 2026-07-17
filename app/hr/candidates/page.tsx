@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import type { Candidate, Position } from '@/lib/types'
 import { STAGES, POSITIONS_DEFAULT } from '@/lib/constants'
@@ -9,7 +9,6 @@ import { v4 as uuidv4 } from 'uuid'
 
 export default function HrCandidatesPage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const supabase = createClient()
   const [candidates, setCandidates] = useState<Candidate[]>([])
   const [positions, setPositions] = useState<Position[]>([])
@@ -87,8 +86,6 @@ export default function HrCandidatesPage() {
     const m: Record<string, string> = { Lolos: 'ok', Pertimbangkan: 'hold', 'Tidak Lolos': 'no', Rekomendasikan: 'ok', Tidak: 'no' }
     return <span className={`chip ${m[v] || 'neutral'}`}>{txt}</span>
   }
-
-  const selectedId = searchParams.get('id')
 
   return (
     <>
