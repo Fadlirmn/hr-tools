@@ -1,17 +1,14 @@
 import { createBrowserClient } from '@supabase/ssr'
-import type { SupabaseClient } from '@supabase/supabase-js'
 
 function getAnonKey() {
   return process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 }
 
-let cached: SupabaseClient | null = null
-
+// Tidak menggunakan singleton global untuk menghindari session leak antar user/logout.
+// @supabase/ssr browser client sudah mengelola auth state via cookies secara aman.
 export function createClient() {
-  if (cached) return cached
-  cached = createBrowserClient(
+  return createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     getAnonKey()
   )
-  return cached
 }

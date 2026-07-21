@@ -42,7 +42,8 @@ export default function CandidateLayout({ children }: { children: React.ReactNod
     { tab: 'candidate/profile', label: 'Profil Saya' },
   ]
 
-  const active = pathname.replace('/', '')
+  // Gunakan pathname langsung untuk match yang akurat (tanpa leading slash)
+  const active = pathname.startsWith('/') ? pathname.slice(1) : pathname
 
   if (!loaded) return null
 

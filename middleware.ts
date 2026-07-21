@@ -43,13 +43,14 @@ export async function middleware(request: NextRequest) {
     },
   })
 
-  let session = null
+  // getUser() memvalidasi JWT ke Supabase server (aman), bukan hanya baca cookie lokal
+  let user = null
   try {
-    const { data } = await supabase.auth.getSession()
-    session = data.session
-  } catch { session = null }
+    const { data } = await supabase.auth.getUser()
+    user = data.user
+  } catch { user = null }
 
-  if (!session) {
+  if (!user) {
     if (isPublic) return response
     if (isApi) return API_UNAUTH('Unauthorized', 401)
     return NextResponse.redirect(new URL('/login', request.url))
@@ -59,13 +60,13 @@ export async function middleware(request: NextRequest) {
   if (isApi) return response
 
   if (pathname === '/login') {
-    const role = session.user.user_metadata?.role
+    const role = user.user_metadata?.role
     if (role === 'hr' || role === 'dev') return NextResponse.redirect(new URL('/hr/dashboard', request.url))
     if (role === 'candidate') return NextResponse.redirect(new URL('/candidate/dashboard', request.url))
     return response
   }
 
-  const role = session.user.user_metadata?.role
+  const role = user.user_metadata?.role
   if (pathname.startsWith('/hr') && role !== 'hr' && role !== 'dev') {
     return NextResponse.redirect(new URL('/candidate/dashboard', request.url))
   }

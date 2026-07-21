@@ -45,27 +45,61 @@ export default function InvitePage() {
     setError('')
 
     const signUpEmail = email.trim()
+
+    // Step 1: Daftarkan user baru di Supabase Auth
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email: signUpEmail,
       password,
       options: {
         data: { role: 'candidate', candidate_id: candidate.id },
+        emailRedirectTo: undefined,
       },
     })
 
     if (signUpError) {
-      setError(signUpError.message)
+      // Email sudah terdaftar → coba sign in dulu untuk validasi
+      if (signUpError.message.toLowerCase().includes('already registered') ||
+          signUpError.message.toLowerCase().includes('already been registered')) {
+        setError('Email ini sudah terdaftar. Gunakan email lain atau hubungi HR.')
+      } else {
+        setError(signUpError.message)
+      }
       setLoading(false)
       return
     }
 
-    const { error: updateError } = await supabase
-      .from('candidates')
-      .update({ user_id: signUpData.user!.id, email: signUpEmail, invite_token: null })
-      .eq('id', candidate.id)
+    const userId = signUpData.user?.id
+    if (!userId) {
+      setError('Gagal membuat akun. Coba lagi.')
+      setLoading(false)
+      return
+    }
 
-    if (updateError) {
-      setError('Gagal menghubungkan akun. Silakan hubungi HR.')
+    // Deteksi kasus Supabase v2: email sudah ada, tapi signUp tidak throw error
+    // (terjadi saat "Prevent duplicate signups" dimatikan di Supabase)
+    // Identities kosong = email sudah terdaftar sebelumnya
+    const identities = (signUpData.user as any)?.identities
+    if (Array.isArray(identities) && identities.length === 0) {
+      setError('Email ini sudah terdaftar. Gunakan email lain atau hubungi HR.')
+      setLoading(false)
+      return
+    }
+
+    // Step 2: Hubungkan user ke kandidat via API route (server-side, bypass RLS)
+    const res = await fetch('/api/claim-invite', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        candidateId: candidate.id,
+        userId,
+        email: signUpEmail,
+        inviteToken: token,
+      }),
+    })
+
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({}))
+      setError(json.error || 'Gagal menghubungkan akun. Silakan hubungi HR.')
       setLoading(false)
       return
     }

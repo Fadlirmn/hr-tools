@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase'
 import { loadQuestions } from '@/lib/questions'
 import type { Candidate, Position, PsiCogQuestion, PsiTraitQuestion, PsiSjtQuestion } from '@/lib/types'
@@ -30,16 +30,29 @@ export default function ExamModal({ mode, candidate, positionName, positions, ti
     loadQuestions().then(setQuestions)
   }, [])
 
+  // Gunakan ref untuk interval agar tidak perlu di deps — mencegah stale closure
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  const clearTimer = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current)
+      intervalRef.current = null
+    }
+  }, [])
+
   useEffect(() => {
     if (!timerActive || screen !== 'test') return
-    const interval = setInterval(() => {
+    intervalRef.current = setInterval(() => {
       setTimeLeft(prev => {
-        if (prev <= 1) { clearInterval(interval); return 0 }
+        if (prev <= 1) {
+          clearTimer()
+          return 0
+        }
         return prev - 1
       })
     }, 1000)
-    return () => clearInterval(interval)
-  }, [timerActive, screen])
+    return clearTimer
+  }, [timerActive, screen, clearTimer])
 
   if (!questions) return null
 
@@ -73,7 +86,7 @@ export default function ExamModal({ mode, candidate, positionName, positions, ti
     return { cogTotal: cTotal, sjtTotal: sTotal, traits: tAvg, cog: { ...a.cog }, trait: { ...a.trait }, sjt: { ...a.sjt }, date: new Date().toISOString().slice(0, 10), via: mode === 'candidate' ? 'kandidat' : 'hr', candidateId: candidate?.id || null }
   }
 
-  const handleSubmit = async (auto: boolean) => {
+  const handleSubmit = useCallback(async (auto: boolean) => {
     const totalAns = Object.keys(ans.cog).length + Object.keys(ans.trait).length + Object.keys(ans.sjt).length
     const totalQ = PSI_COG.length + PSI_TRAIT.length + PSI_SJT.length
     if (!auto && totalAns < totalQ) {
@@ -92,13 +105,16 @@ export default function ExamModal({ mode, candidate, positionName, positions, ti
       res.candidateId = newC.id
     }
     setTimerActive(false)
+    clearTimer()
     setScreen('done')
     await onSave(res)
-  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ans, mode, candidate, name, posId, score, onSave, clearTimer])
 
+  // Auto-submit saat timer habis — menggunakan handleSubmit terbaru (tidak stale)
   useEffect(() => {
     if (timeLeft === 0 && screen === 'test') handleSubmit(true)
-  }, [timeLeft])
+  }, [timeLeft, handleSubmit, screen])
 
   const doneScreen = () => {
     if (mode === 'candidate') {

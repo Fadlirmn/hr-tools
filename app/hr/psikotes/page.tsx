@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabase'
 import { loadQuestions } from '@/lib/questions'
 import ExamModal from '@/components/exam-modal'
@@ -74,7 +74,8 @@ export default function HrPsikotesPage() {
     return { cogTotal: cTotal, sjtTotal: sTotal, traits: tAvg, cogLvl, sjtLvl, topTrait: top }
   }
 
-  const r = calc()
+  // Wrap dengan useMemo agar tidak recompute setiap render
+  const r = useMemo(() => calc(), [cog, trait, sjt, PSI_COG, PSI_TRAIT, PSI_SJT])
 
   const save = async () => {
     if (!c) return
@@ -90,7 +91,11 @@ export default function HrPsikotesPage() {
     await load()
   }
 
-  const cogColor = (v: number) => v >= PSI_COG.length * 0.73 ? 'var(--ok)' : v >= PSI_COG.length * 0.47 ? 'var(--hold)' : 'var(--no)'
+  // Guard div-by-zero: jika pertanyaan belum load, hindari NaN
+  const cogColor = (v: number) =>
+    !PSI_COG.length ? 'var(--line)' :
+    v >= PSI_COG.length * 0.73 ? 'var(--ok)' :
+    v >= PSI_COG.length * 0.47 ? 'var(--hold)' : 'var(--no)'
 
   if (!questions) return <div className="hint">Memuat soal...</div>
 

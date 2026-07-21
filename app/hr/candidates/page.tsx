@@ -85,8 +85,13 @@ export default function HrCandidatesPage() {
       if (error) { alert('Gagal: ' + error.message); return }
     }
     const link = `${window.location.origin}/invite/${token}`
-    await navigator.clipboard.writeText(link)
-    alert(c.invite_token ? `Link undangan disalin ulang:\n${link}` : `Link undangan disalin:\n${link}`)
+    // Clipboard API memerlukan HTTPS; fallback ke prompt() jika gagal
+    try {
+      await navigator.clipboard.writeText(link)
+      alert(c.invite_token ? `Link undangan disalin ulang:\n${link}` : `Link undangan disalin:\n${link}`)
+    } catch {
+      prompt('Salin link undangan ini secara manual:', link)
+    }
     await load()
   }
 
