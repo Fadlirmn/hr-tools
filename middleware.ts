@@ -7,6 +7,9 @@ function getAnonKey() {
 
 const PUBLIC_ROUTES = ['/login', '/invite', '/forgot-password', '/reset-password', '/']
 
+// API routes yang tidak memerlukan session (keamanan dihandle di dalam route itu sendiri)
+const PUBLIC_API_ROUTES = ['/api/claim-invite']
+
 const API_UNAUTH = (msg: string, status: number) =>
   NextResponse.json({ error: msg }, { status })
 
@@ -21,9 +24,11 @@ export async function middleware(request: NextRequest) {
     return isPublic || isApi ? NextResponse.next() : NextResponse.redirect(new URL('/login', request.url))
   }
 
+  const isPublicApi = PUBLIC_API_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'))
+
   const hasSbCookie = request.cookies.getAll().some(c => c.name.startsWith('sb-'))
   if (!hasSbCookie) {
-    if (isPublic) return NextResponse.next()
+    if (isPublic || isPublicApi) return NextResponse.next()
     if (isApi) return API_UNAUTH('Unauthorized', 401)
     return NextResponse.redirect(new URL('/login', request.url))
   }
@@ -51,7 +56,7 @@ export async function middleware(request: NextRequest) {
   } catch { user = null }
 
   if (!user) {
-    if (isPublic) return response
+    if (isPublic || isPublicApi) return response
     if (isApi) return API_UNAUTH('Unauthorized', 401)
     return NextResponse.redirect(new URL('/login', request.url))
   }
