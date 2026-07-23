@@ -109,19 +109,78 @@ export default function HrLayout({ children }: { children: React.ReactNode }) {
           )}
         </nav>
         <div className="side-foot">
-          <div style={{ marginBottom: 6 }}>
-            <div style={{ fontWeight: 600, color: '#fff', fontSize: 12 }}>{userName || userEmail}</div>
-            <div style={{ color: '#9c98bf', fontSize: 10.5, marginTop: 1 }}>{userEmail}</div>
-          </div>
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-            {role === 'dev' && <span style={{ color: 'var(--accent)', fontWeight: 700, fontSize: 10 }}>DEV</span>}
-            <span style={{ flex: 1 }}></span>
-            <span style={{ cursor: 'pointer' }} onClick={() => navigate('profile')}>Profil</span>
-            <span style={{ color: '#9c98bf' }}>·</span>
-            <span style={{ cursor: 'pointer' }} onClick={handleLogout}>Keluar</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {/* Avatar circle */}
+            <div
+              onClick={() => navigate('profile')}
+              title="Pengaturan Profil"
+              style={{
+                width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
+                background: 'linear-gradient(135deg, var(--accent), #7c3aed)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: '#fff', fontWeight: 800, fontSize: 15,
+                cursor: 'pointer', userSelect: 'none',
+                transition: 'opacity .15s',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.opacity = '0.8')}
+              onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+            >
+              {(userName || userEmail).charAt(0).toUpperCase()}
+            </div>
+
+            {/* Name + email */}
+            <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+              <div style={{
+                fontWeight: 600, color: '#fff', fontSize: 12,
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+              }}>
+                {userName || userEmail}
+              </div>
+              <div style={{
+                color: '#9c98bf', fontSize: 10, marginTop: 1,
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+              }}>
+                {role === 'dev' && <span style={{ color: 'var(--accent)', fontWeight: 700, marginRight: 4 }}>DEV</span>}
+                {role === 'hr' && <span style={{ color: '#22c55e', fontWeight: 700, marginRight: 4 }}>HR</span>}
+                {userEmail}
+              </div>
+            </div>
+
+            {/* Profile settings icon */}
+            <button
+              onClick={() => navigate('profile')}
+              title="Pengaturan Profil"
+              style={{
+                background: 'rgba(255,255,255,.08)', border: 'none', borderRadius: 8,
+                width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', color: '#9c98bf', fontSize: 15, flexShrink: 0,
+                transition: 'background .15s, color .15s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,.18)'; e.currentTarget.style.color = '#fff' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,.08)'; e.currentTarget.style.color = '#9c98bf' }}
+            >
+              ⚙
+            </button>
+
+            {/* Logout icon */}
+            <button
+              onClick={handleLogout}
+              title="Keluar"
+              style={{
+                background: 'rgba(255,255,255,.08)', border: 'none', borderRadius: 8,
+                width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', color: '#9c98bf', fontSize: 14, flexShrink: 0,
+                transition: 'background .15s, color .15s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,.2)'; e.currentTarget.style.color = '#f87171' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,.08)'; e.currentTarget.style.color = '#9c98bf' }}
+            >
+              ⏻
+            </button>
           </div>
         </div>
       </aside>
+
 
       <main className="main">
         <div className="topbar">
