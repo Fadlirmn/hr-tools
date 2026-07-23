@@ -64,18 +64,29 @@ export async function POST(req: Request) {
   return NextResponse.json({ ok: true })
 }
 
-// PATCH /api/candidates — update candidate (service role bypasses RLS)
+// PATCH /api/candidates — update single or bulk candidates (service role bypasses RLS)
 export async function PATCH(req: Request) {
   const session = await verifyHr()
   if (!session) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const body = await req.json()
+  const admin = adminClient()
+
+  // Bulk update: { _bulk: { ids: string[], ...fields } }
+  if (body._bulk) {
+    const { ids, ...fields } = body._bulk
+    if (!ids || ids.length === 0) return NextResponse.json({ error: 'ids wajib ada' }, { status: 400 })
+    const { error } = await admin.from('candidates').update(fields).in('id', ids)
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ ok: true })
+  }
+
+  // Single update: { id, ...fields }
   const { id, ...fields } = body
   if (!id) return NextResponse.json({ error: 'id wajib ada' }, { status: 400 })
-
-  const admin = adminClient()
   const { error } = await admin.from('candidates').update(fields).eq('id', id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   return NextResponse.json({ ok: true })
 }
+

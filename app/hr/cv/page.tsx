@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
+import { fetchCandidates } from '@/lib/db-hr'
 import type { Candidate, Position, CvScores, CvAssessment } from '@/lib/types'
 import { CV_CRITERIA, POSITIONS_DEFAULT } from '@/lib/constants'
 
@@ -24,9 +25,9 @@ function HrCvContent() {
   const [notes, setNotes] = useState('')
 
   const load = async () => {
-    const { data: c } = await supabase.from('candidates').select('*').order('tanggal', { ascending: false })
+    const c = await fetchCandidates()
     const { data: p } = await supabase.from('positions').select('*')
-    setCandidates((c || []) as Candidate[])
+    setCandidates(c as Candidate[])
     setPositions((p && p.length > 0 ? p : JSON.parse(JSON.stringify(POSITIONS_DEFAULT))) as Position[])
   }
 
@@ -72,7 +73,16 @@ function HrCvContent() {
       verdict: r.verdict, filled: r.filled, notes: notes.trim(),
       date: new Date().toISOString().slice(0, 10),
     }
-    await supabase.from('candidates').update({ cv: cvData as any, stage: c.stage === 'screening' ? 'psikotes' : c.stage }).eq('id', c.id)
+    await fetch('/api/candidates', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        id: c.id,
+        cv: cvData,
+        stage: c.stage === 'screening' ? 'psikotes' : c.stage,
+      }),
+    })
     await load()
   }
 

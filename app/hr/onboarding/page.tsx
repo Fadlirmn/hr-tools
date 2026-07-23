@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
+import { fetchCandidates } from '@/lib/db-hr'
 import type { Candidate, Position } from '@/lib/types'
 import { ONBOARD, POSITIONS_DEFAULT } from '@/lib/constants'
 
@@ -13,9 +14,9 @@ export default function HrOnboardingPage() {
   const [checklist, setChecklist] = useState<Record<string, boolean>>({})
 
   const load = async () => {
-    const { data: c } = await supabase.from('candidates').select('*').order('tanggal', { ascending: false })
+    const c = await fetchCandidates()
     const { data: p } = await supabase.from('positions').select('*')
-    setCandidates((c || []) as Candidate[])
+    setCandidates(c as Candidate[])
     setPositions((p && p.length > 0 ? p : JSON.parse(JSON.stringify(POSITIONS_DEFAULT))) as Position[])
   }
 
@@ -38,10 +39,16 @@ export default function HrOnboardingPage() {
     let done = 0, tot = 0
     ONBOARD.forEach((g, gi) => g.items.forEach((_, ii) => { tot++; if (checklist[gi + '-' + ii]) done++ }))
     const progress = tot ? Math.round(done / tot * 100) : 0
-    await supabase.from('candidates').update({
-      onboarding: { checklist: { ...checklist }, progress, date: new Date().toISOString().slice(0, 10) } as any,
-      stage: progress === 100 ? 'hired' : c.stage === 'offer' ? 'onboarding' : c.stage,
-    }).eq('id', c.id)
+    await fetch('/api/candidates', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        id: c.id,
+        onboarding: { checklist: { ...checklist }, progress, date: new Date().toISOString().slice(0, 10) },
+        stage: progress === 100 ? 'hired' : c.stage === 'offer' ? 'onboarding' : c.stage,
+      }),
+    })
     await load()
   }
 

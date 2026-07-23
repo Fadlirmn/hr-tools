@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
+import { fetchCandidates } from '@/lib/db-hr'
 import type { Candidate, Position } from '@/lib/types'
 import { POSITIONS_DEFAULT } from '@/lib/constants'
 
@@ -24,15 +25,14 @@ export default function HrPsikotesAksesPage() {
 
   const load = async () => {
     setLoading(true)
-    const [cRes, pRes] = await Promise.all([
-      supabase.from('candidates').select('*').order('tanggal', { ascending: false }),
+    const [candidates, pRes] = await Promise.all([
+      fetchCandidates(),
       supabase.from('positions').select('*'),
     ])
-    const candidates = (cRes.data || []) as Candidate[]
     const positions = (pRes.data && pRes.data.length > 0 ? pRes.data : JSON.parse(JSON.stringify(POSITIONS_DEFAULT))) as Position[]
 
     const now = new Date()
-    const mapped: CandidateRow[] = candidates.map(c => {
+    const mapped: CandidateRow[] = (candidates as Candidate[]).map(c => {
       const posName = positions.find(p => p.id === c.posisi)?.name || '—'
       let status: AccessStatus = 'belum'
 
@@ -65,11 +65,17 @@ export default function HrPsikotesAksesPage() {
     const now = new Date()
     const closeAt = new Date(now.getTime() + Number(days) * 24 * 60 * 60 * 1000)
 
-    await supabase.from('candidates').update({
-      psikotes_open_at: now.toISOString(),
-      psikotes_close_at: closeAt.toISOString(),
-      psikotes_time_limit: Number(timeLimit),
-    }).eq('id', candidate.id)
+    await fetch('/api/candidates', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        id: candidate.id,
+        psikotes_open_at: now.toISOString(),
+        psikotes_close_at: closeAt.toISOString(),
+        psikotes_time_limit: Number(timeLimit),
+      }),
+    })
 
     try {
       await fetch('/api/notify-psikotes', {
@@ -103,17 +109,20 @@ export default function HrPsikotesAksesPage() {
     const closeAt = new Date(now.getTime() + Number(bulkDays) * 24 * 60 * 60 * 1000)
     const ids = eligible.map(r => r.c.id)
 
-    const { error } = await supabase.from('candidates').update({
-      psikotes_open_at: now.toISOString(),
-      psikotes_close_at: closeAt.toISOString(),
-      psikotes_time_limit: Number(bulkTimeLimit),
-    }).in('id', ids)
-
-    if (error) {
-      alert('Gagal: ' + error.message)
-      setSending(false)
-      return
-    }
+    const res = await fetch('/api/candidates', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        id: ids[0], // bulk handled below
+        _bulk: {
+          ids,
+          psikotes_open_at: now.toISOString(),
+          psikotes_close_at: closeAt.toISOString(),
+          psikotes_time_limit: Number(bulkTimeLimit),
+        },
+      }),
+    })
 
     // Notify each candidate
     for (const r of eligible) {
@@ -133,18 +142,30 @@ export default function HrPsikotesAksesPage() {
   }
 
   const closeAccess = async (candidate: Candidate) => {
-    await supabase.from('candidates').update({
-      psikotes_open_at: null,
-      psikotes_close_at: null,
-      psikotes_time_limit: null,
-    }).eq('id', candidate.id)
+    await fetch('/api/candidates', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        id: candidate.id,
+        psikotes_open_at: null,
+        psikotes_close_at: null,
+        psikotes_time_limit: null,
+      }),
+    })
     await load()
   }
 
   const closeAccessEarly = async (candidate: Candidate) => {
-    await supabase.from('candidates').update({
-      psikotes_close_at: new Date().toISOString(),
-    }).eq('id', candidate.id)
+    await fetch('/api/candidates', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        id: candidate.id,
+        psikotes_close_at: new Date().toISOString(),
+      }),
+    })
     await load()
   }
 

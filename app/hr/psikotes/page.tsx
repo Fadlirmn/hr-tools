@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabase'
+import { fetchCandidates } from '@/lib/db-hr'
 import { loadQuestions } from '@/lib/questions'
 import ExamModal from '@/components/exam-modal'
 import type { Candidate, Position, PsikotesResult, PsiCogQuestion, PsiTraitQuestion, PsiSjtQuestion } from '@/lib/types'
@@ -19,12 +20,12 @@ export default function HrPsikotesPage() {
   const [questions, setQuestions] = useState<{ cog: PsiCogQuestion[]; trait: PsiTraitQuestion[]; sjt: PsiSjtQuestion[] } | null>(null)
 
   const load = async () => {
-    const [cRes, pRes, q] = await Promise.all([
-      supabase.from('candidates').select('*').order('tanggal', { ascending: false }),
+    const [cands, pRes, q] = await Promise.all([
+      fetchCandidates(),
       supabase.from('positions').select('*'),
       loadQuestions(),
     ])
-    setCandidates((cRes.data || []) as Candidate[])
+    setCandidates(cands as Candidate[])
     setPositions((pRes.data && pRes.data.length > 0 ? pRes.data : JSON.parse(JSON.stringify(POSITIONS_DEFAULT))) as Position[])
     setQuestions(q)
   }
@@ -84,10 +85,16 @@ export default function HrPsikotesPage() {
       cogTotal: r.cogTotal, sjtTotal: r.sjtTotal, traits: r.traits,
       date: new Date().toISOString().slice(0, 10),
     }
-    await supabase.from('candidates').update({
-      psikotes: psiData as any,
-      stage: (c.stage === 'screening' || c.stage === 'psikotes') ? 'interview' : c.stage,
-    }).eq('id', c.id)
+    await fetch('/api/candidates', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        id: c.id,
+        psikotes: psiData,
+        stage: (c.stage === 'screening' || c.stage === 'psikotes') ? 'interview' : c.stage,
+      }),
+    })
     await load()
   }
 
@@ -222,10 +229,16 @@ export default function HrPsikotesPage() {
         onClose={() => setExamOpen(false)}
         onSave={async (res) => {
           if (res) {
-            await supabase.from('candidates').update({
-              psikotes: res as any,
-              stage: 'interview',
-            }).eq('id', res.candidateId)
+            await fetch('/api/candidates', {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+              body: JSON.stringify({
+                id: res.candidateId,
+                psikotes: res,
+                stage: 'interview',
+              }),
+            })
             await load()
           }
           setExamOpen(false)
