@@ -18,11 +18,15 @@ export default function HrCandidatesPage() {
   const [form, setForm] = useState({ nama: '', posisi: '', sumber: 'LinkedIn', email: '', telepon: '', catatan: '' })
 
   const load = async () => {
-    const { data: c } = await supabase.from('candidates').select('*').order('tanggal', { ascending: false })
+    // Fetch candidates via server API (bypasses RLS — browser JWT may be stale)
+    const res = await fetch('/api/candidates', { credentials: 'include' })
+    const cData = res.ok ? await res.json() : { candidates: [] }
+    // Positions have public read policy — direct fetch is fine
     const { data: p } = await supabase.from('positions').select('*')
-    setCandidates((c || []) as Candidate[])
+    setCandidates((cData.candidates || []) as Candidate[])
     setPositions((p && p.length > 0 ? p : JSON.parse(JSON.stringify(POSITIONS_DEFAULT))) as Position[])
   }
+
 
   useEffect(() => { load() }, [])
 
@@ -81,13 +85,19 @@ export default function HrCandidatesPage() {
     await fetch('/api/delete-user', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ candidateId: id }),
     })
     await load()
   }
 
   const setStage = async (id: string, stage: string) => {
-    await supabase.from('candidates').update({ stage } as any).eq('id', id)
+    await fetch('/api/candidates', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ id, stage }),
+    })
     await load()
   }
 
@@ -96,11 +106,15 @@ export default function HrCandidatesPage() {
     let token = c.invite_token
     if (!token) {
       token = uuidv4()
-      const { error } = await supabase.from('candidates').update({ invite_token: token } as any).eq('id', c.id)
-      if (error) { alert('Gagal: ' + error.message); return }
+      const res = await fetch('/api/candidates', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ id: c.id, invite_token: token }),
+      })
+      if (!res.ok) { const d = await res.json(); alert('Gagal: ' + d.error); return }
     }
     const link = `${window.location.origin}/invite/${token}`
-    // Clipboard API memerlukan HTTPS; fallback ke prompt() jika gagal
     try {
       await navigator.clipboard.writeText(link)
       alert(c.invite_token ? `Link undangan disalin ulang:\n${link}` : `Link undangan disalin:\n${link}`)

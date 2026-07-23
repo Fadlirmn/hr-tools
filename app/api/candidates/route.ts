@@ -32,7 +32,22 @@ async function verifyHr() {
   return session
 }
 
-// POST /api/candidates — insert new candidate (bypasses RLS via service role)
+// GET /api/candidates — list all candidates (service role bypasses RLS)
+export async function GET() {
+  const session = await verifyHr()
+  if (!session) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+  const admin = adminClient()
+  const { data, error } = await admin
+    .from('candidates')
+    .select('*')
+    .order('tanggal', { ascending: false })
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json({ candidates: data ?? [] })
+}
+
+// POST /api/candidates — insert new candidate (service role bypasses RLS)
 export async function POST(req: Request) {
   const session = await verifyHr()
   if (!session) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
@@ -49,7 +64,7 @@ export async function POST(req: Request) {
   return NextResponse.json({ ok: true })
 }
 
-// PATCH /api/candidates — update candidate (bypasses RLS via service role)
+// PATCH /api/candidates — update candidate (service role bypasses RLS)
 export async function PATCH(req: Request) {
   const session = await verifyHr()
   if (!session) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
