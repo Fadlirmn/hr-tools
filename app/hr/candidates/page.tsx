@@ -42,29 +42,39 @@ export default function HrCandidatesPage() {
 
   const save = async () => {
     if (!form.nama.trim()) return
-    // Refresh JWT so RLS gets the latest user_metadata.role
-    // (needed when role was set via SQL editor without re-login)
-    await supabase.auth.refreshSession()
     if (editId) {
-      const { error } = await supabase.from('candidates').update({
-        nama: form.nama.trim(), posisi: form.posisi, sumber: form.sumber,
-        email: form.email.trim(), telepon: form.telepon.trim(), catatan: form.catatan.trim(),
-      }).eq('id', editId)
-      if (error) { alert('Gagal menyimpan: ' + error.message); return }
+      const res = await fetch('/api/candidates', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          id: editId,
+          nama: form.nama.trim(), posisi: form.posisi, sumber: form.sumber,
+          email: form.email.trim(), telepon: form.telepon.trim(), catatan: form.catatan.trim(),
+        }),
+      })
+      if (!res.ok) { const d = await res.json(); alert('Gagal: ' + d.error); return }
     } else {
       const newC: Candidate = {
         id: uuidv4(), user_id: null, nama: form.nama.trim(), posisi: form.posisi,
         sumber: form.sumber, email: form.email.trim(), telepon: form.telepon.trim(),
         catatan: form.catatan.trim(), stage: 'screening',
         tanggal: new Date().toISOString().slice(0, 10),
-        invite_token: null, cv: null, psikotes: null, psikotes_open_at: null, psikotes_close_at: null, psikotes_time_limit: null, interview: null, onboarding: null,
+        invite_token: null, cv: null, psikotes: null, psikotes_open_at: null,
+        psikotes_close_at: null, psikotes_time_limit: null, interview: null, onboarding: null,
       }
-      const { error } = await supabase.from('candidates').insert(newC)
-      if (error) { alert('Gagal menambah kandidat: ' + error.message); return }
+      const res = await fetch('/api/candidates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(newC),
+      })
+      if (!res.ok) { const d = await res.json(); alert('Gagal: ' + d.error); return }
     }
     setShowModal(false)
     await load()
   }
+
 
   const deleteC = async (id: string) => {
     if (!confirm('Hapus kandidat ini beserta seluruh penilaiannya?')) return
