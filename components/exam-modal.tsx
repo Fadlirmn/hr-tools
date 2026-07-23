@@ -24,10 +24,14 @@ export default function ExamModal({ mode, candidate, positionName, positions, ti
   const [name, setName] = useState(candidate?.nama || '')
   const [posId, setPosId] = useState(candidate?.posisi || (positions && positions[0]?.id) || '')
   const [timeLeft, setTimeLeft] = useState((timeLimit || 30) * 60)
-  const [timerActive, setTimerActive] = useState(mode === 'candidate')
+  const [timerActive, setTimerActive] = useState(false) // always start inactive; activated after questions load
 
   useEffect(() => {
-    loadQuestions().then(setQuestions)
+    loadQuestions().then(q => {
+      setQuestions(q)
+      // For candidate mode, timer starts immediately when questions appear
+      if (mode === 'candidate') setTimerActive(true)
+    })
   }, [])
 
   // Gunakan ref untuk interval agar tidak perlu di deps — mencegah stale closure
@@ -92,6 +96,26 @@ export default function ExamModal({ mode, candidate, positionName, positions, ti
     if (!auto && totalAns < totalQ) {
       if (!confirm(`Masih ada ${totalQ - totalAns} soal belum dijawab. Tetap kumpulkan?`)) return
     }
+
+    setTimerActive(false)
+    clearTimer()
+
+    if (mode === 'candidate' && candidate) {
+      // Candidate: submit answers to server — scoring & saving done server-side
+      // Answer keys are NEVER sent to or computed in the browser
+      const res = await fetch('/api/exam-submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ candidateId: candidate.id, cog: ans.cog, trait: ans.trait, sjt: ans.sjt }),
+      })
+      const data = await res.json()
+      setScreen('done')
+      await onSave(data.result ?? null)
+      return
+    }
+
+    // HR mode: compute score locally (answer keys are available since HR gets full data)
     const res = score(ans)
     if (mode === 'hr' && !candidate && name.trim()) {
       const { v4: uuidv4 } = await import('uuid')
@@ -104,8 +128,6 @@ export default function ExamModal({ mode, candidate, positionName, positions, ti
       await supabase.from('candidates').insert(newC)
       res.candidateId = newC.id
     }
-    setTimerActive(false)
-    clearTimer()
     setScreen('done')
     await onSave(res)
   // eslint-disable-next-line react-hooks/exhaustive-deps

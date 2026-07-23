@@ -21,6 +21,11 @@ const NAV_ITEMS = [
   { tab: 'settings', ico: '◇', label: 'Posisi & Bobot' },
 ]
 
+const DEV_NAV_ITEMS = [
+  { sep: 'Developer' },
+  { tab: 'users', ico: '⊕', label: 'Manajemen User' },
+]
+
 export default function HrLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -65,6 +70,7 @@ export default function HrLayout({ children }: { children: React.ReactNode }) {
       'profile': ['Profil Saya', 'Kelola data akun Anda'],
       'questions': ['Pertanyaan Psikotes', 'Kelola soal kognitif, kepribadian & situasional'],
       'settings': ['Posisi & Bobot Penilaian', 'Atur posisi dan bobot kriteria CV'],
+      'users': ['Manajemen User', 'Kelola role & akses pengguna aplikasi'],
     }
     return map[activeTab] || ['Dashboard', '']
   })()
@@ -82,6 +88,17 @@ export default function HrLayout({ children }: { children: React.ReactNode }) {
           {NAV_ITEMS.map((item, i) =>
             'sep' in item ? (
               <div className="sep" key={i}>{item.sep}</div>
+            ) : (
+              <button key={item.tab}
+                className={activeTab === item.tab ? 'active' : ''}
+                onClick={() => navigate(item.tab!)}>
+                <span className="ico">{item.ico}</span> {item.label}
+              </button>
+            )
+          )}
+          {role === 'dev' && DEV_NAV_ITEMS.map((item, i) =>
+            'sep' in item ? (
+              <div className="sep" key={`dev-${i}`}>{item.sep}</div>
             ) : (
               <button key={item.tab}
                 className={activeTab === item.tab ? 'active' : ''}
