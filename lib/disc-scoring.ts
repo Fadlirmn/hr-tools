@@ -1,7 +1,7 @@
 /**
  * Shared DISC scoring logic (Personal Profile System / Classical Pattern style).
  * Dipakai oleh exam-modal.tsx (preview HR), app/api/exam-submit (skor resmi
- * kandidat), dan app/hr/psikotes/page.tsx (input manual HR) agar formula
+ * kandidat), dan app/hr/tes-disc/page.tsx (input manual HR) agar formula
  * konsisten di satu tempat.
  */
 import {

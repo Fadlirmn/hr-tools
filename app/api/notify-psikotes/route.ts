@@ -46,7 +46,8 @@ export async function POST(req: Request) {
 
   const appUrl = process.env.APP_URL || 'http://localhost:3000'
   const testLabel = type === 'disc' ? 'Tes DISC' : type === 'iq' ? 'Tes IQ' : 'Psikotes'
-  const loginUrl = `${appUrl}/candidate/psikotes`
+  const testPath = type === 'disc' ? 'tes-disc' : type === 'iq' ? 'tes-iq' : 'tes-disc'
+  const loginUrl = `${appUrl}/candidate/${testPath}`
 
   try {
     await sendEmail({

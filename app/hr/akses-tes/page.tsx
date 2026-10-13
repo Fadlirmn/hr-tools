@@ -30,6 +30,10 @@ export default function HrPsikotesAksesPage() {
   const [bulkFilter, setBulkFilter] = useState<'all' | 'screening'>('all')
   const [bulkType, setBulkType] = useState<TestType>('disc')
   const [sending, setSending] = useState(false)
+  // Target pembuka akses per kandidat — form inline pengganti prompt() bawaan browser
+  const [accessTarget, setAccessTarget] = useState<{ candidate: Candidate; type: TestType } | null>(null)
+  const [accessTimeLimit, setAccessTimeLimit] = useState('30')
+  const [accessDays, setAccessDays] = useState('3')
 
   const load = async () => {
     setLoading(true)
@@ -59,14 +63,20 @@ export default function HrPsikotesAksesPage() {
       ? { disc_open_at: openAt, disc_close_at: closeAt, disc_time_limit: timeLimit }
       : { iq_open_at: openAt, iq_close_at: closeAt, iq_time_limit: timeLimit }
 
-  const openAccess = async (candidate: Candidate, type: TestType) => {
-    const timeLimit = prompt('Batas waktu pengerjaan (menit):', '30')
-    if (!timeLimit) return
-    const days = prompt('Batas akhir (hari dari sekarang):', '3')
-    if (!days) return
+  const openAccessDialog = (candidate: Candidate, type: TestType) => {
+    setAccessTimeLimit('30')
+    setAccessDays('3')
+    setAccessTarget({ candidate, type })
+  }
+
+  const confirmAccess = async () => {
+    if (!accessTarget) return
+    const { candidate, type } = accessTarget
+    const timeLimit = Math.max(1, Number(accessTimeLimit) || 30)
+    const days = Math.max(1, Number(accessDays) || 3)
 
     const now = new Date()
-    const closeAt = new Date(now.getTime() + Number(days) * 24 * 60 * 60 * 1000)
+    const closeAt = new Date(now.getTime() + days * 24 * 60 * 60 * 1000)
 
     await fetch('/api/candidates', {
       method: 'PATCH',
@@ -74,7 +84,7 @@ export default function HrPsikotesAksesPage() {
       credentials: 'include',
       body: JSON.stringify({
         id: candidate.id,
-        ...fieldsFor(type, now.toISOString(), closeAt.toISOString(), Number(timeLimit)),
+        ...fieldsFor(type, now.toISOString(), closeAt.toISOString(), timeLimit),
       }),
     })
 
@@ -86,6 +96,7 @@ export default function HrPsikotesAksesPage() {
       })
     } catch {}
 
+    setAccessTarget(null)
     await load()
   }
 
@@ -171,16 +182,16 @@ export default function HrPsikotesAksesPage() {
   const actionCell = (candidate: Candidate, type: TestType, status: AccessStatus) => {
     switch (status) {
       case 'belum':
-        return <button className="btn sm primary" onClick={() => openAccess(candidate, type)}>Buka</button>
+        return <button className="btn sm primary" onClick={() => openAccessDialog(candidate, type)}>Buka</button>
       case 'aktif':
         return (
           <div style={{ display: 'flex', gap: 6 }}>
-            <button className="btn sm primary" onClick={() => openAccess(candidate, type)}>Ulang</button>
+            <button className="btn sm primary" onClick={() => openAccessDialog(candidate, type)}>Ulang</button>
             <button className="btn sm" onClick={() => closeAccessEarly(candidate, type)}>Tutup</button>
           </div>
         )
       case 'kadaluarsa':
-        return <button className="btn sm primary" onClick={() => openAccess(candidate, type)}>Buka Ulang</button>
+        return <button className="btn sm primary" onClick={() => openAccessDialog(candidate, type)}>Buka Ulang</button>
       case 'selesai':
         return (
           <div style={{ display: 'flex', gap: 6 }}>
@@ -260,6 +271,29 @@ export default function HrPsikotesAksesPage() {
           </tbody>
         </table>
       </div>
+
+      {accessTarget && (
+        <div className="modal-bg show" onClick={() => setAccessTarget(null)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <h3>Buka Akses {accessTarget.type === 'disc' ? 'Tes DISC' : 'Tes IQ'}</h3>
+            <div className="body">
+              <div className="field"><label className="fld">Kandidat</label>
+                <input type="text" value={accessTarget.candidate.nama} disabled style={{ opacity: 0.6 }} /></div>
+              <div className="grid2">
+                <div className="field"><label className="fld">Batas waktu (menit)</label>
+                  <input type="number" value={accessTimeLimit} onChange={e => setAccessTimeLimit(e.target.value)} min={1} /></div>
+                <div className="field"><label className="fld">Batas akhir (hari dari sekarang)</label>
+                  <input type="number" value={accessDays} onChange={e => setAccessDays(e.target.value)} min={1} /></div>
+              </div>
+              <div className="hint">Notifikasi email otomatis dikirim ke kandidat setelah akses dibuka.</div>
+            </div>
+            <div className="foot">
+              <button className="btn" onClick={() => setAccessTarget(null)}>Batal</button>
+              <button className="btn primary" onClick={confirmAccess}>Buka Akses</button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }

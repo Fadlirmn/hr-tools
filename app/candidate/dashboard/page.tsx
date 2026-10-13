@@ -52,7 +52,7 @@ export default function CandidateDashboardPage() {
         }
         return 'Belum dibuka'
       })(),
-      href: candidate.psikotes_result?.disc ? '/candidate/hasil-psikotes' : '/candidate/psikotes',
+      href: candidate.psikotes_result?.disc ? '/candidate/hasil-tes-disc' : '/candidate/tes-disc',
     },
     {
       label: '🧠 Tes IQ',
@@ -66,7 +66,7 @@ export default function CandidateDashboardPage() {
         }
         return 'Belum dibuka'
       })(),
-      href: candidate.psikotes_result?.iq ? '/candidate/hasil-psikotes' : '/candidate/psikotes',
+      href: candidate.psikotes_result?.iq ? '/candidate/hasil-tes-iq' : '/candidate/tes-iq',
     },
     {
       label: '🎤 Interview',

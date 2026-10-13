@@ -2,7 +2,7 @@ import type { PositionDefault, CvCriterion, DiscQuestion, DiscQuestionMapping, D
 
 export const STAGES: Record<string, string> = {
   screening: 'Screening CV',
-  psikotes: 'Psikotes',
+  psikotes: 'Tes DISC & IQ',
   interview: 'Interview',
   offer: 'Offering',
   onboarding: 'Onboarding',
