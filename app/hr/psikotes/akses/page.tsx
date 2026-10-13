@@ -7,11 +7,20 @@ import type { Candidate, Position } from '@/lib/types'
 import { POSITIONS_DEFAULT } from '@/lib/constants'
 
 type AccessStatus = 'belum' | 'aktif' | 'kadaluarsa' | 'selesai'
+type TestType = 'disc' | 'iq'
 
 interface CandidateRow {
   c: Candidate
   posName: string
-  status: AccessStatus
+  discStatus: AccessStatus
+  iqStatus: AccessStatus
+}
+
+function computeStatus(hasResult: boolean, openAt: string | null, closeAt: string | null): AccessStatus {
+  const now = new Date()
+  if (hasResult) return 'selesai'
+  if (!openAt || !closeAt) return 'belum'
+  return new Date(closeAt) < now ? 'kadaluarsa' : 'aktif'
 }
 
 export default function HrPsikotesAksesPage() {
@@ -21,6 +30,7 @@ export default function HrPsikotesAksesPage() {
   const [bulkTimeLimit, setBulkTimeLimit] = useState('30')
   const [bulkDays, setBulkDays] = useState('3')
   const [bulkFilter, setBulkFilter] = useState<'all' | 'screening'>('all')
+  const [bulkType, setBulkType] = useState<TestType>('disc')
   const [sending, setSending] = useState(false)
 
   const load = async () => {
@@ -31,23 +41,14 @@ export default function HrPsikotesAksesPage() {
     ])
     const positions = (pRes.data && pRes.data.length > 0 ? pRes.data : JSON.parse(JSON.stringify(POSITIONS_DEFAULT))) as Position[]
 
-    const now = new Date()
     const mapped: CandidateRow[] = (candidates as Candidate[]).map(c => {
       const posName = positions.find(p => p.id === c.posisi)?.name || '—'
-      let status: AccessStatus = 'belum'
-
-      if (c.psikotes) {
-        status = 'selesai'
-      } else if (c.psikotes_close_at) {
-        const closeAt = new Date(c.psikotes_close_at)
-        if (closeAt < now) {
-          status = 'kadaluarsa'
-        } else {
-          status = 'aktif'
-        }
+      return {
+        c,
+        posName,
+        discStatus: computeStatus(!!c.psikotes_result?.disc, c.disc_open_at, c.disc_close_at),
+        iqStatus: computeStatus(!!c.psikotes_result?.iq, c.iq_open_at, c.iq_close_at),
       }
-
-      return { c, posName, status }
     })
 
     setRows(mapped)
@@ -56,7 +57,12 @@ export default function HrPsikotesAksesPage() {
 
   useEffect(() => { load() }, [])
 
-  const openAccess = async (candidate: Candidate) => {
+  const fieldsFor = (type: TestType, openAt: string | null, closeAt: string | null, timeLimit: number | null) =>
+    type === 'disc'
+      ? { disc_open_at: openAt, disc_close_at: closeAt, disc_time_limit: timeLimit }
+      : { iq_open_at: openAt, iq_close_at: closeAt, iq_time_limit: timeLimit }
+
+  const openAccess = async (candidate: Candidate, type: TestType) => {
     const timeLimit = prompt('Batas waktu pengerjaan (menit):', '30')
     if (!timeLimit) return
     const days = prompt('Batas akhir (hari dari sekarang):', '3')
@@ -71,9 +77,7 @@ export default function HrPsikotesAksesPage() {
       credentials: 'include',
       body: JSON.stringify({
         id: candidate.id,
-        psikotes_open_at: now.toISOString(),
-        psikotes_close_at: closeAt.toISOString(),
-        psikotes_time_limit: Number(timeLimit),
+        ...fieldsFor(type, now.toISOString(), closeAt.toISOString(), Number(timeLimit)),
       }),
     })
 
@@ -81,7 +85,7 @@ export default function HrPsikotesAksesPage() {
       await fetch('/api/notify-psikotes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ candidateId: candidate.id }),
+        body: JSON.stringify({ candidateId: candidate.id, type }),
       })
     } catch {}
 
@@ -89,9 +93,9 @@ export default function HrPsikotesAksesPage() {
   }
 
   const openBulk = async () => {
-    const eligible = rows.filter(({ c, status }) => {
-      if (status === 'selesai') return false
-      if (status === 'aktif') return false
+    const eligible = rows.filter(({ c, discStatus, iqStatus }) => {
+      const status = bulkType === 'disc' ? discStatus : iqStatus
+      if (status === 'selesai' || status === 'aktif') return false
       if (bulkFilter === 'screening' && c.stage !== 'screening' && c.stage !== 'psikotes') return false
       return true
     })
@@ -102,36 +106,34 @@ export default function HrPsikotesAksesPage() {
     }
 
     const filterLabel = bulkFilter === 'all' ? 'SEMUA KANDIDAT' : 'KANDIDAT Screening / Psikotes'
-    if (!confirm(`Buka akses psikotes untuk ${eligible.length} kandidat (${filterLabel})?\n\nWaktu: ${bulkTimeLimit} menit\nBatas akhir: ${bulkDays} hari`)) return
+    const testLabel = bulkType === 'disc' ? 'Tes DISC' : 'Tes IQ'
+    if (!confirm(`Buka akses ${testLabel} untuk ${eligible.length} kandidat (${filterLabel})?\n\nWaktu: ${bulkTimeLimit} menit\nBatas akhir: ${bulkDays} hari`)) return
 
     setSending(true)
     const now = new Date()
     const closeAt = new Date(now.getTime() + Number(bulkDays) * 24 * 60 * 60 * 1000)
     const ids = eligible.map(r => r.c.id)
 
-    const res = await fetch('/api/candidates', {
+    await fetch('/api/candidates', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
       body: JSON.stringify({
-        id: ids[0], // bulk handled below
+        id: ids[0],
         _bulk: {
           ids,
-          psikotes_open_at: now.toISOString(),
-          psikotes_close_at: closeAt.toISOString(),
-          psikotes_time_limit: Number(bulkTimeLimit),
+          ...fieldsFor(bulkType, now.toISOString(), closeAt.toISOString(), Number(bulkTimeLimit)),
         },
       }),
     })
 
-    // Notify each candidate
     for (const r of eligible) {
       if (r.c.email) {
         try {
           await fetch('/api/notify-psikotes', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ candidateId: r.c.id }),
+            body: JSON.stringify({ candidateId: r.c.id, type: bulkType }),
           })
         } catch {}
       }
@@ -141,30 +143,23 @@ export default function HrPsikotesAksesPage() {
     await load()
   }
 
-  const closeAccess = async (candidate: Candidate) => {
+  const closeAccess = async (candidate: Candidate, type: TestType) => {
     await fetch('/api/candidates', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify({
-        id: candidate.id,
-        psikotes_open_at: null,
-        psikotes_close_at: null,
-        psikotes_time_limit: null,
-      }),
+      body: JSON.stringify({ id: candidate.id, ...fieldsFor(type, null, null, null) }),
     })
     await load()
   }
 
-  const closeAccessEarly = async (candidate: Candidate) => {
+  const closeAccessEarly = async (candidate: Candidate, type: TestType) => {
+    const field = type === 'disc' ? 'disc_close_at' : 'iq_close_at'
     await fetch('/api/candidates', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify({
-        id: candidate.id,
-        psikotes_close_at: new Date().toISOString(),
-      }),
+      body: JSON.stringify({ id: candidate.id, [field]: new Date().toISOString() }),
     })
     await load()
   }
@@ -176,17 +171,47 @@ export default function HrPsikotesAksesPage() {
     selesai: { text: 'Selesai', cls: 'hold' },
   }
 
+  const actionCell = (candidate: Candidate, type: TestType, status: AccessStatus) => {
+    switch (status) {
+      case 'belum':
+        return <button className="btn sm primary" onClick={() => openAccess(candidate, type)}>Buka</button>
+      case 'aktif':
+        return (
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button className="btn sm primary" onClick={() => openAccess(candidate, type)}>Ulang</button>
+            <button className="btn sm" onClick={() => closeAccessEarly(candidate, type)}>Tutup</button>
+          </div>
+        )
+      case 'kadaluarsa':
+        return <button className="btn sm primary" onClick={() => openAccess(candidate, type)}>Buka Ulang</button>
+      case 'selesai':
+        return (
+          <div style={{ display: 'flex', gap: 6 }}>
+            <span className="hint" style={{ fontSize: 11, lineHeight: '30px' }}>Selesai</span>
+            <button className="btn sm" onClick={() => closeAccess(candidate, type)}>Reset</button>
+          </div>
+        )
+    }
+  }
+
   if (loading) return <div className="hint">Memuat...</div>
 
   return (
     <>
       <div className="notice">
-        Kelola akses psikotes mandiri untuk kandidat. Status <b>Aktif</b> berarti kandidat dapat mengerjakan tes dari portal mereka dalam batas waktu yang ditentukan.
+        Kelola akses Tes DISC dan Tes IQ secara independen. Status <b>Aktif</b> berarti kandidat dapat mengerjakan tes dari portal mereka dalam batas waktu yang ditentukan.
       </div>
 
       <div className="card card-p" style={{ marginBottom: 16, border: '1.5px solid var(--violet)' }}>
         <h4 className="blk" style={{ marginTop: 0 }}>Buka Akses untuk Semua</h4>
         <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+          <div className="field" style={{ minWidth: 140, flex: 1 }}>
+            <label className="fld">Jenis Tes</label>
+            <select value={bulkType} onChange={e => setBulkType(e.target.value as TestType)}>
+              <option value="disc">Tes DISC</option>
+              <option value="iq">Tes IQ</option>
+            </select>
+          </div>
           <div className="field" style={{ minWidth: 140, flex: 1 }}>
             <label className="fld">Batas waktu (menit)</label>
             <input type="number" value={bulkTimeLimit} onChange={e => setBulkTimeLimit(e.target.value)} min={1} />
@@ -215,43 +240,24 @@ export default function HrPsikotesAksesPage() {
               <th>Nama</th>
               <th>Posisi</th>
               <th>Stage</th>
-              <th>Status</th>
-              <th>Waktu</th>
-              <th>Batas Akhir</th>
-              <th>Aksi</th>
+              <th>Status DISC</th>
+              <th>Aksi DISC</th>
+              <th>Status IQ</th>
+              <th>Aksi IQ</th>
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 ? (
               <tr><td colSpan={7} className="empty-cell">Belum ada kandidat.</td></tr>
-            ) : rows.map(({ c, posName, status }) => (
+            ) : rows.map(({ c, posName, discStatus, iqStatus }) => (
               <tr key={c.id}>
                 <td><b>{c.nama}</b></td>
                 <td>{posName}</td>
                 <td><span className="chip neutral">{c.stage}</span></td>
-                <td><span className={`chip ${statusLabel[status].cls}`}>{statusLabel[status].text}</span></td>
-                <td>{c.psikotes_time_limit ? `${c.psikotes_time_limit} menit` : '—'}</td>
-                <td>{c.psikotes_close_at ? new Date(c.psikotes_close_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}</td>
-                <td>
-                  {status === 'belum' && (
-                    <button className="btn sm primary" onClick={() => openAccess(c)}>Buka</button>
-                  )}
-                  {status === 'aktif' && (
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      <button className="btn sm primary" onClick={() => openAccess(c)}>Ulang</button>
-                      <button className="btn sm" onClick={() => closeAccessEarly(c)}>Tutup</button>
-                    </div>
-                  )}
-                  {status === 'kadaluarsa' && (
-                    <button className="btn sm primary" onClick={() => openAccess(c)}>Buka Ulang</button>
-                  )}
-                  {status === 'selesai' && (
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      <span className="hint" style={{ fontSize: 11, lineHeight: '30px' }}>Selesai</span>
-                      <button className="btn sm" onClick={() => closeAccess(c)}>Reset</button>
-                    </div>
-                  )}
-                </td>
+                <td><span className={`chip ${statusLabel[discStatus].cls}`}>{statusLabel[discStatus].text}</span></td>
+                <td>{actionCell(c, 'disc', discStatus)}</td>
+                <td><span className={`chip ${statusLabel[iqStatus].cls}`}>{statusLabel[iqStatus].text}</span></td>
+                <td>{actionCell(c, 'iq', iqStatus)}</td>
               </tr>
             ))}
           </tbody>

@@ -4,8 +4,9 @@ import { useEffect, useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabase'
 import { fetchCandidates } from '@/lib/db-hr'
 import { loadQuestions } from '@/lib/questions'
-import ExamModal from '@/components/exam-modal'
-import type { Candidate, Position, PsikotesResult, PsiCogQuestion, PsiTraitQuestion, PsiSjtQuestion } from '@/lib/types'
+import { calcDiscGraphs } from '@/lib/disc-scoring'
+import ExamModal, { type ExamTestType, type ExamResult } from '@/components/exam-modal'
+import type { Candidate, Position, DiscQuestion, DiscLetter, DiscAnswer, IqQuestion, IqResult } from '@/lib/types'
 import { POSITIONS_DEFAULT } from '@/lib/constants'
 
 export default function HrPsikotesPage() {
@@ -13,11 +14,11 @@ export default function HrPsikotesPage() {
   const [candidates, setCandidates] = useState<Candidate[]>([])
   const [positions, setPositions] = useState<Position[]>([])
   const [selId, setSelId] = useState<string>('')
-  const [cog, setCog] = useState<Record<number, number>>({})
-  const [trait, setTrait] = useState<Record<number, number>>({})
-  const [sjt, setSjt] = useState<Record<number, number>>({})
-  const [examOpen, setExamOpen] = useState(false)
-  const [questions, setQuestions] = useState<{ cog: PsiCogQuestion[]; trait: PsiTraitQuestion[]; sjt: PsiSjtQuestion[] } | null>(null)
+  const [discAns, setDiscAns] = useState<Record<number, DiscAnswer>>({})
+  const [iqAns, setIqAns] = useState<Record<number, number>>({})
+  const [examOpen, setExamOpen] = useState<ExamTestType | null>(null)
+  const [discQuestions, setDiscQuestions] = useState<DiscQuestion[]>([])
+  const [iqQuestions, setIqQuestions] = useState<IqQuestion[]>([])
 
   const load = async () => {
     const [cands, pRes, q] = await Promise.all([
@@ -27,7 +28,8 @@ export default function HrPsikotesPage() {
     ])
     setCandidates(cands as Candidate[])
     setPositions((pRes.data && pRes.data.length > 0 ? pRes.data : JSON.parse(JSON.stringify(POSITIONS_DEFAULT))) as Position[])
-    setQuestions(q)
+    setDiscQuestions(q.disc)
+    setIqQuestions(q.iq)
   }
 
   useEffect(() => { load() }, [])
@@ -35,76 +37,84 @@ export default function HrPsikotesPage() {
   const c = candidates.find(x => x.id === selId) || null
 
   useEffect(() => {
-    if (c?.psikotes) {
-      setCog({ ...c.psikotes.cog })
-      setTrait({ ...c.psikotes.trait })
-      setSjt({ ...c.psikotes.sjt })
-    } else {
-      setCog({})
-      setTrait({})
-      setSjt({})
-    }
+    setDiscAns(c?.psikotes_result?.disc ? { ...c.psikotes_result.disc.answers } : {})
+    setIqAns(c?.psikotes_result?.iq ? { ...c.psikotes_result.iq.answers } : {})
   }, [selId])
 
-  const setCogFn = (i: number, j: number) => setCog(prev => ({ ...prev, [i]: j }))
-  const setTraitFn = (i: number, n: number) => setTrait(prev => ({ ...prev, [i]: n }))
-  const setSjtFn = (i: number, j: number) => setSjt(prev => ({ ...prev, [i]: j }))
-
-  const PSI_COG = questions?.cog || []
-  const PSI_TRAIT = questions?.trait || []
-  const PSI_SJT = questions?.sjt || []
-
-  const calc = () => {
-    let cTotal = 0
-    PSI_COG.forEach((it, i) => { if (cog[i] === it.a) cTotal++ })
-    let sTotal = 0
-    PSI_SJT.forEach((it, i) => { if (sjt[i] != null) sTotal += it.o[sjt[i]][1] })
-    const traits: Record<string, { sum: number; cnt: number }> = {}
-    PSI_TRAIT.forEach((it, i) => {
-      if (trait[i]) {
-        if (!traits[it.t]) traits[it.t] = { sum: 0, cnt: 0 }
-        traits[it.t].sum += trait[i]
-        traits[it.t].cnt++
-      }
+  const selectDisc = (qNo: number, letter: DiscLetter, type: 'most' | 'least') => {
+    setDiscAns(prev => {
+      const current = prev[qNo] || {}
+      if (type === 'most' && current.least === letter) { alert('Pilihan Most dan Least tidak boleh sama!'); return prev }
+      if (type === 'least' && current.most === letter) { alert('Pilihan Most dan Least tidak boleh sama!'); return prev }
+      return { ...prev, [qNo]: { ...current, [type]: letter } as DiscAnswer }
     })
-    const tAvg: Record<string, number> = {}
-    Object.entries(traits).forEach(([k, v]) => { tAvg[k] = v.cnt ? v.sum / v.cnt : 0 })
-    const cogLvl = cTotal >= Math.round(PSI_COG.length * 0.73) ? 'baik' : cTotal >= Math.round(PSI_COG.length * 0.47) ? 'cukup' : 'perlu perhatian'
-    const sjtLvl = sTotal >= Math.round(PSI_SJT.length * 0.73) ? 'tinggi' : sTotal >= Math.round(PSI_SJT.length * 0.47) ? 'sedang' : 'perlu perhatian'
-    const top = Object.entries(tAvg).sort((a, b) => b[1] - a[1])[0]
-    return { cogTotal: cTotal, sjtTotal: sTotal, traits: tAvg, cogLvl, sjtLvl, topTrait: top }
   }
+  const setIqFn = (i: number, oi: number) => setIqAns(prev => ({ ...prev, [i]: oi }))
 
-  // Wrap dengan useMemo agar tidak recompute setiap render
-  const r = useMemo(() => calc(), [cog, trait, sjt, PSI_COG, PSI_TRAIT, PSI_SJT])
+  const discCalc = useMemo(() => calcDiscGraphs(discAns), [discAns])
 
-  const save = async () => {
+  const iqCalc = useMemo(() => {
+    let correct = 0
+    iqQuestions.forEach((q, i) => { if (iqAns[i] === q.a) correct++ })
+    const total = iqQuestions.length
+    const percent = total ? Math.round((correct / total) * 100) : 0
+    const category: IqResult['category'] = percent >= 80 ? 'Tinggi' : percent >= 50 ? 'Rata-rata' : 'Perlu Perhatian'
+    return { correct, total, percent, category }
+  }, [iqAns, iqQuestions])
+
+  const saveDisc = async () => {
     if (!c) return
-    const psiData: PsikotesResult = {
-      cog: { ...cog }, trait: { ...trait }, sjt: { ...sjt },
-      cogTotal: r.cogTotal, sjtTotal: r.sjtTotal, traits: r.traits,
-      date: new Date().toISOString().slice(0, 10),
-    }
+    const result = { answers: { ...discAns }, ...discCalc, date: new Date().toISOString().slice(0, 10), via: 'hr' as const }
     await fetch('/api/candidates', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
       body: JSON.stringify({
         id: c.id,
-        psikotes: psiData,
+        psikotes_result: { disc: result, iq: c.psikotes_result?.iq ?? null },
         stage: (c.stage === 'screening' || c.stage === 'psikotes') ? 'interview' : c.stage,
       }),
     })
     await load()
   }
 
-  // Guard div-by-zero: jika pertanyaan belum load, hindari NaN
-  const cogColor = (v: number) =>
-    !PSI_COG.length ? 'var(--line)' :
-    v >= PSI_COG.length * 0.73 ? 'var(--ok)' :
-    v >= PSI_COG.length * 0.47 ? 'var(--hold)' : 'var(--no)'
+  const saveIq = async () => {
+    if (!c) return
+    const result = { answers: { ...iqAns }, ...iqCalc, date: new Date().toISOString().slice(0, 10), via: 'hr' as const }
+    await fetch('/api/candidates', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        id: c.id,
+        psikotes_result: { disc: c.psikotes_result?.disc ?? null, iq: result },
+        stage: (c.stage === 'screening' || c.stage === 'psikotes') ? 'interview' : c.stage,
+      }),
+    })
+    await load()
+  }
 
-  if (!questions) return <div className="hint">Memuat soal...</div>
+  const saveFromModal = async (res: ExamResult | null, type: ExamTestType) => {
+    if (res) {
+      const current = candidates.find(x => x.id === res.candidateId)
+      await fetch('/api/candidates', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          id: res.candidateId,
+          psikotes_result: type === 'disc'
+            ? { disc: res, iq: current?.psikotes_result?.iq ?? null }
+            : { disc: current?.psikotes_result?.disc ?? null, iq: res },
+          stage: 'interview',
+        }),
+      })
+      await load()
+    }
+    setExamOpen(null)
+  }
+
+  const letters: DiscLetter[] = ['a', 'b', 'c', 'd']
 
   return (
     <>
@@ -118,105 +128,102 @@ export default function HrPsikotesPage() {
         </select>
       </div>
 
+      {/* Panel DISC */}
       <div className="card card-p" style={{ marginBottom: 16, border: '1.5px solid var(--violet)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
           <div style={{ minWidth: 240, flex: 1 }}>
-            <h3 style={{ margin: '0 0 3px' }}>▶ Mode Pengerjaan Kandidat</h3>
-            <div className="hint" style={{ margin: 0 }}>
-              Buka tes layar penuh agar <b>kandidat mengerjakan sendiri</b>. Hasil otomatis masuk ke profil kandidat.
-            </div>
+            <h3 style={{ margin: '0 0 3px' }}>▶ Mode Pengerjaan Kandidat — Tes DISC</h3>
+            <div className="hint" style={{ margin: 0 }}>Buka tes layar penuh agar <b>kandidat mengerjakan sendiri</b>.</div>
           </div>
-          <button className="btn primary" onClick={() => setExamOpen(true)}>Mulai Tes Kandidat</button>
+          <button className="btn primary" onClick={() => setExamOpen('disc')}>Mulai Tes DISC</button>
         </div>
       </div>
-
-      <div className="notice">ℹ️ <b>Panel HRD (input / koreksi manual)</b> — gunakan bagian di bawah untuk memasukkan jawaban kandidat secara manual atau meninjau hasil. Terdiri dari 3 bagian: <b>Kognitif</b> (kunci jawaban, benar/salah), <b>Profil Kepribadian</b> (skala 1–5), dan <b>Situasional/Integritas</b>. Hasil dihitung otomatis.</div>
 
       <div className="card card-p">
         <div className="section-head" style={{ marginTop: 0 }}>
-          <span className="tag">Bagian 1</span><h3>Tes Kognitif</h3><span className="meta">{PSI_COG.length} soal · skor benar/salah</span>
+          <span className="tag">DISC</span><h3>Tes DISC</h3><span className="meta">{discQuestions.length} soal · Most/Least</span>
         </div>
-        {PSI_COG.map((it, i) => (
-          <div className="q" key={i}>
-            <div className="qn"><span className="num">{i + 1}</span><span>{it.q}</span></div>
-            {it.o.map((o, j) => (
-              <label key={j} className={`opt ${cog[i] === j ? 'sel' : ''}`} onClick={() => setCogFn(i, j)}>
-                <span className="key">{'ABCD'[j]}</span><span>{o}</span>
-              </label>
-            ))}
-          </div>
-        ))}
-      </div>
-
-      <div className="card card-p" style={{ marginTop: 16 }}>
-        <div className="section-head" style={{ marginTop: 0 }}>
-          <span className="tag">Bagian 2</span><h3>Profil Kepribadian & Gaya Kerja</h3>
-          <span className="meta">1 = Sangat tidak setuju · 5 = Sangat setuju</span>
-        </div>
-        {PSI_TRAIT.map((it, i) => (
-          <div className="q" key={i}>
-            <div className="qn"><span className="num">{i + 1}</span><span>{it.q}</span></div>
-            <div className="likert">
-              {[1, 2, 3, 4, 5].map(n => (
-                <button key={n} className={trait[i] === n ? 'on' : ''} onClick={() => setTraitFn(i, n)}>
-                  {['Sangat tidak', 'Tidak', 'Netral', 'Setuju', 'Sangat'][n - 1]}<br />{n}
-                </button>
-              ))}
+        {discQuestions.map(q => {
+          const ans = discAns[q.no] || {}
+          return (
+            <div className="q" key={q.no}>
+              <div className="qn"><span className="num">{q.no}</span></div>
+              {letters.map(letter => {
+                const isMost = ans.most === letter
+                const isLeast = ans.least === letter
+                return (
+                  <div key={letter} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', marginBottom: 4, borderRadius: 8, background: isMost ? 'var(--line-soft)' : 'transparent' }}>
+                    <span><span className="key" style={{ marginRight: 8 }}>{letter.toUpperCase()}</span>{q.options[letter]}</span>
+                    <span style={{ display: 'flex', gap: 6 }}>
+                      <button type="button" className={`btn sm ${isMost ? 'primary' : ''}`} onClick={() => selectDisc(q.no, letter, 'most')}>M</button>
+                      <button type="button" className={`btn sm ${isLeast ? 'danger' : ''}`} onClick={() => selectDisc(q.no, letter, 'least')}>L</button>
+                    </span>
+                  </div>
+                )
+              })}
             </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="card card-p" style={{ marginTop: 16 }}>
-        <div className="section-head" style={{ marginTop: 0 }}>
-          <span className="tag">Bagian 3</span><h3>Tes Situasional & Integritas</h3><span className="meta">pilih tindakan paling tepat</span>
-        </div>
-        {PSI_SJT.map((it, i) => (
-          <div className="q" key={i}>
-            <div className="qn"><span className="num">{i + 1}</span><span>{it.q}</span></div>
-            {it.o.map((o, j) => (
-              <label key={j} className={`opt ${sjt[i] === j ? 'sel' : ''}`} onClick={() => setSjtFn(i, j)}>
-                <span className="key">{'ABCD'[j]}</span><span>{o[0]}</span>
-              </label>
+          )
+        })}
+        <h4 className="blk" style={{ marginTop: 18 }}>Hasil DISC</h4>
+        <div className="grid2" style={{ gap: 16 }}>
+          <div>
+            <div className="seg"><span className="lbl">Adapted Style</span><b>{discCalc.adapted.pattern.name} ({discCalc.adapted.pattern.type})</b></div>
+            {(['D', 'I', 'S', 'C'] as const).map(d => (
+              <div className="seg" key={d}>
+                <span className="lbl">{d}</span>
+                <div className="track"><i style={{ width: discCalc.adapted.scores[d] + '%', background: 'var(--violet)' }}></i></div>
+                <span className="pct">{discCalc.adapted.scores[d]}</span>
+              </div>
             ))}
           </div>
-        ))}
-      </div>
-
-      <div className="card card-p" style={{ marginTop: 16 }}>
-        <h4 className="blk" style={{ marginTop: 0 }}>Hasil Psikotes</h4>
-        <div className="scorecard">
-          <div className="gauge">
-            <svg width="128" height="128">
-              <circle cx="64" cy="64" r="54" fill="none" stroke="var(--line)" strokeWidth="12" />
-              <circle cx="64" cy="64" r="54" fill="none" stroke={cogColor(r.cogTotal)} strokeWidth="12" strokeLinecap="round"
-                strokeDasharray={2 * Math.PI * 54} strokeDashoffset={2 * Math.PI * 54 * (1 - r.cogTotal / PSI_COG.length)} />
-            </svg>
-            <div className="val"><b>{r.cogTotal}/{PSI_COG.length}</b><span>Kognitif</span></div>
+          <div>
+            <div className="seg"><span className="lbl">Natural Style</span><b>{discCalc.natural.pattern.name} ({discCalc.natural.pattern.type})</b></div>
+            {(['D', 'I', 'S', 'C'] as const).map(d => (
+              <div className="seg" key={d}>
+                <span className="lbl">{d}</span>
+                <div className="track"><i style={{ width: discCalc.natural.scores[d] + '%', background: 'var(--violet)' }}></i></div>
+                <span className="pct">{discCalc.natural.scores[d]}</span>
+              </div>
+            ))}
           </div>
-          <div className="gauge">
-            <svg width="128" height="128">
-              <circle cx="64" cy="64" r="54" fill="none" stroke="var(--line)" strokeWidth="12" />
-              <circle cx="64" cy="64" r="54" fill="none" stroke={cogColor(r.sjtTotal)} strokeWidth="12" strokeLinecap="round"
-                strokeDasharray={2 * Math.PI * 54} strokeDashoffset={2 * Math.PI * 54 * (1 - r.sjtTotal / PSI_SJT.length)} />
-            </svg>
-            <div className="val"><b>{r.sjtTotal}/{PSI_SJT.length}</b><span>Integritas</span></div>
-          </div>
-        </div>
-        <h4 className="blk">Profil Kepribadian (rata-rata 1–5)</h4>
-        {Object.entries(r.traits).map(([t, val]) => (
-          <div className="seg" key={t}>
-            <span className="lbl">{t}</span>
-            <div className="track"><i style={{ width: Math.round(val / 5 * 100) + '%', background: 'var(--violet)' }}></i></div>
-            <span className="pct">{val.toFixed(1)}</span>
-          </div>
-        ))}
-        <div className="verdict-line" style={{ marginTop: 12 }}>
-          Kemampuan kognitif <b>{r.cogLvl}</b> ({r.cogTotal}/{PSI_COG.length}). Integritas/situasional <b>{r.sjtLvl}</b> ({r.sjtTotal}/{PSI_SJT.length}).
-          {r.topTrait && r.topTrait[1] > 0 && <> Trait paling menonjol: <b>{r.topTrait[0]}</b>.</>}
         </div>
         {c ? (
-          <button className="btn primary no-print" style={{ marginTop: 14 }} onClick={save}>💾 Simpan hasil ke {c.nama}</button>
+          <button className="btn primary no-print" style={{ marginTop: 14 }} onClick={saveDisc}>💾 Simpan hasil DISC ke {c.nama}</button>
+        ) : (
+          <div className="hint" style={{ marginTop: 12 }}>Pilih kandidat untuk menyimpan, atau pakai sebagai uji coba.</div>
+        )}
+      </div>
+
+      {/* Panel IQ */}
+      <div className="card card-p" style={{ marginTop: 24, marginBottom: 16, border: '1.5px solid var(--violet)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+          <div style={{ minWidth: 240, flex: 1 }}>
+            <h3 style={{ margin: '0 0 3px' }}>▶ Mode Pengerjaan Kandidat — Tes IQ</h3>
+            <div className="hint" style={{ margin: 0 }}>Buka tes layar penuh agar <b>kandidat mengerjakan sendiri</b>.</div>
+          </div>
+          <button className="btn primary" onClick={() => setExamOpen('iq')}>Mulai Tes IQ</button>
+        </div>
+      </div>
+
+      <div className="card card-p">
+        <div className="section-head" style={{ marginTop: 0 }}>
+          <span className="tag">IQ</span><h3>Tes IQ</h3><span className="meta">{iqQuestions.length} soal · skor benar/salah</span>
+        </div>
+        {iqQuestions.map((q, i) => (
+          <div className="q" key={i}>
+            <div className="qn"><span className="num">{i + 1}</span><span>{q.q}</span></div>
+            {q.o.map((o, oi) => (
+              <label key={oi} className={`opt ${iqAns[i] === oi ? 'sel' : ''}`} onClick={() => setIqFn(i, oi)}>
+                <span className="key">{'ABCD'[oi]}</span><span>{o}</span>
+              </label>
+            ))}
+          </div>
+        ))}
+        <h4 className="blk" style={{ marginTop: 18 }}>Hasil IQ</h4>
+        <div className="seg"><span className="lbl">Skor</span><b>{iqCalc.correct}/{iqCalc.total} ({iqCalc.percent}%)</b></div>
+        <div className="seg"><span className="lbl">Kategori</span><b>{iqCalc.category}</b></div>
+        {c ? (
+          <button className="btn primary no-print" style={{ marginTop: 14 }} onClick={saveIq}>💾 Simpan hasil IQ ke {c.nama}</button>
         ) : (
           <div className="hint" style={{ marginTop: 12 }}>Pilih kandidat untuk menyimpan, atau pakai sebagai uji coba.</div>
         )}
@@ -224,25 +231,11 @@ export default function HrPsikotesPage() {
 
       {examOpen && <ExamModal
         mode="hr"
+        testType={examOpen}
         candidate={c}
         positions={positions}
-        onClose={() => setExamOpen(false)}
-        onSave={async (res) => {
-          if (res) {
-            await fetch('/api/candidates', {
-              method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
-              credentials: 'include',
-              body: JSON.stringify({
-                id: res.candidateId,
-                psikotes: res,
-                stage: 'interview',
-              }),
-            })
-            await load()
-          }
-          setExamOpen(false)
-        }}
+        onClose={() => setExamOpen(null)}
+        onSave={(res) => saveFromModal(res, examOpen)}
       />}
     </>
   )

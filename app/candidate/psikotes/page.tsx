@@ -3,14 +3,22 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import { getCandidateByUserId } from '@/lib/db'
-import ExamModal from '@/components/exam-modal'
-import type { Candidate } from '@/lib/types'
+import ExamModal, { type ExamTestType, type ExamResult } from '@/components/exam-modal'
+import type { Candidate, DiscResult, IqResult } from '@/lib/types'
+
+type GateStatus = 'belum' | 'aktif' | 'kadaluarsa' | 'selesai'
+
+function gateStatus(hasResult: boolean, openAt: string | null, closeAt: string | null, timeLimit: number | null): GateStatus {
+  if (hasResult) return 'selesai'
+  if (!openAt || !closeAt || !timeLimit) return 'belum'
+  return new Date(closeAt) < new Date() ? 'kadaluarsa' : 'aktif'
+}
 
 export default function CandidatePsikotesPage() {
   const supabase = createClient()
   const [candidate, setCandidate] = useState<Candidate | null>(null)
   const [loading, setLoading] = useState(true)
-  const [examOpen, setExamOpen] = useState(false)
+  const [examOpen, setExamOpen] = useState<ExamTestType | null>(null)
 
   const load = async () => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -24,77 +32,79 @@ export default function CandidatePsikotesPage() {
   useEffect(() => { load() }, [])
 
   if (loading) return null
-
   if (!candidate) return <div className="empty"><div className="big">◦</div><div>Data tidak ditemukan</div></div>
 
-  if (candidate.psikotes) {
-    return (
-      <div className="profile-section">
-        <h3>🧠 Psikotes</h3>
+  const discStatus = gateStatus(!!candidate.psikotes_result?.disc, candidate.disc_open_at, candidate.disc_close_at, candidate.disc_time_limit)
+  const iqStatus = gateStatus(!!candidate.psikotes_result?.iq, candidate.iq_open_at, candidate.iq_close_at, candidate.iq_time_limit)
+
+  const onSave = async (res: ExamResult | null, type: ExamTestType) => {
+    if (res) {
+      const nextPsikotesResult = type === 'disc'
+        ? { disc: res as DiscResult, iq: candidate.psikotes_result?.iq ?? null }
+        : { disc: candidate.psikotes_result?.disc ?? null, iq: res as IqResult }
+      await supabase.from('candidates').update({
+        psikotes_result: nextPsikotesResult,
+        stage: 'interview',
+      }).eq('id', candidate.id)
+      setCandidate(prev => prev ? { ...prev, psikotes_result: nextPsikotesResult } : prev)
+    }
+    setExamOpen(null)
+  }
+
+  const renderGate = (type: ExamTestType, title: string, status: GateStatus, timeLimit: number | null, closeAt: string | null) => {
+    if (status === 'selesai') {
+      return (
         <div className="empty"><div className="big">✓</div><div style={{ fontWeight: 700 }}>Tes sudah selesai</div>
-          <div className="hint">Anda sudah mengerjakan psikotes. Lihat hasilnya di halaman Hasil Psikotes.</div>
+          <div className="hint">Lihat hasilnya di halaman Hasil Psikotes.</div>
         </div>
-      </div>
-    )
-  }
-
-  const now = new Date()
-
-  if (!candidate.psikotes_open_at || !candidate.psikotes_close_at || !candidate.psikotes_time_limit) {
-    return (
-      <div className="profile-section">
-        <h3>🧠 Psikotes</h3>
+      )
+    }
+    if (status === 'belum') {
+      return (
         <div className="empty"><div className="big">◦</div><div style={{ fontWeight: 700 }}>Belum dibuka</div>
-          <div className="hint">HR belum membuka akses psikotes untuk Anda. Silakan tunggu atau hubungi HR.</div>
+          <div className="hint">HR belum membuka akses {title} untuk Anda. Silakan tunggu atau hubungi HR.</div>
         </div>
-      </div>
-    )
-  }
-
-  const closeAt = new Date(candidate.psikotes_close_at)
-
-  if (closeAt < now) {
-    return (
-      <div className="profile-section">
-        <h3>🧠 Psikotes</h3>
+      )
+    }
+    if (status === 'kadaluarsa') {
+      return (
         <div className="empty"><div className="big">!</div><div style={{ fontWeight: 700 }}>Akses kedaluwarsa</div>
-          <div className="hint">Batas waktu pengerjaan psikotes sudah lewat ({closeAt.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}). Hubungi HR untuk informasi lebih lanjut.</div>
+          <div className="hint">Batas waktu pengerjaan {title} sudah lewat ({new Date(closeAt!).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}). Hubungi HR untuk informasi lebih lanjut.</div>
         </div>
-      </div>
+      )
+    }
+    return (
+      <>
+        <p style={{ marginBottom: 16, lineHeight: 1.6 }}>
+          Akses {title} Anda telah dibuka. Anda memiliki waktu <b>{timeLimit} menit</b> untuk menyelesaikan tes.
+          Batas akhir pengerjaan: <b>{new Date(closeAt!).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</b>.
+        </p>
+        <button className="btn primary" onClick={() => setExamOpen(type)} style={{ fontSize: 15, padding: '12px 32px' }}>
+          Mulai {title}
+        </button>
+      </>
     )
   }
 
   return (
-    <div className="profile-section">
-      <h3>🧠 Psikotes</h3>
-      <p style={{ marginBottom: 16, lineHeight: 1.6 }}>
-        Akses psikotes Anda telah dibuka. Anda memiliki waktu <b>{candidate.psikotes_time_limit} menit</b> untuk menyelesaikan tes.
-        Batas akhir pengerjaan: <b>{closeAt.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</b>.
-      </p>
-      <div className="notice" style={{ marginBottom: 16 }}>
-        Pastikan Anda dalam keadaan siap dan tidak terganggu. Tes terdiri dari 3 bagian: Kognitif, Kepribadian, dan Situasional.
-        Timer akan berjalan otomatis setelah tes dimulai.
+    <>
+      <div className="profile-section">
+        <h3>🧩 Tes DISC</h3>
+        {renderGate('disc', 'Tes DISC', discStatus, candidate.disc_time_limit, candidate.disc_close_at)}
       </div>
-      <button className="btn primary" onClick={() => setExamOpen(true)} style={{ fontSize: 15, padding: '12px 32px' }}>
-        Mulai Psikotes
-      </button>
+      <div className="profile-section">
+        <h3>🧠 Tes IQ</h3>
+        {renderGate('iq', 'Tes IQ', iqStatus, candidate.iq_time_limit, candidate.iq_close_at)}
+      </div>
 
       {examOpen && <ExamModal
         mode="candidate"
+        testType={examOpen}
         candidate={candidate}
-        timeLimit={candidate.psikotes_time_limit}
-        onClose={() => setExamOpen(false)}
-        onSave={async (res) => {
-          if (res) {
-            await supabase.from('candidates').update({
-              psikotes: res as any,
-              stage: 'interview',
-            }).eq('id', candidate.id)
-            setCandidate(prev => prev ? { ...prev, psikotes: res } : prev)
-          }
-          setExamOpen(false)
-        }}
+        timeLimit={examOpen === 'disc' ? candidate.disc_time_limit : candidate.iq_time_limit}
+        onClose={() => setExamOpen(null)}
+        onSave={(res) => onSave(res, examOpen)}
       />}
-    </div>
+    </>
   )
 }

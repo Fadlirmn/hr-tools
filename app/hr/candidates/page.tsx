@@ -64,8 +64,11 @@ export default function HrCandidatesPage() {
         sumber: form.sumber, email: form.email.trim(), telepon: form.telepon.trim(),
         catatan: form.catatan.trim(), stage: 'screening',
         tanggal: new Date().toISOString().slice(0, 10),
-        invite_token: null, cv: null, psikotes: null, psikotes_open_at: null,
-        psikotes_close_at: null, psikotes_time_limit: null, interview: null, onboarding: null,
+        invite_token: null, cv: null,
+        psikotes: null, psikotes_open_at: null, psikotes_close_at: null, psikotes_time_limit: null,
+        psikotes_result: null, disc_open_at: null, disc_close_at: null, disc_time_limit: null,
+        iq_open_at: null, iq_close_at: null, iq_time_limit: null,
+        interview: null, onboarding: null,
       }
       const res = await fetch('/api/candidates', {
         method: 'POST',
@@ -141,8 +144,8 @@ export default function HrCandidatesPage() {
         </div>
       ) : (
         <div className="card card-p">
-          <table className="tbl">
-            <thead><tr><th>Nama</th><th>Posisi</th><th>Sumber</th><th>Tahap</th><th>CV</th><th>Psikotes</th><th>Interview</th><th>Undangan</th><th></th></tr></thead>
+            <table className="tbl">
+            <thead><tr><th>Nama</th><th>Posisi</th><th>Sumber</th><th>Tahap</th><th>CV</th><th>DISC</th><th>IQ</th><th>Interview</th><th>Undangan</th><th></th></tr></thead>
             <tbody>
               {candidates.map(c => (
                 <tr key={c.id}>
@@ -160,7 +163,8 @@ export default function HrCandidatesPage() {
                     </select>
                   </td>
                   <td>{c.cv ? scoreChip(c.cv.verdict, c.cv.percent + '%') : <span className="hint">—</span>}</td>
-                  <td>{c.psikotes ? <b>{c.psikotes.cogTotal}/15</b> : <span className="hint">—</span>}</td>
+                  <td>{c.psikotes_result?.disc ? <b>{c.psikotes_result.disc.adapted.pattern.type}</b> : <span className="hint">—</span>}</td>
+                  <td>{c.psikotes_result?.iq ? <b>{c.psikotes_result.iq.percent}%</b> : <span className="hint">—</span>}</td>
                   <td>{c.interview ? scoreChip(c.interview.verdict, c.interview.avg.toFixed(1)) : <span className="hint">—</span>}</td>
                   <td>
                     {c.user_id ? (

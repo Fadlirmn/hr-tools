@@ -43,18 +43,32 @@ export default function CandidateDashboardPage() {
       href: '/candidate/hasil-cv',
     },
     {
-      label: '🧠 Psikotes',
-      hint: 'Tes kognitif, kepribadian & integritas',
+      label: '🧩 Tes DISC',
+      hint: 'Profil kepribadian 4-dimensi',
       score: (() => {
-        if (candidate.psikotes) return `Kognitif ${candidate.psikotes.cogTotal}/15`
-        if (candidate.psikotes_open_at) {
-          const closeAt = new Date(candidate.psikotes_close_at!)
+        if (candidate.psikotes_result?.disc) return `Tipe ${candidate.psikotes_result.disc.adapted.pattern.type}`
+        if (candidate.disc_open_at) {
+          const closeAt = new Date(candidate.disc_close_at!)
           if (closeAt < new Date()) return 'Kadaluarsa'
           return 'Tersedia — Kerjakan'
         }
         return 'Belum dibuka'
       })(),
-      href: candidate.psikotes ? '/candidate/hasil-psikotes' : '/candidate/psikotes',
+      href: candidate.psikotes_result?.disc ? '/candidate/hasil-psikotes' : '/candidate/psikotes',
+    },
+    {
+      label: '🧠 Tes IQ',
+      hint: 'Pengukuran kemampuan kognitif',
+      score: (() => {
+        if (candidate.psikotes_result?.iq) return `${candidate.psikotes_result.iq.percent}% · ${candidate.psikotes_result.iq.category}`
+        if (candidate.iq_open_at) {
+          const closeAt = new Date(candidate.iq_close_at!)
+          if (closeAt < new Date()) return 'Kadaluarsa'
+          return 'Tersedia — Kerjakan'
+        }
+        return 'Belum dibuka'
+      })(),
+      href: candidate.psikotes_result?.iq ? '/candidate/hasil-psikotes' : '/candidate/psikotes',
     },
     {
       label: '🎤 Interview',

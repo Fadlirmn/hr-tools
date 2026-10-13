@@ -48,10 +48,19 @@ export interface Candidate {
   tanggal: string
   invite_token: string | null
   cv: CvAssessment | null
+  // Arsip hasil psikotes lama (cog/trait/sjt) — dipertahankan read-only, tidak dipakai di UI baru.
   psikotes: PsikotesResult | null
   psikotes_open_at: string | null
   psikotes_close_at: string | null
   psikotes_time_limit: number | null
+  // Hasil tes DISC & IQ (modul baru) — dua sesi independen.
+  psikotes_result: PsikotesResultV2 | null
+  disc_open_at: string | null
+  disc_close_at: string | null
+  disc_time_limit: number | null
+  iq_open_at: string | null
+  iq_close_at: string | null
+  iq_time_limit: number | null
   interview: InterviewAssessment | null
   onboarding: OnboardingProgress | null
 }
@@ -125,6 +134,95 @@ export interface PsiTraitQuestion {
 export interface PsiSjtQuestion {
   q: string
   o: [string, number][]
+}
+
+// --- Tes DISC (forced-choice Most/Least, 4 pilihan teks per soal) ---
+export type DiscDimension = 'D' | 'I' | 'S' | 'C' | 'X'
+export type DiscLetter = 'a' | 'b' | 'c' | 'd'
+
+export interface DiscQuestion {
+  no: number
+  options: Record<DiscLetter, string>
+}
+
+// Pemetaan huruf pilihan -> dimensi DISC, berbeda untuk kolom Most dan Least
+// (satu kata sifat bisa mewakili dimensi berbeda tergantung dipilih sebagai Most atau Least).
+export interface DiscQuestionMapping {
+  [questionNo: number]: Record<DiscLetter, DiscDimension>
+}
+
+// Tabel konversi raw count (jumlah dimensi terpilih) -> skor persentil 0-100.
+export type DiscConversionTable = Record<'D' | 'I' | 'S' | 'C', Record<number, number>>
+
+export interface DiscBehavioralPattern {
+  name: string
+  type: 'D' | 'I' | 'S' | 'C'
+}
+
+// Peta kode graph (8 huruf: H/L + D/I/S/C diurutkan skor tertinggi->terendah) -> nama pola.
+export type DiscBehavioralGraphMap = Record<string, DiscBehavioralPattern>
+
+export interface DiscProfileTendencies {
+  goal: string
+  judges: string
+  influence: string
+  valueTo: string
+  overuses: string
+  underStress: string
+  fears: string
+}
+
+export interface DiscProfileDescription {
+  keyStrengths: string[]
+  improveBy: string[]
+  tendencies: DiscProfileTendencies
+}
+
+export type DiscProfileDescriptionMap = Record<string, DiscProfileDescription>
+
+export interface DiscAnswer {
+  most: DiscLetter
+  least: DiscLetter
+}
+
+export interface DiscGraphResult {
+  scores: Record<'D' | 'I' | 'S' | 'C', number>
+  pattern: DiscBehavioralPattern
+}
+
+export interface DiscResult {
+  answers: Record<number, DiscAnswer>
+  adapted: DiscGraphResult // dihitung dari kolom "Most" — gaya adaptasi di lingkungan kerja
+  natural: DiscGraphResult // dihitung dari kolom "Least" — gaya alami/dasar
+  date: string
+  via: 'kandidat' | 'hr'
+}
+
+// --- Tes IQ ---
+export type IqCategory = 'Logika' | 'Numerik' | 'Verbal' | 'Spasial'
+
+export interface IqQuestion {
+  sec: IqCategory
+  q: string
+  o: string[]
+  a: number
+}
+
+export type IqResultCategory = 'Tinggi' | 'Rata-rata' | 'Perlu Perhatian'
+
+export interface IqResult {
+  answers: Record<number, number>
+  correct: number
+  total: number
+  percent: number
+  category: IqResultCategory
+  date: string
+  via: 'kandidat' | 'hr'
+}
+
+export interface PsikotesResultV2 {
+  disc: DiscResult | null
+  iq: IqResult | null
 }
 
 export interface IntCompetency {

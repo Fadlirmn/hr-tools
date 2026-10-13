@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
+import { sendEmail } from '@/lib/email'
 
 const RATE_LIMIT = 10
 const RATE_WINDOW = 60000
@@ -50,7 +51,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  const { candidateId } = await req.json()
+  const { candidateId, type } = await req.json() as { candidateId: string; type?: 'disc' | 'iq' }
   if (!candidateId) return NextResponse.json({ error: 'candidateId required' }, { status: 400 })
 
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -72,32 +73,20 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Candidate has no email' }, { status: 400 })
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/^https?:\/\//, '').split('.')[0]
-    ? process.env.VERCEL_URL || process.env.NEXT_PUBLIC_SUPABASE_URL?.replace('https://', '').split('.')[0]
-    : 'localhost:3000'
+  const appUrl = process.env.VERCEL_URL || 'localhost:3000'
+  const testLabel = type === 'disc' ? 'Tes DISC' : type === 'iq' ? 'Tes IQ' : 'Psikotes'
   const loginUrl = `https://${appUrl}/candidate/psikotes`
 
   try {
-    const nodemailer = await import('nodemailer')
-    const transporter = nodemailer.default.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT) || 465,
-      secure: (process.env.SMTP_PORT || '465') === '465',
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    })
-    await transporter.sendMail({
-      from: process.env.SMTP_FROM || 'noreply@perusahaan.com',
+    await sendEmail({
       to: candidate.email,
-      subject: 'Psikotes Telah Dibuka — Segera Kerjakan',
+      subject: `${testLabel} Telah Dibuka — Segera Kerjakan`,
       html: `<div style="font-family:sans-serif;max-width:480px;margin:0 auto">
-        <h2>Psikotes Dibuka</h2>
+        <h2>${testLabel} Dibuka</h2>
         <p>Halo <b>${candidate.nama}</b>,</p>
-        <p>Akses psikotes Anda telah dibuka oleh HR. Silakan kerjakan tes berikut:</p>
+        <p>Akses ${testLabel} Anda telah dibuka oleh HR. Silakan kerjakan tes berikut:</p>
         <div style="margin:20px 0;text-align:center">
-          <a href="${loginUrl}" style="display:inline-block;padding:12px 28px;background:#7c5bfe;color:#fff;text-decoration:none;border-radius:8px;font-weight:700">Mulai Psikotes</a>
+          <a href="${loginUrl}" style="display:inline-block;padding:12px 28px;background:#7c5bfe;color:#fff;text-decoration:none;border-radius:8px;font-weight:700">Mulai ${testLabel}</a>
         </div>
         <p style="color:#666;font-size:12px">Link ini akan kedaluwarsa sesuai batas waktu yang ditentukan HR.</p>
       </div>`,

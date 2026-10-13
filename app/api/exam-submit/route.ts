@@ -1,16 +1,26 @@
 import { NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
-import { PSI_COG as COG_FALLBACK, PSI_TRAIT as TRAIT_FALLBACK, PSI_SJT as SJT_FALLBACK } from '@/lib/constants'
-import type { PsiCogQuestion, PsiTraitQuestion, PsiSjtQuestion } from '@/lib/types'
+import { IQ_QUESTIONS as IQ_FALLBACK } from '@/lib/constants'
+import { calcDiscGraphs } from '@/lib/disc-scoring'
+import { sendEmail } from '@/lib/email'
+import type { IqQuestion, DiscAnswer, DiscResult, IqResult } from '@/lib/types'
 
 /**
  * POST /api/exam-submit
  *
- * Accepts raw candidate answers, fetches the answer key server-side,
- * computes the score, and saves the result to the candidates table.
+ * Accepts raw candidate answers for either 'disc' or 'iq', computes the score
+ * (deterministic — never LLM), saves the result to candidates.psikotes_result,
+ * and notifies HR by email.
  *
- * Body: { candidateId: string, cog: Record<number,number>, trait: Record<number,number>, sjt: Record<number,number> }
+ * DISC scoring uses the fixed mapping/conversion tables in lib/disc-scoring.ts
+ * (tied to the 24 original question numbers) — independent of any wording
+ * edits HR makes via the questions editor, since the psychometric structure
+ * (which letter maps to which DISC dimension) is not customizable per-edit.
+ *
+ * Body (disc): { type: 'disc', candidateId: string, answers: Record<number, {most, least}> }
+ * Body (iq):   { type: 'iq', candidateId: string, answers: Record<number,number> }
  */
 export async function POST(req: Request) {
   const cookieStore = await cookies()
@@ -38,70 +48,85 @@ export async function POST(req: Request) {
   }
 
   const body = await req.json()
-  const { candidateId, cog, trait, sjt } = body as {
-    candidateId: string | null
-    cog: Record<number, number>
-    trait: Record<number, number>
-    sjt: Record<number, number>
-  }
+  const { type, candidateId } = body as { type: 'disc' | 'iq'; candidateId: string | null }
 
-  // Fetch full questions with answer keys (server-side, never exposed to browser)
-  const { data: qData } = await supabase.from('exam_questions').select('id,type,data')
+  if (type !== 'disc' && type !== 'iq') {
+    return NextResponse.json({ error: 'type harus disc atau iq' }, { status: 400 })
+  }
 
   function parseData<T>(raw: unknown, fallback: T[]): T[] {
     if (Array.isArray(raw) && raw.length > 0) return raw as T[]
     return fallback
   }
 
-  const PSI_COG = parseData<PsiCogQuestion>(qData?.find(r => r.type === 'cog')?.data, COG_FALLBACK)
-  const PSI_TRAIT = parseData<PsiTraitQuestion>(qData?.find(r => r.type === 'trait')?.data, TRAIT_FALLBACK)
-  const PSI_SJT = parseData<PsiSjtQuestion>(qData?.find(r => r.type === 'sjt')?.data, SJT_FALLBACK)
+  const via: 'kandidat' | 'hr' = isCandidate ? 'kandidat' : 'hr'
+  let result: DiscResult | IqResult
 
-  // Score computation (server-side — answer keys never leave the server)
-  // NOTE: JSON.parse always produces string keys, so we compare using Number(i)
-  let cogTotal = 0
-  PSI_COG.forEach((it, i) => { if (Number(cog[i]) === it.a) cogTotal++ })
+  if (type === 'disc') {
+    const { answers } = body as { answers: Record<number, DiscAnswer> }
+    const { adapted, natural } = calcDiscGraphs(answers || {})
+    result = { answers: { ...answers }, adapted, natural, date: new Date().toISOString().slice(0, 10), via }
+  } else {
+    const { answers } = body as { answers: Record<number, number> }
+    const { data: qData } = await supabase.from('exam_questions').select('id,type,data')
+    const questions = parseData<IqQuestion>(qData?.find(r => r.type === 'iq')?.data, IQ_FALLBACK)
 
-  let sjtTotal = 0
-  PSI_SJT.forEach((it, i) => {
-    const chosen = sjt[i] != null ? Number(sjt[i]) : null
-    if (chosen != null && it.o[chosen]) sjtTotal += it.o[chosen][1]
-  })
+    let correct = 0
+    // NOTE: JSON.parse always produces string keys, so we compare using Number(i)
+    questions.forEach((q, i) => { if (Number(answers[i]) === q.a) correct++ })
+    const total = questions.length
+    const percent = total ? Math.round((correct / total) * 100) : 0
+    const category: IqResult['category'] = percent >= 80 ? 'Tinggi' : percent >= 50 ? 'Rata-rata' : 'Perlu Perhatian'
 
-  const traitMap: Record<string, { sum: number; cnt: number }> = {}
-  PSI_TRAIT.forEach((it, i) => {
-    if (trait[i]) {
-      if (!traitMap[it.t]) traitMap[it.t] = { sum: 0, cnt: 0 }
-      traitMap[it.t].sum += trait[i]
-      traitMap[it.t].cnt++
-    }
-  })
-  const traits: Record<string, number> = {}
-  Object.entries(traitMap).forEach(([k, v]) => { traits[k] = v.cnt ? v.sum / v.cnt : 0 })
-
-  const via = isCandidate ? 'kandidat' : 'hr'
-  const result = {
-    cogTotal,
-    sjtTotal,
-    traits,
-    cog: { ...cog },
-    trait: { ...trait },
-    sjt: { ...sjt },
-    date: new Date().toISOString().slice(0, 10),
-    via,
-    candidateId: candidateId ?? null,
+    result = { answers: { ...answers }, correct, total, percent, category, date: new Date().toISOString().slice(0, 10), via }
   }
 
   if (candidateId) {
-    // Update the candidate record
-    const nextStage = isCandidate ? { stage: 'interview' } : {}
-    const { error } = await supabase
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    const admin = serviceKey
+      ? createAdminClient(supabaseUrl, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } })
+      : supabase
+
+    const { data: current } = await admin
       .from('candidates')
-      .update({ psikotes: result as any, ...nextStage })
+      .select('psikotes_result, nama, email')
+      .eq('id', candidateId)
+      .single()
+
+    const nextPsikotesResult = {
+      disc: type === 'disc' ? result : (current?.psikotes_result?.disc ?? null),
+      iq: type === 'iq' ? result : (current?.psikotes_result?.iq ?? null),
+    }
+
+    const nextStage = isCandidate ? { stage: 'interview' } : {}
+    const { error } = await admin
+      .from('candidates')
+      .update({ psikotes_result: nextPsikotesResult, ...nextStage })
       .eq('id', candidateId)
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+    // Notify HR best-effort — never block the primary save.
+    try {
+      const hrEmail = process.env.HR_NOTIFY_EMAIL
+      if (hrEmail && current) {
+        const summary = type === 'disc'
+          ? `Pola Adapted Style: <b>${(result as DiscResult).adapted.pattern.name}</b> (tipe ${(result as DiscResult).adapted.pattern.type})`
+          : `Skor: <b>${(result as IqResult).correct}/${(result as IqResult).total}</b> (${(result as IqResult).percent}%) — ${(result as IqResult).category}`
+        await sendEmail({
+          to: hrEmail,
+          subject: `Hasil ${type === 'disc' ? 'Tes DISC' : 'Tes IQ'} — ${current.nama}`,
+          html: `<div style="font-family:sans-serif;max-width:480px;margin:0 auto">
+            <h2>Hasil ${type === 'disc' ? 'Tes DISC' : 'Tes IQ'}</h2>
+            <p>Kandidat <b>${current.nama}</b> baru saja menyelesaikan ${type === 'disc' ? 'Tes DISC' : 'Tes IQ'}.</p>
+            <p>${summary}</p>
+          </div>`,
+        })
+      }
+    } catch {
+      // email gagal, hasil tetap tersimpan — tidak dilaporkan sebagai error ke caller
+    }
   }
 
-  return NextResponse.json({ ok: true, result })
+  return NextResponse.json({ ok: true, result: { ...result, candidateId: candidateId ?? null } })
 }

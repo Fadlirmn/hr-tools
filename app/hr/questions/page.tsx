@@ -1,16 +1,18 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import { loadQuestions, saveQuestionType } from '@/lib/questions'
-import type { PsiCogQuestion, PsiTraitQuestion, PsiSjtQuestion } from '@/lib/types'
+import type { DiscQuestion, DiscLetter, IqQuestion, IqCategory } from '@/lib/types'
 
-type Tab = 'cog' | 'trait' | 'sjt'
+type Tab = 'disc' | 'iq'
+
+const IQ_CATEGORIES: IqCategory[] = ['Logika', 'Numerik', 'Verbal', 'Spasial']
+const DISC_LETTERS: DiscLetter[] = ['a', 'b', 'c', 'd']
 
 export default function HrQuestionsPage() {
-  const [tab, setTab] = useState<Tab>('cog')
-  const [cog, setCog] = useState<PsiCogQuestion[]>([])
-  const [trait, setTrait] = useState<PsiTraitQuestion[]>([])
-  const [sjt, setSjt] = useState<PsiSjtQuestion[]>([])
+  const [tab, setTab] = useState<Tab>('disc')
+  const [disc, setDisc] = useState<DiscQuestion[]>([])
+  const [iq, setIq] = useState<IqQuestion[]>([])
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState('')
   const [loaded, setLoaded] = useState(false)
@@ -18,9 +20,8 @@ export default function HrQuestionsPage() {
   useEffect(() => {
     ;(async () => {
       const q = await loadQuestions()
-      setCog(q.cog)
-      setTrait(q.trait)
-      setSjt(q.sjt)
+      setDisc(q.disc)
+      setIq(q.iq)
       setLoaded(true)
     })()
   }, [])
@@ -29,7 +30,7 @@ export default function HrQuestionsPage() {
 
   const save = async () => {
     setSaving(true)
-    const data = tab === 'cog' ? cog : tab === 'trait' ? trait : sjt
+    const data = tab === 'disc' ? disc : iq
     const ok = await saveQuestionType(tab, data)
     if (ok) showMsg('Tersimpan')
     else showMsg('Gagal menyimpan')
@@ -37,9 +38,8 @@ export default function HrQuestionsPage() {
   }
 
   const TABS: { key: Tab; label: string }[] = [
-    { key: 'cog', label: 'Kognitif' },
-    { key: 'trait', label: 'Kepribadian' },
-    { key: 'sjt', label: 'Situasional' },
+    { key: 'disc', label: 'Tes DISC' },
+    { key: 'iq', label: 'Tes IQ' },
   ]
 
   if (!loaded) return <div className="hint">Memuat...</div>
@@ -60,17 +60,52 @@ export default function HrQuestionsPage() {
 
       {msg && <div className="toast show" style={{ position: 'static', transform: 'none', marginBottom: 12, opacity: 1 }}>{msg}</div>}
 
-      {tab === 'cog' && <CogEditor data={cog} onChange={setCog} />}
-      {tab === 'trait' && <TraitEditor data={trait} onChange={setTrait} />}
-      {tab === 'sjt' && <SjtEditor data={sjt} onChange={setSjt} />}
+      {tab === 'disc' && <DiscEditor data={disc} onChange={setDisc} />}
+      {tab === 'iq' && <IqEditor data={iq} onChange={setIq} />}
     </>
   )
 }
 
-function CogEditor({ data, onChange }: { data: PsiCogQuestion[]; onChange: (d: PsiCogQuestion[]) => void }) {
-  const update = (i: number, field: string, val: string | number) => {
+function DiscEditor({ data, onChange }: { data: DiscQuestion[]; onChange: (d: DiscQuestion[]) => void }) {
+  const updateOption = (i: number, letter: DiscLetter, val: string) => {
     const next = [...data]
-    next[i] = { ...next[i], [field]: val }
+    next[i] = { ...next[i], options: { ...next[i].options, [letter]: val } }
+    onChange(next)
+  }
+
+  return (
+    <div className="card card-p">
+      <div style={{ marginBottom: 12 }}>
+        <h4 className="blk" style={{ margin: 0 }}>Soal Tes DISC ({data.length})</h4>
+        <div className="hint" style={{ marginTop: 4 }}>
+          Hanya teks pilihan yang dapat diedit. Urutan dan jumlah soal terkait langsung dengan formula skor
+          (tabel konversi DISC), sehingga tambah/hapus/urutan ulang soal tidak didukung.
+        </div>
+      </div>
+      {data.map((q, i) => (
+        <div key={q.no} className="q" style={{ padding: '14px 0' }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginBottom: 8 }}>
+            <span style={{ fontWeight: 800, fontSize: 13, color: 'var(--violet)', minWidth: 28 }}>#{q.no}</span>
+            <div className="grid2" style={{ flex: 1, gap: 8 }}>
+              {DISC_LETTERS.map(letter => (
+                <label key={letter} className="opt" style={{ padding: '6px 10px', margin: 0, fontSize: 13 }}>
+                  <span className="key" style={{ width: 20, height: 20, fontSize: 10 }}>{letter.toUpperCase()}</span>
+                  <input type="text" value={q.options[letter]} onChange={e => updateOption(i, letter, e.target.value)}
+                    style={{ border: 'none', padding: 0, fontSize: 13, background: 'transparent' }} />
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function IqEditor({ data, onChange }: { data: IqQuestion[]; onChange: (d: IqQuestion[]) => void }) {
+  const update = (i: number, field: 'sec' | 'q', val: string) => {
+    const next = [...data]
+    next[i] = { ...next[i], [field]: val } as IqQuestion
     onChange(next)
   }
   const updateOpt = (i: number, oi: number, val: string) => {
@@ -78,12 +113,13 @@ function CogEditor({ data, onChange }: { data: PsiCogQuestion[]; onChange: (d: P
     next[i].o[oi] = val
     onChange(next)
   }
-  const add = () => {
-    onChange([...data, { sec: '', q: '', o: ['', '', '', ''], a: 0 }])
+  const updateAnswer = (i: number, oi: number) => {
+    const next = [...data]
+    next[i] = { ...next[i], a: oi }
+    onChange(next)
   }
-  const remove = (i: number) => {
-    onChange(data.filter((_, idx) => idx !== i))
-  }
+  const add = () => onChange([...data, { sec: 'Logika', q: '', o: ['', '', '', ''], a: 0 }])
+  const remove = (i: number) => onChange(data.filter((_, idx) => idx !== i))
   const move = (i: number, dir: -1 | 1) => {
     const j = i + dir
     if (j < 0 || j >= data.length) return
@@ -95,7 +131,7 @@ function CogEditor({ data, onChange }: { data: PsiCogQuestion[]; onChange: (d: P
   return (
     <div className="card card-p">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <h4 className="blk" style={{ margin: 0 }}>Soal Kognitif ({data.length})</h4>
+        <h4 className="blk" style={{ margin: 0 }}>Soal IQ ({data.length})</h4>
         <button className="btn sm primary" onClick={add}>＋ Soal</button>
       </div>
       {data.map((q, i) => (
@@ -103,8 +139,10 @@ function CogEditor({ data, onChange }: { data: PsiCogQuestion[]; onChange: (d: P
           <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginBottom: 8 }}>
             <span style={{ fontWeight: 800, fontSize: 13, color: 'var(--violet)', minWidth: 28 }}>#{i + 1}</span>
             <div style={{ flex: 1 }}>
-              <input type="text" value={q.sec} onChange={e => update(i, 'sec', e.target.value)}
-                placeholder="Bagian (cth. A. Logika)" style={{ fontSize: 12, marginBottom: 6, padding: '6px 10px' }} />
+              <select value={q.sec} onChange={e => update(i, 'sec', e.target.value)}
+                style={{ fontSize: 12, marginBottom: 6, padding: '6px 10px', width: 'auto' }}>
+                {IQ_CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+              </select>
               <input type="text" value={q.q} onChange={e => update(i, 'q', e.target.value)}
                 placeholder="Pertanyaan..." style={{ fontWeight: 600, padding: '6px 10px' }} />
             </div>
@@ -127,111 +165,10 @@ function CogEditor({ data, onChange }: { data: PsiCogQuestion[]; onChange: (d: P
             <span style={{ fontWeight: 600, color: 'var(--muted)' }}>Jawaban benar:</span>
             {['A', 'B', 'C', 'D'].map((l, oi) => (
               <label key={oi} style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
-                <input type="radio" name={`cog-${i}`} checked={q.a === oi} onChange={() => update(i, 'a', oi)} />
+                <input type="radio" name={`iq-${i}`} checked={q.a === oi} onChange={() => updateAnswer(i, oi)} />
                 {l}
               </label>
             ))}
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function TraitEditor({ data, onChange }: { data: PsiTraitQuestion[]; onChange: (d: PsiTraitQuestion[]) => void }) {
-  const update = (i: number, field: string, val: string) => {
-    const next = [...data]
-    next[i] = { ...next[i], [field]: val }
-    onChange(next)
-  }
-  const add = () => onChange([...data, { t: '', q: '' }])
-  const remove = (i: number) => onChange(data.filter((_, idx) => idx !== i))
-  const move = (i: number, dir: -1 | 1) => {
-    const j = i + dir
-    if (j < 0 || j >= data.length) return
-    const next = [...data]; [next[i], next[j]] = [next[j], next[i]]; onChange(next)
-  }
-
-  return (
-    <div className="card card-p">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <h4 className="blk" style={{ margin: 0 }}>Pernyataan Kepribadian ({data.length})</h4>
-        <button className="btn sm primary" onClick={add}>＋ Pernyataan</button>
-      </div>
-      {data.map((q, i) => (
-        <div key={i} className="q" style={{ padding: '12px 0' }}>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-            <span style={{ fontWeight: 800, fontSize: 13, color: 'var(--violet)', minWidth: 28, marginTop: 6 }}>#{i + 1}</span>
-            <div style={{ flex: 1 }}>
-              <input type="text" value={q.t} onChange={e => update(i, 't', e.target.value)}
-                placeholder="Trait (cth. Inisiatif)" style={{ fontSize: 12, marginBottom: 6, padding: '6px 10px' }} />
-              <input type="text" value={q.q} onChange={e => update(i, 'q', e.target.value)}
-                placeholder="Pernyataan..." style={{ padding: '6px 10px' }} />
-            </div>
-            <div style={{ display: 'flex', gap: 4, flexShrink: 0, marginTop: 6 }}>
-              <button className="btn sm" onClick={() => move(i, -1)}>↑</button>
-              <button className="btn sm" onClick={() => move(i, 1)}>↓</button>
-              <button className="btn sm danger" onClick={() => remove(i)}>✕</button>
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function SjtEditor({ data, onChange }: { data: PsiSjtQuestion[]; onChange: (d: PsiSjtQuestion[]) => void }) {
-  const update = (i: number, field: string, val: string) => {
-    const next = [...data]
-    next[i] = { ...next[i], [field]: val }
-    onChange(next)
-  }
-  const updateOpt = (i: number, oi: number, field: 'text' | 'score', val: string | number) => {
-    const next = [...data]
-    const opt = [...next[i].o] as [string, number][]
-    opt[oi] = field === 'text' ? [val as string, opt[oi][1]] : [opt[oi][0], val as number]
-    next[i] = { ...next[i], o: opt }
-    onChange(next)
-  }
-  const add = () => onChange([...data, { q: '', o: [['', 0], ['', 0], ['', 0], ['', 0]] }])
-  const remove = (i: number) => onChange(data.filter((_, idx) => idx !== i))
-  const move = (i: number, dir: -1 | 1) => {
-    const j = i + dir
-    if (j < 0 || j >= data.length) return
-    const next = [...data]; [next[i], next[j]] = [next[j], next[i]]; onChange(next)
-  }
-
-  return (
-    <div className="card card-p">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <h4 className="blk" style={{ margin: 0 }}>Skenario Situasional ({data.length})</h4>
-        <button className="btn sm primary" onClick={add}>＋ Skenario</button>
-      </div>
-      {data.map((q, i) => (
-        <div key={i} className="q" style={{ padding: '12px 0' }}>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-            <span style={{ fontWeight: 800, fontSize: 13, color: 'var(--violet)', minWidth: 28, marginTop: 6 }}>#{i + 1}</span>
-            <div style={{ flex: 1 }}>
-              <input type="text" value={q.q} onChange={e => update(i, 'q', e.target.value)}
-                placeholder="Skenario..." style={{ fontWeight: 600, padding: '6px 10px' }} />
-              <div className="grid2" style={{ gap: 6, marginTop: 8 }}>
-                {q.o.map((o, oi) => (
-                  <div key={oi} style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                    <span style={{ fontWeight: 700, fontSize: 11, color: 'var(--muted)', minWidth: 14 }}>{'ABCD'[oi]}</span>
-                    <input type="text" value={o[0]} onChange={e => updateOpt(i, oi, 'text', e.target.value)}
-                      placeholder="Opsi..." style={{ flex: 1, fontSize: 12, padding: '5px 8px' }} />
-                    <input type="number" value={o[1]} onChange={e => updateOpt(i, oi, 'score', Number(e.target.value))}
-                      style={{ width: 44, fontSize: 12, padding: '5px 8px', textAlign: 'center' }}
-                      placeholder="Skor" min={0} max={3} />
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: 4, flexShrink: 0, marginTop: 6 }}>
-              <button className="btn sm" onClick={() => move(i, -1)}>↑</button>
-              <button className="btn sm" onClick={() => move(i, 1)}>↓</button>
-              <button className="btn sm danger" onClick={() => remove(i)}>✕</button>
-            </div>
           </div>
         </div>
       ))}
