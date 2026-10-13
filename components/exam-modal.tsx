@@ -209,7 +209,7 @@ export default function ExamModal({ mode, testType, candidate, positions, timeLi
               const isMost = ans.most === letter
               const isLeast = ans.least === letter
               return (
-                <div key={letter} className={`exam-opt ${isMost ? 'sel' : ''}`} style={{ justifyContent: 'space-between', display: 'flex', alignItems: 'center' }}>
+                <div key={letter} className={`exam-opt ${isMost ? 'sel' : ''} ${isLeast ? 'least' : ''}`} style={{ justifyContent: 'space-between', display: 'flex', alignItems: 'center' }}>
                   <span><span className="k">{letter.toUpperCase()}</span>{q.options[letter]}</span>
                   <span style={{ display: 'flex', gap: 6 }}>
                     <button type="button" className={`btn sm ${isMost ? 'primary' : ''}`} onClick={() => selectDisc(q.no, letter, 'most')}>M</button>

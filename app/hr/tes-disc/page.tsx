@@ -125,7 +125,7 @@ export default function HrTesDiscPage() {
                 const isMost = ans.most === letter
                 const isLeast = ans.least === letter
                 return (
-                  <div key={letter} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', marginBottom: 4, borderRadius: 8, background: isMost ? 'var(--line-soft)' : 'transparent' }}>
+                  <div key={letter} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', marginBottom: 4, borderRadius: 8, background: isMost ? 'var(--violet-soft)' : isLeast ? 'var(--no-bg)' : 'transparent' }}>
                     <span><span className="key" style={{ marginRight: 8 }}>{letter.toUpperCase()}</span>{q.options[letter]}</span>
                     <span style={{ display: 'flex', gap: 6 }}>
                       <button type="button" className={`btn sm ${isMost ? 'primary' : ''}`} onClick={() => selectDisc(q.no, letter, 'most')}>M</button>
