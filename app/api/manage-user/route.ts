@@ -1,63 +1,28 @@
 import { NextResponse } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
-import { createClient } from '@supabase/supabase-js'
-import { cookies } from 'next/headers'
+import { query } from '@/lib/pg'
+import { getSessionUser } from '@/lib/auth'
 
-/** Helper: verify caller is a dev */
 async function verifyDev() {
-  const cookieStore = await cookies()
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-  const anonKey =
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-
-  const supabase = createServerClient(supabaseUrl, anonKey, {
-    cookies: {
-      getAll() { return cookieStore.getAll() },
-      setAll() {},
-    },
-  })
-
-  const { data: { session } } = await supabase.auth.getSession()
-  if (!session) return null
-  if (session.user.user_metadata?.role !== 'dev') return null
-  return session
+  const user = await getSessionUser()
+  if (!user || user.role !== 'dev') return null
+  return user
 }
 
-function adminClient() {
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!serviceKey) throw new Error('SUPABASE_SERVICE_ROLE_KEY not set')
-  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  })
-}
-
-// GET /api/manage-user — list all auth users
+// GET /api/manage-user — list all users
 export async function GET() {
-  const session = await verifyDev()
-  if (!session) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const user = await verifyDev()
+  if (!user) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-  const admin = adminClient()
-  const { data, error } = await admin.auth.admin.listUsers()
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-
-  // Return only the fields the UI needs
-  const users = data.users.map(u => ({
-    id: u.id,
-    email: u.email,
-    role: u.user_metadata?.role ?? '',
-    nama: u.user_metadata?.nama ?? '',
-    created_at: u.created_at,
-    last_sign_in_at: u.last_sign_in_at,
-  }))
-
-  return NextResponse.json({ users })
+  const res = await query(
+    `SELECT id, email, role, nama, created_at, last_sign_in_at FROM users ORDER BY created_at DESC`
+  )
+  return NextResponse.json({ users: res.rows })
 }
 
 // POST /api/manage-user — update role (and optionally nama) for a user
 export async function POST(req: Request) {
-  const session = await verifyDev()
-  if (!session) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const user = await verifyDev()
+  if (!user) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const body = await req.json()
   const { userId, role, nama } = body as { userId: string; role: string; nama?: string }
@@ -71,38 +36,26 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Invalid role' }, { status: 400 })
   }
 
-  const admin = adminClient()
-  const { data: existing } = await admin.auth.admin.getUserById(userId)
-  const currentMeta = existing?.user?.user_metadata ?? {}
+  await query(
+    `UPDATE users SET role = $1, nama = COALESCE($2, nama) WHERE id = $3`,
+    [role, nama, userId]
+  )
 
-  const { error } = await admin.auth.admin.updateUserById(userId, {
-    user_metadata: {
-      ...currentMeta,
-      role,
-      ...(nama !== undefined ? { nama } : {}),
-    },
-  })
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ ok: true })
 }
 
-// DELETE /api/manage-user — delete a user (hard delete from auth)
+// DELETE /api/manage-user — delete a user (hard delete)
 export async function DELETE(req: Request) {
-  const session = await verifyDev()
-  if (!session) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const user = await verifyDev()
+  if (!user) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const { userId } = await req.json()
   if (!userId) return NextResponse.json({ error: 'userId required' }, { status: 400 })
 
-  // Prevent self-deletion
-  if (userId === session.user.id) {
+  if (userId === user.id) {
     return NextResponse.json({ error: 'Cannot delete yourself' }, { status: 400 })
   }
 
-  const admin = adminClient()
-  const { error } = await admin.auth.admin.deleteUser(userId)
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-
+  await query('DELETE FROM users WHERE id = $1', [userId])
   return NextResponse.json({ ok: true })
 }

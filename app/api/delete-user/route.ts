@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
-import { createClient } from '@supabase/supabase-js'
-import { cookies } from 'next/headers'
+import { query } from '@/lib/pg'
+import { getSessionUser } from '@/lib/auth'
+import { errorMessage } from '@/lib/errors'
 
 const RATE_LIMIT = 10
 const RATE_WINDOW = 60000
@@ -25,57 +25,29 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
   }
 
-  const cookieStore = await cookies()
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-  if (!supabaseUrl || !anonKey) {
-    return NextResponse.json({ error: 'Server config missing' }, { status: 500 })
-  }
-
-  const supabase = createServerClient(supabaseUrl, anonKey, {
-    cookies: {
-      getAll() { return cookieStore.getAll() },
-      setAll() {},
-    },
-  })
-
-  const { data: { session } } = await supabase.auth.getSession()
-  if (!session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  const role = session.user.user_metadata?.role
-  if (role !== 'hr' && role !== 'dev') {
+  const user = await getSessionUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (user.role !== 'hr' && user.role !== 'dev') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
   const { candidateId } = await req.json()
   if (!candidateId) return NextResponse.json({ error: 'candidateId required' }, { status: 400 })
 
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!serviceKey) {
-    return NextResponse.json({ error: 'Server config missing' }, { status: 500 })
-  }
+  const candRes = await query<{ user_id: string | null }>('SELECT user_id FROM candidates WHERE id = $1 LIMIT 1', [candidateId])
+  const userId = candRes.rows[0]?.user_id
 
-  const admin = createClient(supabaseUrl, serviceKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  })
-
-  const { data: candidate } = await admin
-    .from('candidates')
-    .select('user_id')
-    .eq('id', candidateId)
-    .single()
-
-  const userId = candidate?.user_id
-
+  // ON DELETE CASCADE/SET NULL tidak dipasang untuk users->candidates agar
+  // penghapusan kandidat tidak otomatis menghapus akun user; hapus manual di
+  // sini supaya akun login kandidat ikut hilang saat kandidat dihapus HR.
   if (userId) {
-    await admin.auth.admin.deleteUser(userId)
+    await query('DELETE FROM users WHERE id = $1', [userId])
   }
 
-  const { error: dbErr } = await admin.from('candidates').delete().eq('id', candidateId)
-  if (dbErr) return NextResponse.json({ error: dbErr.message }, { status: 500 })
-
-  return NextResponse.json({ ok: true })
+  try {
+    await query('DELETE FROM candidates WHERE id = $1', [candidateId])
+    return NextResponse.json({ ok: true })
+  } catch (err) {
+    return NextResponse.json({ error: errorMessage(err) }, { status: 500 })
+  }
 }

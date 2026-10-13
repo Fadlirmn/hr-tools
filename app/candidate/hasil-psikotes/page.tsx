@@ -1,18 +1,17 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase'
+import { getCurrentUser } from '@/lib/auth-client'
 import { getCandidateByUserId } from '@/lib/db'
 import { DISC_PROFILE_DESCRIPTIONS } from '@/lib/constants'
 import type { Candidate, DiscGraphResult } from '@/lib/types'
 
 export default function CandidateHasilPsikotesPage() {
-  const supabase = createClient()
   const [candidate, setCandidate] = useState<Candidate | null>(null)
 
   useEffect(() => {
     ;(async () => {
-      const { data: { user } } = await supabase.auth.getUser()
+      const user = await getCurrentUser()
       if (user) {
         const c = await getCandidateByUserId(user.id)
         setCandidate(c)

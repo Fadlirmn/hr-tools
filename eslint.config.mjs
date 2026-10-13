@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Node CommonJS runtime script dieksekusi via `node scripts/init-db.js`
+    // di Dockerfile (bukan diproses Next.js build) — require() intentional.
+    "scripts/**",
   ]),
 ]);
 

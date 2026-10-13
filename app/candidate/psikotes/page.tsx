@@ -1,10 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase'
+import { getCurrentUser } from '@/lib/auth-client'
 import { getCandidateByUserId } from '@/lib/db'
 import ExamModal, { type ExamTestType, type ExamResult } from '@/components/exam-modal'
-import type { Candidate, DiscResult, IqResult } from '@/lib/types'
+import type { Candidate } from '@/lib/types'
 
 type GateStatus = 'belum' | 'aktif' | 'kadaluarsa' | 'selesai'
 
@@ -15,13 +15,12 @@ function gateStatus(hasResult: boolean, openAt: string | null, closeAt: string |
 }
 
 export default function CandidatePsikotesPage() {
-  const supabase = createClient()
   const [candidate, setCandidate] = useState<Candidate | null>(null)
   const [loading, setLoading] = useState(true)
   const [examOpen, setExamOpen] = useState<ExamTestType | null>(null)
 
   const load = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getCurrentUser()
     if (user) {
       const c = await getCandidateByUserId(user.id)
       setCandidate(c)
@@ -37,17 +36,11 @@ export default function CandidatePsikotesPage() {
   const discStatus = gateStatus(!!candidate.psikotes_result?.disc, candidate.disc_open_at, candidate.disc_close_at, candidate.disc_time_limit)
   const iqStatus = gateStatus(!!candidate.psikotes_result?.iq, candidate.iq_open_at, candidate.iq_close_at, candidate.iq_time_limit)
 
-  const onSave = async (res: ExamResult | null, type: ExamTestType) => {
-    if (res) {
-      const nextPsikotesResult = type === 'disc'
-        ? { disc: res as DiscResult, iq: candidate.psikotes_result?.iq ?? null }
-        : { disc: candidate.psikotes_result?.disc ?? null, iq: res as IqResult }
-      await supabase.from('candidates').update({
-        psikotes_result: nextPsikotesResult,
-        stage: 'interview',
-      }).eq('id', candidate.id)
-      setCandidate(prev => prev ? { ...prev, psikotes_result: nextPsikotesResult } : prev)
-    }
+  // Catatan: exam-submit route sudah menyimpan hasil ke DB (hasil disertakan
+  // di `res`). Di sini kita hanya perlu re-fetch untuk sinkronkan UI lokal,
+  // bukan menulis lagi — exam-submit yang punya logic psikotes_result merge.
+  const onSave = async (res: ExamResult | null) => {
+    if (res) await load()
     setExamOpen(null)
   }
 
@@ -103,7 +96,7 @@ export default function CandidatePsikotesPage() {
         candidate={candidate}
         timeLimit={examOpen === 'disc' ? candidate.disc_time_limit : candidate.iq_time_limit}
         onClose={() => setExamOpen(null)}
-        onSave={(res) => onSave(res, examOpen)}
+        onSave={onSave}
       />}
     </>
   )

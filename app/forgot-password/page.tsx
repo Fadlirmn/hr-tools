@@ -1,10 +1,8 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { createClient } from '@/lib/supabase'
 
 export default function ForgotPasswordPage() {
-  const supabase = createClient()
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [done, setDone] = useState(false)
@@ -28,22 +26,21 @@ export default function ForgotPasswordPage() {
     setLoading(true)
     setError('')
 
-    const { error: err } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
+    const res = await fetch('/api/auth/forgot-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
     })
 
     setLoading(false)
 
-    if (err) {
-      const msg = err.message.toLowerCase()
-      if (msg.includes('rate limit') || msg.includes('too many')) {
+    if (!res.ok) {
+      if (res.status === 429) {
         setError('Terlalu banyak permintaan. Tunggu 2 menit sebelum mencoba lagi.')
         startCooldown(120)
-      } else if (err.message.includes('400') || msg.includes('email') || msg.includes('not found') || msg.includes('invalid')) {
-        // Jangan bedakan email exist / tidak — tetap kasih success
-        setDone(true)
       } else {
-        setError(err.message)
+        const data = await res.json().catch(() => ({}))
+        setError(data.error || 'Gagal mengirim link reset.')
         startCooldown(30)
       }
     } else {

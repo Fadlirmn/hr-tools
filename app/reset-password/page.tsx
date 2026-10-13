@@ -1,47 +1,41 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase'
+import { useState, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={null}>
+      <ResetPasswordContent />
+    </Suspense>
+  )
+}
+
+function ResetPasswordContent() {
   const router = useRouter()
-  const supabase = createClient()
+  const searchParams = useSearchParams()
+  const token = searchParams.get('token') || ''
   const [password, setPassword] = useState('')
   const [showPw, setShowPw] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [ready, setReady] = useState(false)
   const [done, setDone] = useState(false)
-
-  useEffect(() => {
-    const hash = window.location.hash
-    const isRecovery = hash.includes('type=recovery')
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        setReady(true)
-      }
-    })
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session || isRecovery) {
-        setReady(true)
-      }
-    })
-
-    return () => subscription.unsubscribe()
-  }, [])
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault()
     if (password.length < 6) { setError('Password minimal 6 karakter.'); return }
+    if (!token) { setError('Link reset password tidak valid.'); return }
     setLoading(true)
     setError('')
 
-    const { error: err } = await supabase.auth.updateUser({ password })
+    const res = await fetch('/api/auth/reset-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, password }),
+    })
+    const data = await res.json().catch(() => ({}))
     setLoading(false)
-    if (err) { setError(err.message); return }
+    if (!res.ok) { setError(data.error || 'Gagal mereset password.'); return }
     setDone(true)
   }
 
@@ -61,7 +55,17 @@ export default function ResetPasswordPage() {
     )
   }
 
-  if (!ready) return null
+  if (!token) {
+    return (
+      <div className="login-bg">
+        <div className="login-card" style={{ textAlign: 'center' }}>
+          <div className="sub">Link reset password tidak valid atau sudah kedaluwarsa.</div>
+          <button className="btn primary" style={{ marginTop: 16, justifyContent: 'center', width: '100%' }}
+            onClick={() => router.push('/forgot-password')}>Minta Link Baru</button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="login-bg">

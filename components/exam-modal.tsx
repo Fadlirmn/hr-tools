@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { createClient } from '@/lib/supabase'
 import { loadQuestions } from '@/lib/questions'
 import { calcDiscGraphs } from '@/lib/disc-scoring'
 import type { Candidate, Position, DiscQuestion, DiscLetter, IqQuestion, DiscAnswer, DiscResult, IqResult, IqCategory } from '@/lib/types'
@@ -32,7 +31,6 @@ function calcIq(ans: Record<number, number>, questions: IqQuestion[]) {
 }
 
 export default function ExamModal({ mode, testType, candidate, positions, timeLimit, onClose, onSave }: ExamModalProps) {
-  const supabase = createClient()
   const [discQuestions, setDiscQuestions] = useState<DiscQuestion[]>([])
   const [iqQuestions, setIqQuestions] = useState<IqQuestion[]>([])
   const [screen, setScreen] = useState<'intro' | 'test' | 'done'>(mode === 'candidate' ? 'test' : 'intro')
@@ -141,7 +139,12 @@ export default function ExamModal({ mode, testType, candidate, positions, timeLi
         stage: 'interview', tanggal: new Date().toISOString().slice(0, 10),
         invite_token: null, cv: null, psikotes_result: psikotesResultPatch, interview: null, onboarding: null,
       }
-      await supabase.from('candidates').insert(newC)
+      await fetch('/api/candidates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(newC),
+      })
       candidateId = newId
     }
     setScreen('done')

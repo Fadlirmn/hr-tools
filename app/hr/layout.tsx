@@ -2,7 +2,7 @@
 
 import { useRouter, usePathname } from 'next/navigation'
 import { useCallback, useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase'
+import { getCurrentUser, logout } from '@/lib/auth-client'
 import type { UserRole } from '@/lib/types'
 
 const NAV_ITEMS = [
@@ -29,7 +29,6 @@ const DEV_NAV_ITEMS = [
 export default function HrLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
-  const supabase = createClient()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [role, setRole] = useState<UserRole | ''>('')
   const [userEmail, setUserEmail] = useState('')
@@ -37,11 +36,11 @@ export default function HrLayout({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     ;(async () => {
-      const { data: { user } } = await supabase.auth.getUser()
+      const user = await getCurrentUser()
       if (user) {
-        setRole((user.user_metadata?.role as UserRole) || '')
-        setUserEmail(user.email || '')
-        setUserName(user.user_metadata?.nama || '')
+        setRole(user.role)
+        setUserEmail(user.email)
+        setUserName(user.nama || '')
       }
     })()
   }, [])
@@ -54,7 +53,7 @@ export default function HrLayout({ children }: { children: React.ReactNode }) {
   }, [router])
 
   const handleLogout = async () => {
-    await supabase.auth.signOut()
+    await logout()
     router.push('/login')
   }
 

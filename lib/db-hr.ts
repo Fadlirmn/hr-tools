@@ -1,7 +1,5 @@
 /**
- * Fetch all candidates via the server-side API route.
- * Uses service role key server-side → bypasses RLS → returns all candidates
- * regardless of browser JWT state.
+ * Fetch all candidates via the server-side API route (role-checked di sana).
  */
 export async function fetchCandidates() {
   const res = await fetch('/api/candidates', { credentials: 'include' })

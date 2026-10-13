@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase'
+import { getCurrentUser } from '@/lib/auth-client'
 import type { UserRole } from '@/lib/types'
 
 const ROLE_LABEL: Record<string, { label: string; color: string }> = {
@@ -11,7 +11,6 @@ const ROLE_LABEL: Record<string, { label: string; color: string }> = {
 }
 
 export default function HrProfilePage() {
-  const supabase = createClient()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [pwSaving, setPwSaving] = useState(false)
@@ -31,13 +30,13 @@ export default function HrProfilePage() {
 
   useEffect(() => {
     ;(async () => {
-      const { data: { user } } = await supabase.auth.getUser()
+      const user = await getCurrentUser()
       if (user) {
-        setEmail(user.email || '')
-        setRole((user.user_metadata?.role as UserRole) || '')
-        setNama(user.user_metadata?.nama || '')
-        setUsername(user.user_metadata?.username || '')
-        setTelepon(user.user_metadata?.telepon || '')
+        setEmail(user.email)
+        setRole(user.role)
+        setNama(user.nama || '')
+        setUsername(user.username || '')
+        setTelepon(user.telepon || '')
       }
       setLoading(false)
     })()
@@ -47,11 +46,14 @@ export default function HrProfilePage() {
     e.preventDefault()
     setSaving(true)
     setMsg('')
-    const { error } = await supabase.auth.updateUser({
-      data: { nama, username: username.trim(), telepon },
+    const res = await fetch('/api/auth/profile', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ nama, username: username.trim(), telepon }),
     })
     setSaving(false)
-    if (error) setMsg('Gagal menyimpan: ' + error.message)
+    if (!res.ok) setMsg('Gagal menyimpan.')
     else setMsg('Profil berhasil diperbarui!')
   }
 
@@ -62,9 +64,14 @@ export default function HrProfilePage() {
     if (pwNew !== pwConfirm) { setPwMsg('Password baru tidak cocok.'); return }
     if (pwNew.length < 8) { setPwMsg('Password minimal 8 karakter.'); return }
     setPwSaving(true)
-    const { error } = await supabase.auth.updateUser({ password: pwNew })
+    const res = await fetch('/api/auth/change-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ password: pwNew }),
+    })
     setPwSaving(false)
-    if (error) setPwMsg('Gagal: ' + error.message)
+    if (!res.ok) setPwMsg('Gagal mengubah password.')
     else {
       setPwMsg('Password berhasil diubah!')
       setPwNew(''); setPwConfirm('')

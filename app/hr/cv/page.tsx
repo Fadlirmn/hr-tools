@@ -2,10 +2,10 @@
 
 import { useEffect, useState, useCallback, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { createClient } from '@/lib/supabase'
 import { fetchCandidates } from '@/lib/db-hr'
+import { getPositions } from '@/lib/db'
 import type { Candidate, Position, CvScores, CvAssessment } from '@/lib/types'
-import { CV_CRITERIA, POSITIONS_DEFAULT } from '@/lib/constants'
+import { CV_CRITERIA } from '@/lib/constants'
 
 export default function HrCvPage() {
   return (
@@ -17,7 +17,6 @@ export default function HrCvPage() {
 
 function HrCvContent() {
   const searchParams = useSearchParams()
-  const supabase = createClient()
   const [candidates, setCandidates] = useState<Candidate[]>([])
   const [positions, setPositions] = useState<Position[]>([])
   const [selId, setSelId] = useState<string>(searchParams.get('candidateId') || '')
@@ -26,9 +25,8 @@ function HrCvContent() {
 
   const load = async () => {
     const c = await fetchCandidates()
-    const { data: p } = await supabase.from('positions').select('*')
     setCandidates(c as Candidate[])
-    setPositions((p && p.length > 0 ? p : JSON.parse(JSON.stringify(POSITIONS_DEFAULT))) as Position[])
+    setPositions(await getPositions())
   }
 
   useEffect(() => { load() }, [])

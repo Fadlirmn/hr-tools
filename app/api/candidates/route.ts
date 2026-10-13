@@ -1,92 +1,108 @@
 import { NextResponse } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
-import { createClient } from '@supabase/supabase-js'
-import { cookies } from 'next/headers'
-
-function adminClient() {
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!serviceKey) throw new Error('SUPABASE_SERVICE_ROLE_KEY not set')
-  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  })
-}
+import { query } from '@/lib/pg'
+import { getSessionUser } from '@/lib/auth'
+import { errorMessage } from '@/lib/errors'
 
 async function verifyHr() {
-  const cookieStore = await cookies()
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-  const anonKey =
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-
-  const supabase = createServerClient(supabaseUrl, anonKey, {
-    cookies: {
-      getAll() { return cookieStore.getAll() },
-      setAll() {},
-    },
-  })
-
-  const { data: { session } } = await supabase.auth.getSession()
-  if (!session) return null
-  const role = session.user.user_metadata?.role
-  if (role !== 'hr' && role !== 'dev') return null
-  return session
+  const user = await getSessionUser()
+  if (!user) return null
+  if (user.role !== 'hr' && user.role !== 'dev') return null
+  return user
 }
 
-// GET /api/candidates — list all candidates (service role bypasses RLS)
+// GET /api/candidates — list all candidates
 export async function GET() {
-  const session = await verifyHr()
-  if (!session) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const user = await verifyHr()
+  if (!user) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-  const admin = adminClient()
-  const { data, error } = await admin
-    .from('candidates')
-    .select('*')
-    .order('tanggal', { ascending: false })
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json({ candidates: data ?? [] })
+  const res = await query('SELECT * FROM candidates ORDER BY tanggal DESC')
+  return NextResponse.json({ candidates: res.rows })
 }
 
-// POST /api/candidates — insert new candidate (service role bypasses RLS)
+// POST /api/candidates — insert new candidate
 export async function POST(req: Request) {
-  const session = await verifyHr()
-  if (!session) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const user = await verifyHr()
+  if (!user) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-  const body = await req.json()
-  if (!body?.nama?.trim()) {
+  const body = await req.json() as Record<string, unknown>
+  if (!(typeof body?.nama === 'string' && body.nama.trim())) {
     return NextResponse.json({ error: 'Nama wajib diisi' }, { status: 400 })
   }
 
-  const admin = adminClient()
-  const { error } = await admin.from('candidates').insert(body)
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  const cols = Object.keys(body)
+  const vals = cols.map(c => body[c])
+  const placeholders = cols.map((_, i) => `$${i + 1}`)
 
-  return NextResponse.json({ ok: true })
+  try {
+    await query(
+      `INSERT INTO candidates (${cols.join(',')}) VALUES (${placeholders.join(',')})`,
+      vals
+    )
+    return NextResponse.json({ ok: true })
+  } catch (err) {
+    return NextResponse.json({ error: errorMessage(err) }, { status: 500 })
+  }
 }
 
-// PATCH /api/candidates — update single or bulk candidates (service role bypasses RLS)
+// PATCH /api/candidates — update single or bulk candidates
 export async function PATCH(req: Request) {
-  const session = await verifyHr()
-  if (!session) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const user = await verifyHr()
+  if (!user) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-  const body = await req.json()
-  const admin = adminClient()
+  const body = await req.json() as Record<string, unknown>
 
   // Bulk update: { _bulk: { ids: string[], ...fields } }
   if (body._bulk) {
-    const { ids, ...fields } = body._bulk
+    const { ids, ...fields } = body._bulk as { ids: string[] } & Record<string, unknown>
     if (!ids || ids.length === 0) return NextResponse.json({ error: 'ids wajib ada' }, { status: 400 })
-    const { error } = await admin.from('candidates').update(fields).in('id', ids)
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-    return NextResponse.json({ ok: true })
+
+    const cols = Object.keys(fields)
+    if (cols.length === 0) return NextResponse.json({ error: 'tidak ada field untuk diupdate' }, { status: 400 })
+
+    const setClause = cols.map((c, i) => `${c} = $${i + 1}`).join(', ')
+    const vals = cols.map(c => fields[c])
+    const idsPlaceholder = `$${cols.length + 1}`
+
+    try {
+      await query(
+        `UPDATE candidates SET ${setClause} WHERE id = ANY(${idsPlaceholder})`,
+        [...vals, ids]
+      )
+      return NextResponse.json({ ok: true })
+    } catch (err) {
+      return NextResponse.json({ error: errorMessage(err) }, { status: 500 })
+    }
   }
 
   // Single update: { id, ...fields }
   const { id, ...fields } = body
   if (!id) return NextResponse.json({ error: 'id wajib ada' }, { status: 400 })
-  const { error } = await admin.from('candidates').update(fields).eq('id', id)
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  return NextResponse.json({ ok: true })
+  const cols = Object.keys(fields)
+  if (cols.length === 0) return NextResponse.json({ error: 'tidak ada field untuk diupdate' }, { status: 400 })
+
+  const setClause = cols.map((c, i) => `${c} = $${i + 1}`).join(', ')
+  const vals = cols.map(c => fields[c])
+
+  try {
+    await query(`UPDATE candidates SET ${setClause} WHERE id = $${cols.length + 1}`, [...vals, id])
+    return NextResponse.json({ ok: true })
+  } catch (err) {
+    return NextResponse.json({ error: errorMessage(err) }, { status: 500 })
+  }
 }
 
+// DELETE /api/candidates — wipe SEMUA kandidat (tombol "Hapus semua data" di Settings).
+// Hanya menghapus baris candidates — tidak menghapus akun users terkait (beda
+// dengan /api/delete-user yang menghapus satu kandidat + akunnya sekaligus).
+export async function DELETE() {
+  const user = await verifyHr()
+  if (!user) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+  try {
+    await query('DELETE FROM candidates')
+    return NextResponse.json({ ok: true })
+  } catch (err) {
+    return NextResponse.json({ error: errorMessage(err) }, { status: 500 })
+  }
+}

@@ -2,23 +2,22 @@
 
 import { useRouter, usePathname } from 'next/navigation'
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase'
+import { getCurrentUser, logout } from '@/lib/auth-client'
 import { getCandidateByUserId } from '@/lib/db'
 import type { Candidate, UserRole } from '@/lib/types'
 
 export default function CandidateLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
-  const supabase = createClient()
   const [candidate, setCandidate] = useState<Candidate | null>(null)
   const [role, setRole] = useState<UserRole | ''>('')
   const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
     ;(async () => {
-      const { data: { user } } = await supabase.auth.getUser()
+      const user = await getCurrentUser()
       if (user) {
-        setRole((user.user_metadata?.role as UserRole) || '')
+        setRole(user.role)
         const c = await getCandidateByUserId(user.id)
         setCandidate(c)
       }
@@ -27,7 +26,7 @@ export default function CandidateLayout({ children }: { children: React.ReactNod
   }, [])
 
   const handleLogout = async () => {
-    await supabase.auth.signOut()
+    await logout()
     router.push('/login')
   }
 

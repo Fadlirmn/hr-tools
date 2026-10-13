@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
-import { createClient } from '@supabase/supabase-js'
-import { cookies } from 'next/headers'
+import { query } from '@/lib/pg'
+import { getSessionUser } from '@/lib/auth'
 import { sendEmail } from '@/lib/email'
 
 const RATE_LIMIT = 10
@@ -26,56 +25,28 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
   }
 
-  const cookieStore = await cookies()
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-  if (!supabaseUrl || !anonKey) {
-    return NextResponse.json({ error: 'Server config missing' }, { status: 500 })
-  }
-
-  const supabase = createServerClient(supabaseUrl, anonKey, {
-    cookies: {
-      getAll() { return cookieStore.getAll() },
-      setAll() {},
-    },
-  })
-
-  const { data: { session } } = await supabase.auth.getSession()
-  if (!session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  const role = session.user.user_metadata?.role
-  if (role !== 'hr' && role !== 'dev') {
+  const user = await getSessionUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (user.role !== 'hr' && user.role !== 'dev') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
   const { candidateId, type } = await req.json() as { candidateId: string; type?: 'disc' | 'iq' }
   if (!candidateId) return NextResponse.json({ error: 'candidateId required' }, { status: 400 })
 
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!serviceKey) {
-    return NextResponse.json({ error: 'Server config missing' }, { status: 500 })
-  }
-
-  const admin = createClient(supabaseUrl, serviceKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  })
-
-  const { data: candidate } = await admin
-    .from('candidates')
-    .select('email, nama')
-    .eq('id', candidateId)
-    .single()
+  const candRes = await query<{ email: string; nama: string }>(
+    'SELECT email, nama FROM candidates WHERE id = $1 LIMIT 1',
+    [candidateId]
+  )
+  const candidate = candRes.rows[0]
 
   if (!candidate?.email) {
     return NextResponse.json({ error: 'Candidate has no email' }, { status: 400 })
   }
 
-  const appUrl = process.env.VERCEL_URL || 'localhost:3000'
+  const appUrl = process.env.APP_URL || 'http://localhost:3000'
   const testLabel = type === 'disc' ? 'Tes DISC' : type === 'iq' ? 'Tes IQ' : 'Psikotes'
-  const loginUrl = `https://${appUrl}/candidate/psikotes`
+  const loginUrl = `${appUrl}/candidate/psikotes`
 
   try {
     await sendEmail({
@@ -93,6 +64,6 @@ export async function POST(req: Request) {
     })
     return NextResponse.json({ ok: true })
   } catch {
-    return NextResponse.json({ ok: true, note: 'Email not sent via SMTP; ensure Supabase SMTP is configured in project settings' })
+    return NextResponse.json({ ok: true, note: 'Email gagal terkirim, silakan cek konfigurasi layanan email.' })
   }
 }

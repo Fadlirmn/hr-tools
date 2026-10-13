@@ -1,5 +1,33 @@
--- Enable UUID extension
+-- =============================================================
+-- schema.sql — Self-hosted PostgreSQL (bukan Supabase).
+-- Auth ditangani di app code (lib/auth.ts, PBKDF2 + session cookie
+-- HMAC), BUKAN Supabase Auth/RLS. Semua access-control (siapa boleh
+-- baca/tulis apa) dicek di Route Handler, bukan di DB policy.
+-- =============================================================
+
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- Users table — menggantikan Supabase auth.users.
+CREATE TABLE IF NOT EXISTS users (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  email TEXT UNIQUE NOT NULL,
+  password_hash TEXT NOT NULL,
+  role TEXT NOT NULL DEFAULT 'candidate', -- 'hr' | 'dev' | 'candidate'
+  nama TEXT DEFAULT '',
+  username TEXT DEFAULT '',
+  telepon TEXT DEFAULT '',
+  created_at TIMESTAMPTZ DEFAULT now(),
+  last_sign_in_at TIMESTAMPTZ DEFAULT NULL
+);
+
+-- Password reset tokens — menggantikan Supabase resetPasswordForEmail.
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+  token TEXT PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  expires_at TIMESTAMPTZ NOT NULL,
+  used BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
 
 -- Positions table
 CREATE TABLE IF NOT EXISTS positions (
@@ -11,7 +39,7 @@ CREATE TABLE IF NOT EXISTS positions (
 -- Candidates table
 CREATE TABLE IF NOT EXISTS candidates (
   id TEXT PRIMARY KEY,
-  user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  user_id UUID REFERENCES users(id) ON DELETE SET NULL,
   nama TEXT NOT NULL,
   posisi TEXT REFERENCES positions(id) ON DELETE SET NULL,
   sumber TEXT DEFAULT 'LinkedIn',
@@ -51,55 +79,6 @@ INSERT INTO positions (id, name, weights) VALUES
   ('admin', 'Admin Marketplace / Olshop', '{"exp":2,"skill":2,"portfolio":1,"achiev":1,"edu":1,"stability":3,"fit":2,"salary":1,"cvquality":3,"soft":2}')
 ON CONFLICT (id) DO NOTHING;
 
--- Enable Row Level Security
-ALTER TABLE positions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE candidates ENABLE ROW LEVEL SECURITY;
-
--- Drop old insecure policies
-DROP POLICY IF EXISTS "hr_all_positions" ON positions;
-DROP POLICY IF EXISTS "hr_all_candidates" ON candidates;
-DROP POLICY IF EXISTS "candidate_read_own" ON candidates;
-DROP POLICY IF EXISTS "hr_all_exam" ON exam_questions;
--- Drop any previous instance of new policies (safe re-run)
-DROP POLICY IF EXISTS "positions_read" ON positions;
-DROP POLICY IF EXISTS "positions_write_hr" ON positions;
-DROP POLICY IF EXISTS "hr_candidates_all" ON candidates;
-DROP POLICY IF EXISTS "candidate_candidates_read_own" ON candidates;
-DROP POLICY IF EXISTS "candidate_candidates_update_own" ON candidates;
-DROP POLICY IF EXISTS "anon_candidates_read_invite" ON candidates;
-DROP POLICY IF EXISTS "candidate_candidates_claim_invite" ON candidates;
-DROP POLICY IF EXISTS "hr_exam_all" ON exam_questions;
-DROP POLICY IF EXISTS "candidate_exam_read" ON exam_questions;
-
--- Helper: check role from JWT user_metadata
--- Usage: auth.jwt() -> 'user_metadata' ->> 'role'
--- Stores: 'hr', 'candidate', or 'dev'
-
--- Positions: everyone can read, only HR/dev can write
-CREATE POLICY "positions_read" ON positions FOR SELECT USING (true);
-CREATE POLICY "positions_write_hr" ON positions FOR ALL
-  USING (auth.jwt() -> 'user_metadata' ->> 'role' IN ('hr', 'dev'))
-  WITH CHECK (auth.jwt() -> 'user_metadata' ->> 'role' IN ('hr', 'dev'));
-
--- Candidates: HR/dev full access
-CREATE POLICY "hr_candidates_all" ON candidates FOR ALL
-  USING (auth.jwt() -> 'user_metadata' ->> 'role' IN ('hr', 'dev'))
-  WITH CHECK (auth.jwt() -> 'user_metadata' ->> 'role' IN ('hr', 'dev'));
--- Candidates: read own record
-CREATE POLICY "candidate_candidates_read_own" ON candidates FOR SELECT
-  USING (user_id = auth.uid());
--- Candidates: update own record
-CREATE POLICY "candidate_candidates_update_own" ON candidates FOR UPDATE
-  USING (user_id = auth.uid())
-  WITH CHECK (user_id = auth.uid());
--- Anyone (incl. anon) can read unclaimed invite records (for invite page)
-CREATE POLICY "anon_candidates_read_invite" ON candidates FOR SELECT
-  USING (invite_token IS NOT NULL AND user_id IS NULL);
--- Candidate can claim invite after signup
-CREATE POLICY "candidate_candidates_claim_invite" ON candidates FOR UPDATE
-  USING (invite_token IS NOT NULL AND user_id IS NULL)
-  WITH CHECK (user_id = auth.uid());
-
 -- Exam questions
 CREATE TABLE IF NOT EXISTS exam_questions (
   id TEXT PRIMARY KEY,
@@ -109,20 +88,10 @@ CREATE TABLE IF NOT EXISTS exam_questions (
 );
 
 -- Relax CHECK constraint if table already exists from a previous schema version
--- (safe re-run: drop old constraint allowing cog/trait/sjt, then re-add with disc/iq only)
 ALTER TABLE exam_questions DROP CONSTRAINT IF EXISTS exam_questions_type_check;
 ALTER TABLE exam_questions ADD CONSTRAINT exam_questions_type_check CHECK (type IN ('disc','iq'));
 -- Hapus baris bank soal lama (cog/trait/sjt) jika tersisa dari migrasi sebelumnya
 DELETE FROM exam_questions WHERE id IN ('psi_cog', 'psi_trait', 'psi_sjt');
-
-ALTER TABLE exam_questions ENABLE ROW LEVEL SECURITY;
--- HR/dev full access
-CREATE POLICY "hr_exam_all" ON exam_questions FOR ALL
-  USING (auth.jwt() -> 'user_metadata' ->> 'role' IN ('hr', 'dev'))
-  WITH CHECK (auth.jwt() -> 'user_metadata' ->> 'role' IN ('hr', 'dev'));
--- Candidates can only read (need to take the test)
-CREATE POLICY "candidate_exam_read" ON exam_questions FOR SELECT
-  USING (auth.jwt() -> 'user_metadata' ->> 'role' = 'candidate');
 
 -- Insert default questions (dijalankan sekali; data harus sinkron dengan lib/constants.ts)
 -- CATATAN SUMBER (disc_questions): soal, mapping huruf->dimensi, tabel konversi skor,

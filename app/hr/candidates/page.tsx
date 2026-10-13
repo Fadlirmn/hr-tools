@@ -2,14 +2,13 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase'
+import { getPositions } from '@/lib/db'
 import type { Candidate, Position } from '@/lib/types'
-import { STAGES, POSITIONS_DEFAULT } from '@/lib/constants'
+import { STAGES } from '@/lib/constants'
 import { v4 as uuidv4 } from 'uuid'
 
 export default function HrCandidatesPage() {
   const router = useRouter()
-  const supabase = createClient()
   const [candidates, setCandidates] = useState<Candidate[]>([])
   const [positions, setPositions] = useState<Position[]>([])
 
@@ -18,13 +17,10 @@ export default function HrCandidatesPage() {
   const [form, setForm] = useState({ nama: '', posisi: '', sumber: 'LinkedIn', email: '', telepon: '', catatan: '' })
 
   const load = async () => {
-    // Fetch candidates via server API (bypasses RLS — browser JWT may be stale)
     const res = await fetch('/api/candidates', { credentials: 'include' })
     const cData = res.ok ? await res.json() : { candidates: [] }
-    // Positions have public read policy — direct fetch is fine
-    const { data: p } = await supabase.from('positions').select('*')
     setCandidates((cData.candidates || []) as Candidate[])
-    setPositions((p && p.length > 0 ? p : JSON.parse(JSON.stringify(POSITIONS_DEFAULT))) as Position[])
+    setPositions(await getPositions())
   }
 
 

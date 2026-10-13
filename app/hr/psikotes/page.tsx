@@ -1,16 +1,14 @@
 'use client'
 
 import { useEffect, useState, useMemo } from 'react'
-import { createClient } from '@/lib/supabase'
 import { fetchCandidates } from '@/lib/db-hr'
+import { getPositions } from '@/lib/db'
 import { loadQuestions } from '@/lib/questions'
 import { calcDiscGraphs } from '@/lib/disc-scoring'
 import ExamModal, { type ExamTestType, type ExamResult } from '@/components/exam-modal'
 import type { Candidate, Position, DiscQuestion, DiscLetter, DiscAnswer, IqQuestion, IqResult } from '@/lib/types'
-import { POSITIONS_DEFAULT } from '@/lib/constants'
 
 export default function HrPsikotesPage() {
-  const supabase = createClient()
   const [candidates, setCandidates] = useState<Candidate[]>([])
   const [positions, setPositions] = useState<Position[]>([])
   const [selId, setSelId] = useState<string>('')
@@ -21,13 +19,13 @@ export default function HrPsikotesPage() {
   const [iqQuestions, setIqQuestions] = useState<IqQuestion[]>([])
 
   const load = async () => {
-    const [cands, pRes, q] = await Promise.all([
+    const [cands, pos, q] = await Promise.all([
       fetchCandidates(),
-      supabase.from('positions').select('*'),
+      getPositions(),
       loadQuestions(),
     ])
     setCandidates(cands as Candidate[])
-    setPositions((pRes.data && pRes.data.length > 0 ? pRes.data : JSON.parse(JSON.stringify(POSITIONS_DEFAULT))) as Position[])
+    setPositions(pos)
     setDiscQuestions(q.disc)
     setIqQuestions(q.iq)
   }

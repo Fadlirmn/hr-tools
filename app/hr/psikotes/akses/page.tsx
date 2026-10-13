@@ -1,10 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase'
 import { fetchCandidates } from '@/lib/db-hr'
+import { getPositions } from '@/lib/db'
 import type { Candidate, Position } from '@/lib/types'
-import { POSITIONS_DEFAULT } from '@/lib/constants'
 
 type AccessStatus = 'belum' | 'aktif' | 'kadaluarsa' | 'selesai'
 type TestType = 'disc' | 'iq'
@@ -24,7 +23,6 @@ function computeStatus(hasResult: boolean, openAt: string | null, closeAt: strin
 }
 
 export default function HrPsikotesAksesPage() {
-  const supabase = createClient()
   const [rows, setRows] = useState<CandidateRow[]>([])
   const [loading, setLoading] = useState(true)
   const [bulkTimeLimit, setBulkTimeLimit] = useState('30')
@@ -35,11 +33,10 @@ export default function HrPsikotesAksesPage() {
 
   const load = async () => {
     setLoading(true)
-    const [candidates, pRes] = await Promise.all([
+    const [candidates, positions] = await Promise.all([
       fetchCandidates(),
-      supabase.from('positions').select('*'),
+      getPositions(),
     ])
-    const positions = (pRes.data && pRes.data.length > 0 ? pRes.data : JSON.parse(JSON.stringify(POSITIONS_DEFAULT))) as Position[]
 
     const mapped: CandidateRow[] = (candidates as Candidate[]).map(c => {
       const posName = positions.find(p => p.id === c.posisi)?.name || '—'

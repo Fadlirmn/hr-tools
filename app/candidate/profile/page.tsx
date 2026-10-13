@@ -1,11 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase'
+import { getCurrentUser } from '@/lib/auth-client'
 import { getCandidateByUserId } from '@/lib/db'
 
 export default function CandidateProfilePage() {
-  const supabase = createClient()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState('')
@@ -17,7 +16,7 @@ export default function CandidateProfilePage() {
 
   useEffect(() => {
     ;(async () => {
-      const { data: { user } } = await supabase.auth.getUser()
+      const user = await getCurrentUser()
       if (user) {
         const c = await getCandidateByUserId(user.id)
         if (c) {
@@ -37,9 +36,14 @@ export default function CandidateProfilePage() {
     if (!candidateId) return
     setSaving(true)
     setMsg('')
-    const { error } = await supabase.from('candidates').update({ nama, email, telepon }).eq('id', candidateId)
+    const res = await fetch('/api/candidates/me', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ nama, email, telepon }),
+    })
     setSaving(false)
-    if (error) setMsg('Gagal menyimpan: ' + error.message)
+    if (!res.ok) setMsg('Gagal menyimpan.')
     else setMsg('Profil berhasil diperbarui!')
   }
 

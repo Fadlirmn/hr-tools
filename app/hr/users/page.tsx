@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase'
+import { getCurrentUser } from '@/lib/auth-client'
 import type { UserRole } from '@/lib/types'
 
 interface AppUser {
@@ -23,7 +23,6 @@ const ROLE_LABELS: Record<string, { label: string; color: string }> = {
 
 export default function UsersPage() {
   const router = useRouter()
-  const supabase = createClient()
 
   const [myRole, setMyRole] = useState<UserRole | ''>('')
   const [users, setUsers] = useState<AppUser[]>([])
@@ -35,22 +34,7 @@ export default function UsersPage() {
   const [editRole, setEditRole] = useState('')
   const [editNama, setEditNama] = useState('')
 
-  // Check current user is dev
-  useEffect(() => {
-    ;(async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      const role = user?.user_metadata?.role as UserRole | ''
-      setMyRole(role)
-      if (role !== 'dev') {
-        router.replace('/hr/dashboard')
-        return
-      }
-      await load()
-    })()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  const load = async () => {
+  async function load() {
     setLoading(true)
     const res = await fetch('/api/manage-user')
     if (res.ok) {
@@ -64,6 +48,21 @@ export default function UsersPage() {
     }
     setLoading(false)
   }
+
+  // Check current user is dev
+  useEffect(() => {
+    ;(async () => {
+      const user = await getCurrentUser()
+      const role = (user?.role as UserRole) || ''
+      setMyRole(role)
+      if (role !== 'dev') {
+        router.replace('/hr/dashboard')
+        return
+      }
+      await load()
+    })()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const openModal = (u: AppUser) => {
     setModalUser(u)

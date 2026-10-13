@@ -2,28 +2,26 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase'
-import { getCandidateByUserId } from '@/lib/db'
+import { getCurrentUser } from '@/lib/auth-client'
+import { getCandidateByUserId, getPositions } from '@/lib/db'
 import type { Candidate, Position } from '@/lib/types'
-import { STAGES, POSITIONS_DEFAULT } from '@/lib/constants'
+import { STAGES } from '@/lib/constants'
 
 const STAGE_ORDER = ['screening', 'psikotes', 'interview', 'offer', 'onboarding', 'hired']
 
 export default function CandidateDashboardPage() {
   const router = useRouter()
-  const supabase = createClient()
   const [candidate, setCandidate] = useState<Candidate | null>(null)
   const [positions, setPositions] = useState<Position[]>([])
 
   useEffect(() => {
     ;(async () => {
-      const { data: { user } } = await supabase.auth.getUser()
+      const user = await getCurrentUser()
       if (user) {
         const c = await getCandidateByUserId(user.id)
         setCandidate(c)
       }
-      const { data: p } = await supabase.from('positions').select('*')
-      setPositions((p && p.length > 0 ? p : JSON.parse(JSON.stringify(POSITIONS_DEFAULT))) as Position[])
+      setPositions(await getPositions())
     })()
   }, [])
 

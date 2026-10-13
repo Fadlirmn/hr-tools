@@ -1,9 +1,5 @@
-import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-
-function getAnonKey() {
-  return process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-}
+import { verifySessionToken, SESSION_COOKIE_NAME } from '@/lib/session-token'
 
 const PUBLIC_ROUTES = ['/login', '/invite', '/forgot-password', '/reset-password', '/']
 
@@ -17,69 +13,34 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   const isApi = pathname.startsWith('/api/')
   const isPublic = PUBLIC_ROUTES.some(p => pathname === p || pathname.startsWith(p + '/'))
-
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const anonKey = getAnonKey()
-  if (!supabaseUrl || !anonKey) {
-    return isPublic || isApi ? NextResponse.next() : NextResponse.redirect(new URL('/login', request.url))
-  }
-
   const isPublicApi = PUBLIC_API_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'))
 
-  const hasSbCookie = request.cookies.getAll().some(c => c.name.startsWith('sb-'))
-  if (!hasSbCookie) {
+  const token = request.cookies.get(SESSION_COOKIE_NAME)?.value
+  const claims = await verifySessionToken(token)
+
+  if (!claims) {
     if (isPublic || isPublicApi) return NextResponse.next()
     if (isApi) return API_UNAUTH('Unauthorized', 401)
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  let response = NextResponse.next({ request })
-
-  const supabase = createServerClient(supabaseUrl, anonKey, {
-    cookies: {
-      getAll() { return request.cookies.getAll() },
-      setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-        response = NextResponse.next({ request })
-        cookiesToSet.forEach(({ name, value, options }) =>
-          response.cookies.set(name, value, options)
-        )
-      },
-    },
-  })
-
-  // getUser() memvalidasi JWT ke Supabase server (aman), bukan hanya baca cookie lokal
-  let user = null
-  try {
-    const { data } = await supabase.auth.getUser()
-    user = data.user
-  } catch { user = null }
-
-  if (!user) {
-    if (isPublic || isPublicApi) return response
-    if (isApi) return API_UNAUTH('Unauthorized', 401)
-    return NextResponse.redirect(new URL('/login', request.url))
-  }
-
-  // API routes: just ensure auth; role check done inside each handler
-  if (isApi) return response
+  // API routes: just ensure auth; detailed role check done inside each handler
+  if (isApi) return NextResponse.next()
 
   if (pathname === '/login') {
-    const role = user.user_metadata?.role
-    if (role === 'hr' || role === 'dev') return NextResponse.redirect(new URL('/hr/dashboard', request.url))
-    if (role === 'candidate') return NextResponse.redirect(new URL('/candidate/dashboard', request.url))
-    return response
+    if (claims.role === 'hr' || claims.role === 'dev') return NextResponse.redirect(new URL('/hr/dashboard', request.url))
+    if (claims.role === 'candidate') return NextResponse.redirect(new URL('/candidate/dashboard', request.url))
+    return NextResponse.next()
   }
 
-  const role = user.user_metadata?.role
-  if (pathname.startsWith('/hr') && role !== 'hr' && role !== 'dev') {
+  if (pathname.startsWith('/hr') && claims.role !== 'hr' && claims.role !== 'dev') {
     return NextResponse.redirect(new URL('/candidate/dashboard', request.url))
   }
-  if (pathname.startsWith('/candidate') && role !== 'candidate' && role !== 'dev') {
+  if (pathname.startsWith('/candidate') && claims.role !== 'candidate' && claims.role !== 'dev') {
     return NextResponse.redirect(new URL('/hr/dashboard', request.url))
   }
 
-  return response
+  return NextResponse.next()
 }
 
 export const config = {

@@ -1,18 +1,17 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase'
+import { getCurrentUser } from '@/lib/auth-client'
 import { getCandidateByUserId } from '@/lib/db'
 import type { Candidate, OnboardingProgress } from '@/lib/types'
 import { ONBOARD } from '@/lib/constants'
 
 export default function CandidateOnboardingPage() {
-  const supabase = createClient()
   const [candidate, setCandidate] = useState<Candidate | null>(null)
 
   useEffect(() => {
     ;(async () => {
-      const { data: { user } } = await supabase.auth.getUser()
+      const user = await getCurrentUser()
       if (user) {
         const c = await getCandidateByUserId(user.id)
         setCandidate(c)

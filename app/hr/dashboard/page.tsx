@@ -2,22 +2,20 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase'
 import { fetchCandidates } from '@/lib/db-hr'
+import { getPositions } from '@/lib/db'
 import type { Candidate, Position } from '@/lib/types'
 import { STAGES } from '@/lib/constants'
 
 export default function HrDashboardPage() {
   const router = useRouter()
-  const supabase = createClient()
   const [candidates, setCandidates] = useState<Candidate[]>([])
   const [positions, setPositions] = useState<Position[]>([])
 
   const load = async () => {
     const c = await fetchCandidates()
-    const { data: p } = await supabase.from('positions').select('*')
     setCandidates(c as Candidate[])
-    setPositions((p || []) as Position[])
+    setPositions(await getPositions())
   }
 
   useEffect(() => { load() }, [])

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
-import { createClient as createAdminClient } from '@supabase/supabase-js'
-import { cookies } from 'next/headers'
+import { query } from '@/lib/pg'
+import { getSessionUser } from '@/lib/auth'
+import { errorMessage } from '@/lib/errors'
 import { IQ_QUESTIONS as IQ_FALLBACK } from '@/lib/constants'
 import { calcDiscGraphs } from '@/lib/disc-scoring'
 import { sendEmail } from '@/lib/email'
@@ -23,25 +23,11 @@ import type { IqQuestion, DiscAnswer, DiscResult, IqResult } from '@/lib/types'
  * Body (iq):   { type: 'iq', candidateId: string, answers: Record<number,number> }
  */
 export async function POST(req: Request) {
-  const cookieStore = await cookies()
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-  const anonKey =
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  const user = await getSessionUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const supabase = createServerClient(supabaseUrl, anonKey, {
-    cookies: {
-      getAll() { return cookieStore.getAll() },
-      setAll() {},
-    },
-  })
-
-  const { data: { session } } = await supabase.auth.getSession()
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-  const role = session.user.user_metadata?.role ?? ''
-  const isCandidate = role === 'candidate'
-  const isHr = role === 'hr' || role === 'dev'
+  const isCandidate = user.role === 'candidate'
+  const isHr = user.role === 'hr' || user.role === 'dev'
 
   if (!isCandidate && !isHr) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
@@ -68,11 +54,10 @@ export async function POST(req: Request) {
     result = { answers: { ...answers }, adapted, natural, date: new Date().toISOString().slice(0, 10), via }
   } else {
     const { answers } = body as { answers: Record<number, number> }
-    const { data: qData } = await supabase.from('exam_questions').select('id,type,data')
-    const questions = parseData<IqQuestion>(qData?.find(r => r.type === 'iq')?.data, IQ_FALLBACK)
+    const qRes = await query<{ data: unknown }>(`SELECT data FROM exam_questions WHERE type = 'iq' LIMIT 1`)
+    const questions = parseData<IqQuestion>(qRes.rows[0]?.data, IQ_FALLBACK)
 
     let correct = 0
-    // NOTE: JSON.parse always produces string keys, so we compare using Number(i)
     questions.forEach((q, i) => { if (Number(answers[i]) === q.a) correct++ })
     const total = questions.length
     const percent = total ? Math.round((correct / total) * 100) : 0
@@ -82,29 +67,29 @@ export async function POST(req: Request) {
   }
 
   if (candidateId) {
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-    const admin = serviceKey
-      ? createAdminClient(supabaseUrl, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } })
-      : supabase
-
-    const { data: current } = await admin
-      .from('candidates')
-      .select('psikotes_result, nama, email')
-      .eq('id', candidateId)
-      .single()
+    const candRes = await query<{ psikotes_result: { disc?: DiscResult; iq?: IqResult } | null; nama: string; email: string }>(
+      'SELECT psikotes_result, nama, email FROM candidates WHERE id = $1 LIMIT 1',
+      [candidateId]
+    )
+    const current = candRes.rows[0]
 
     const nextPsikotesResult = {
       disc: type === 'disc' ? result : (current?.psikotes_result?.disc ?? null),
       iq: type === 'iq' ? result : (current?.psikotes_result?.iq ?? null),
     }
 
-    const nextStage = isCandidate ? { stage: 'interview' } : {}
-    const { error } = await admin
-      .from('candidates')
-      .update({ psikotes_result: nextPsikotesResult, ...nextStage })
-      .eq('id', candidateId)
-
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    try {
+      if (isCandidate) {
+        await query(
+          `UPDATE candidates SET psikotes_result = $1, stage = 'interview' WHERE id = $2`,
+          [nextPsikotesResult, candidateId]
+        )
+      } else {
+        await query(`UPDATE candidates SET psikotes_result = $1 WHERE id = $2`, [nextPsikotesResult, candidateId])
+      }
+    } catch (err) {
+      return NextResponse.json({ error: errorMessage(err) }, { status: 500 })
+    }
 
     // Notify HR best-effort — never block the primary save.
     try {

@@ -1,13 +1,12 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase'
 import { fetchCandidates } from '@/lib/db-hr'
+import { getPositions } from '@/lib/db'
 import type { Candidate, Position, InterviewAssessment } from '@/lib/types'
-import { INT_COMP, POSITIONS_DEFAULT } from '@/lib/constants'
+import { INT_COMP } from '@/lib/constants'
 
 export default function HrInterviewPage() {
-  const supabase = createClient()
   const [candidates, setCandidates] = useState<Candidate[]>([])
   const [positions, setPositions] = useState<Position[]>([])
   const [selId, setSelId] = useState('')
@@ -18,9 +17,8 @@ export default function HrInterviewPage() {
 
   const load = async () => {
     const c = await fetchCandidates()
-    const { data: p } = await supabase.from('positions').select('*')
     setCandidates(c as Candidate[])
-    setPositions((p && p.length > 0 ? p : JSON.parse(JSON.stringify(POSITIONS_DEFAULT))) as Position[])
+    setPositions(await getPositions())
   }
 
   useEffect(() => { load() }, [])

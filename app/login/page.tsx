@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -12,31 +11,29 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
-  const supabase = createClient()
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError('')
 
-    const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password })
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ email, password }),
+    })
+    const data = await res.json()
 
-    if (authError) {
-      const m = authError.message.toLowerCase()
+    if (!res.ok) {
       let msg = 'Email atau password salah.'
-      if (m.includes('email not confirmed') || m.includes('email_not_confirmed')) {
-        msg = 'Email belum diverifikasi. Silakan cek inbox (atau folder spam) dan klik link verifikasi.'
-      } else if (m.includes('invalid login credentials')) {
-        msg = 'Email atau password salah. Pastikan akun sudah terdaftar di sistem.'
-      } else if (m.includes('rate limit') || m.includes('too many')) {
-        msg = 'Terlalu banyak percobaan. Tunggu beberapa saat sebelum mencoba lagi.'
-      }
-      setError(msg)
+      if (res.status === 429) msg = 'Terlalu banyak percobaan. Tunggu beberapa saat sebelum mencoba lagi.'
+      setError(data.error || msg)
       setLoading(false)
       return
     }
 
-    const role = data.user?.user_metadata?.role
+    const role = data.user?.role
     if (role === 'hr' || role === 'dev') router.push('/hr/dashboard')
     else if (role === 'candidate') router.push('/candidate/dashboard')
     else router.push('/hr/dashboard')
