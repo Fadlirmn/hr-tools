@@ -4,7 +4,10 @@ import { verifySessionToken, SESSION_COOKIE_NAME } from '@/lib/session-token'
 const PUBLIC_ROUTES = ['/login', '/invite', '/forgot-password', '/reset-password', '/']
 
 // API routes yang tidak memerlukan session (keamanan dihandle di dalam route itu sendiri)
-const PUBLIC_API_ROUTES = ['/api/claim-invite']
+// invite-candidate WAJIB publik: dibuka kandidat yang belum punya akun/session.
+// Kalau tidak, device lain (tanpa cookie login) kena 401 → halaman invite
+// selalu "Undangan tidak valid", sementara di browser HR (sudah login) terlihat normal.
+const PUBLIC_API_ROUTES = ['/api/claim-invite', '/api/invite-candidate']
 
 const API_UNAUTH = (msg: string, status: number) =>
   NextResponse.json({ error: msg }, { status })

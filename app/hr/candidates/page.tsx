@@ -140,7 +140,13 @@ export default function HrCandidatesPage() {
       })
       if (!res.ok) { const d = await res.json(); alert('Gagal: ' + d.error); return }
     }
-    const link = `${window.location.origin}/invite/${token}`
+    // Base URL: pakai domain publik dari env bila ada. window.location.origin
+    // ikut localhost saat HR akses via localhost → link tidak bisa dibuka device lain.
+    const base = (process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/$/, '') || window.location.origin
+    const link = `${base}/invite/${token}`
+    if (base.includes('localhost') || base.includes('127.0.0.1')) {
+      alert(`Link undangan (PERHATIAN: masih localhost, tidak bisa dibuka dari device lain):\n${link}\n\nAgar bisa dibuka kandidat, set NEXT_PUBLIC_APP_URL ke domain publik lalu rebuild/restart.`)
+    }
     try {
       await navigator.clipboard.writeText(link)
       alert(c.invite_token ? `Link undangan disalin ulang:\n${link}` : `Link undangan disalin:\n${link}`)

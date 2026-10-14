@@ -14,6 +14,11 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# NEXT_PUBLIC_* di-bake ke bundle client saat build, jadi harus tersedia
+# sebagai build arg (bukan cuma env runtime). Diisi dari compose/docker build.
+ARG NEXT_PUBLIC_APP_URL
+ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
+
 ENV NEXT_TELEMETRY_DISABLED=1
 
 RUN npm run build
