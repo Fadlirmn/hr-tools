@@ -7,7 +7,8 @@ const PUBLIC_ROUTES = ['/login', '/invite', '/forgot-password', '/reset-password
 // invite-candidate WAJIB publik: dibuka kandidat yang belum punya akun/session.
 // Kalau tidak, device lain (tanpa cookie login) kena 401 → halaman invite
 // selalu "Undangan tidak valid", sementara di browser HR (sudah login) terlihat normal.
-const PUBLIC_API_ROUTES = ['/api/claim-invite', '/api/invite-candidate']
+// login/forgot/reset juga publik: dipanggil sebelum user punya session.
+const PUBLIC_API_ROUTES = ['/api/claim-invite', '/api/invite-candidate', '/api/auth/login', '/api/auth/forgot-password', '/api/auth/reset-password']
 
 const API_UNAUTH = (msg: string, status: number) =>
   NextResponse.json({ error: msg }, { status })
