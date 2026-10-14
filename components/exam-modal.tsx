@@ -34,7 +34,8 @@ export default function ExamModal({ mode, testType, candidate, positions, timeLi
   const [discQuestions, setDiscQuestions] = useState<DiscQuestion[]>([])
   const [iqQuestions, setIqQuestions] = useState<IqQuestion[]>([])
   const [screen, setScreen] = useState<'intro' | 'test' | 'done'>(mode === 'candidate' ? 'test' : 'intro')
-  const [secIdx, setSecIdx] = useState(0) // dipakai IQ untuk navigasi kategori
+  const [secIdx, setSecIdx] = useState(0) // dipakai IQ untuk navigasi kategori (mode HR)
+  const [qIdx, setQIdx] = useState(0) // soal aktif (mode kandidat: 1 soal per layar)
   const [discAns, setDiscAns] = useState<Record<number, DiscAnswer>>({})
   const [iqAns, setIqAns] = useState<Record<number, number>>({})
   const [name, setName] = useState(candidate?.nama || '')
@@ -272,6 +273,73 @@ export default function ExamModal({ mode, testType, candidate, positions, timeLi
     </div>
   )
 
+  // ===== Mode kandidat: 1 soal per layar =====
+  const totalQ = testType === 'disc' ? discQuestions.length : iqQuestions.length
+  const isAnswered = (i: number) => testType === 'disc'
+    ? !!(discAns[discQuestions[i]?.no]?.most && discAns[discQuestions[i]?.no]?.least)
+    : iqAns[i] != null
+  const answeredTotal = testType === 'disc' ? discAnsweredCount : iqAnsweredCount
+  const goTo = (i: number) => {
+    setQIdx(Math.max(0, Math.min(totalQ - 1, i)))
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0 })
+  }
+
+  const renderOne = () => {
+    if (testType === 'disc') {
+      const q = discQuestions[qIdx]
+      if (!q) return null
+      const ans = discAns[q.no] || {}
+      return (
+        <>
+          <div className="exam-sec-h">{title} · Soal {qIdx + 1} dari {totalQ}</div>
+          <div className="exam-sec-d">Pilih satu kata <b>Most (M)</b> — paling menggambarkan diri Anda — dan satu kata <b>Least (L)</b> — paling tidak menggambarkan diri Anda. Tidak boleh huruf yang sama.</div>
+          <div className="exam-q">
+            {letters.map(letter => {
+              const isMost = ans.most === letter
+              const isLeast = ans.least === letter
+              return (
+                <div key={letter} className={`exam-opt ${isMost ? 'sel' : ''} ${isLeast ? 'least' : ''}`} style={{ justifyContent: 'space-between', display: 'flex', alignItems: 'center' }}>
+                  <span><span className="k">{letter.toUpperCase()}</span>{q.options[letter]}</span>
+                  <span style={{ display: 'flex', gap: 6 }}>
+                    <button type="button" className={`btn sm ${isMost ? 'primary' : ''}`} onClick={() => selectDisc(q.no, letter, 'most')}>M</button>
+                    <button type="button" className={`btn sm ${isLeast ? 'danger' : ''}`} onClick={() => selectDisc(q.no, letter, 'least')}>L</button>
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </>
+      )
+    }
+    const q = iqQuestions[qIdx]
+    if (!q) return null
+    return (
+      <>
+        <div className="exam-sec-h">{title} · {q.sec}</div>
+        <div className="exam-sec-d">Soal {qIdx + 1} dari {totalQ} — pilih satu jawaban yang paling tepat.</div>
+        <div className="exam-q">
+          <div className="qtext"><span className="n">{qIdx + 1}</span><span>{q.q}</span></div>
+          {q.o.map((o, oi) => (
+            <div key={oi} className={`exam-opt ${iqAns[qIdx] === oi ? 'sel' : ''}`} onClick={() => setIq(qIdx, oi)}>
+              <span className="k">{'ABCD'[oi]}</span><span>{o}</span>
+            </div>
+          ))}
+        </div>
+      </>
+    )
+  }
+
+  const candidateNav = (
+    <div className="exam-nav">
+      {qIdx > 0 ? <button className="btn" onClick={() => goTo(qIdx - 1)}>← Sebelumnya</button> : <span></span>}
+      {qIdx < totalQ - 1 ? (
+        <button className="btn primary" onClick={() => goTo(qIdx + 1)}>Lanjut →</button>
+      ) : (
+        <button className="btn primary" onClick={() => handleSubmit(false)}>✓ Kumpulkan Jawaban</button>
+      )}
+    </div>
+  )
+
   if (mode === 'candidate') {
     return (
       <>
@@ -287,14 +355,19 @@ export default function ExamModal({ mode, testType, candidate, positions, timeLi
         </div>
         <div style={{ marginTop: 64 }}>
           <div className="exam-prog" style={{ paddingTop: 16 }}>
-            <span className="lbl">{testType === 'iq' ? `Bagian ${secIdx + 1} dari ${IQ_CATEGORIES.length}` : title}</span>
-            <div className="bar"><i style={{ width: progressPct + '%' }}></i></div>
-            <span className="lbl">{progressLabel}</span>
+            <span className="lbl">Soal {qIdx + 1}/{totalQ}</span>
+            <div className="bar"><i style={{ width: (totalQ ? Math.round(((qIdx + 1) / totalQ) * 100) : 0) + '%' }}></i></div>
+            <span className="lbl">Terjawab {answeredTotal}/{totalQ}</span>
           </div>
           <div className="exam-card" style={{ margin: '0 auto', maxWidth: 800 }}>
-            {body}
+            {renderOne()}
+            <div className="exam-grid">
+              {Array.from({ length: totalQ }, (_, i) => (
+                <button key={i} type="button" className={i === qIdx ? 'cur' : isAnswered(i) ? 'done' : ''} onClick={() => goTo(i)}>{i + 1}</button>
+              ))}
+            </div>
           </div>
-          <div style={{ maxWidth: 800, margin: '0 auto', padding: '16px 0' }}>{navButtons}</div>
+          <div style={{ maxWidth: 800, margin: '0 auto', padding: '16px 0' }}>{candidateNav}</div>
         </div>
       </>
     )

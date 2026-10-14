@@ -250,6 +250,12 @@ h4.blk{font-size:13.5px;font-weight:800;margin:18px 0 8px;color:var(--ink)}
 .exam-likert button.on{border-color:var(--violet);background:var(--violet-soft);color:var(--violet)}
 .exam-likert button.on .num{color:var(--violet)}
 .exam-nav{display:flex;justify-content:space-between;gap:12px;margin-top:22px;align-items:center}
+.exam-grid{display:flex;flex-wrap:wrap;gap:6px;margin-top:18px}
+.exam-grid button{width:34px;height:34px;border-radius:8px;border:1.5px solid var(--line);background:var(--card);
+  font-family:inherit;font-size:12px;font-weight:700;color:var(--ink-soft);cursor:pointer}
+.exam-grid button.done{background:var(--ok-bg);border-color:var(--ok);color:var(--ok)}
+.exam-grid button.cur{border-color:var(--violet);background:var(--violet);color:#fff}
+@media(max-width:560px){.exam-nav .btn{flex:1;justify-content:center}}
 .exam-done{text-align:center;padding:42px 24px}
 .exam-done .big{width:74px;height:74px;border-radius:50%;background:var(--ok-bg);color:var(--ok);
   display:grid;place-items:center;font-size:38px;margin:0 auto 18px;font-weight:700}
