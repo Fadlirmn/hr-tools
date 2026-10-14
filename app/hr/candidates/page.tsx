@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getPositions } from '@/lib/db'
 import type { Candidate, Position } from '@/lib/types'
@@ -11,6 +11,9 @@ export default function HrCandidatesPage() {
   const router = useRouter()
   const [candidates, setCandidates] = useState<Candidate[]>([])
   const [positions, setPositions] = useState<Position[]>([])
+  // Ref agar event listener (didaftar sekali) selalu baca positions terbaru
+  const positionsRef = useRef<Position[]>([])
+  useEffect(() => { positionsRef.current = positions }, [positions])
 
   const [showModal, setShowModal] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
@@ -20,11 +23,35 @@ export default function HrCandidatesPage() {
     const res = await fetch('/api/candidates', { credentials: 'include' })
     const cData = res.ok ? await res.json() : { candidates: [] }
     setCandidates((cData.candidates || []) as Candidate[])
-    setPositions(await getPositions())
+    const pos = await getPositions()
+    setPositions(pos)
+    return pos
   }
 
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    ;(async () => {
+      const pos = await load()
+      // Dibuka via tombol "＋ Kandidat Baru" di topbar dari halaman lain
+      try {
+        if (sessionStorage.getItem('open-add-candidate') === '1') {
+          sessionStorage.removeItem('open-add-candidate')
+          setEditId(null)
+          setForm({ nama: '', posisi: pos[0]?.id || '', sumber: 'LinkedIn', email: '', telepon: '', catatan: '' })
+          setShowModal(true)
+        }
+      } catch { /* abaikan */ }
+    })()
+    // Dibuka via tombol topbar saat sudah di halaman ini
+    const handler = () => {
+      setEditId(null)
+      setForm(prev => ({ nama: '', posisi: positionsRef.current[0]?.id || prev.posisi, sumber: 'LinkedIn', email: '', telepon: '', catatan: '' }))
+      setShowModal(true)
+    }
+    window.addEventListener('open-add-candidate', handler)
+    return () => window.removeEventListener('open-add-candidate', handler)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const posName = (id: string) => positions.find(p => p.id === id)?.name || '—'
 

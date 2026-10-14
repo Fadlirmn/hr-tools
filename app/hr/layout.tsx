@@ -53,6 +53,20 @@ export default function HrLayout({ children }: { children: React.ReactNode }) {
     setSidebarOpen(false)
   }, [router])
 
+  // Tombol atas "＋ Kandidat Baru": langsung buka modal tambah kandidat.
+  // - Kalau sudah di halaman kandidat → kirim event agar modal langsung terbuka.
+  // - Kalau dari halaman lain → titip flag via sessionStorage, lalu pindah halaman;
+  //   halaman kandidat baca flag itu setelah load dan otomatis buka modal.
+  const handleAddCandidate = useCallback(() => {
+    setSidebarOpen(false)
+    if (activeTab === 'candidates') {
+      window.dispatchEvent(new CustomEvent('open-add-candidate'))
+    } else {
+      try { sessionStorage.setItem('open-add-candidate', '1') } catch { /* abaikan */ }
+      router.push('/hr/candidates')
+    }
+  }, [router, activeTab])
+
   const handleLogout = async () => {
     await logout()
     router.push('/login')
@@ -192,7 +206,7 @@ export default function HrLayout({ children }: { children: React.ReactNode }) {
               <div className="sub">{pageTitle[1]}</div>
             </div>
           </div>
-          <button className="btn primary" onClick={() => navigate('candidates')}>＋ Kandidat Baru</button>
+          <button className="btn primary" onClick={handleAddCandidate}>＋ Kandidat Baru</button>
         </div>
         <div className="content">{children}</div>
       </main>
