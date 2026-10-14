@@ -27,12 +27,18 @@ export default function UsersPage() {
   const [myRole, setMyRole] = useState<UserRole | ''>('')
   const [users, setUsers] = useState<AppUser[]>([])
   const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState<string | null>(null) // userId being saved
+  const [saving, setSaving] = useState<string | null>(null) // userId being saved, 'new' saat tambah
 
-  // Modal state
+  // Modal state — satu modal untuk tambah & edit
+  const [modalOpen, setModalOpen] = useState(false)
+  const [modalMode, setModalMode] = useState<'edit' | 'add'>('edit')
   const [modalUser, setModalUser] = useState<AppUser | null>(null)
-  const [editRole, setEditRole] = useState('')
+  const [editRole, setEditRole] = useState('hr')
   const [editNama, setEditNama] = useState('')
+  const [editEmail, setEditEmail] = useState('')
+  const [editPassword, setEditPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [modalError, setModalError] = useState('')
 
   async function load() {
     setLoading(true)
@@ -64,22 +70,90 @@ export default function UsersPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const openModal = (u: AppUser) => {
+  const openEditModal = (u: AppUser) => {
+    setModalMode('edit')
     setModalUser(u)
     setEditRole(u.role)
-    setEditNama(u.nama)
+    setEditNama(u.nama || '')
+    setEditEmail(u.email)
+    setEditPassword('')
+    setShowPassword(false)
+    setModalError('')
+    setModalOpen(true)
+  }
+
+  const openAddModal = () => {
+    setModalMode('add')
+    setModalUser(null)
+    setEditRole('hr')
+    setEditNama('')
+    setEditEmail('')
+    setEditPassword('')
+    setShowPassword(false)
+    setModalError('')
+    setModalOpen(true)
+  }
+
+  const closeModal = () => {
+    setModalOpen(false)
+    setModalUser(null)
+    setEditPassword('')
+    setShowPassword(false)
+    setModalError('')
   }
 
   const saveModal = async () => {
+    setModalError('')
+    // --- mode tambah user baru ---
+    if (modalMode === 'add') {
+      if (!editEmail.trim() || !editEmail.includes('@')) {
+        setModalError('Email tidak valid.')
+        return
+      }
+      if (editPassword.length < 6) {
+        setModalError('Password minimal 6 karakter.')
+        return
+      }
+      setSaving('new')
+      const res = await fetch('/api/manage-user', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: editEmail.trim(), password: editPassword, role: editRole, nama: editNama }),
+      })
+      const data = await res.json().catch(() => ({}))
+      setSaving(null)
+      if (!res.ok) {
+        setModalError(data.error || 'Gagal menambah user.')
+        return
+      }
+      closeModal()
+      await load()
+      return
+    }
+    // --- mode edit user ---
     if (!modalUser) return
+    if (editPassword !== '' && editPassword.length < 6) {
+      setModalError('Password minimal 6 karakter (kosongkan jika tidak diubah).')
+      return
+    }
     setSaving(modalUser.id)
-    await fetch('/api/manage-user', {
+    const res = await fetch('/api/manage-user', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: modalUser.id, role: editRole, nama: editNama }),
+      body: JSON.stringify({
+        userId: modalUser.id,
+        role: editRole,
+        nama: editNama,
+        ...(editPassword ? { password: editPassword } : {}),
+      }),
     })
+    const data = await res.json().catch(() => ({}))
     setSaving(null)
-    setModalUser(null)
+    if (!res.ok) {
+      setModalError(data.error || 'Gagal menyimpan.')
+      return
+    }
+    closeModal()
     await load()
   }
 
@@ -100,6 +174,9 @@ export default function UsersPage() {
     return new Date(s).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
   }
 
+  const isAdd = modalMode === 'add'
+  const busy = isAdd ? saving === 'new' : (!!modalUser && saving === modalUser.id)
+
   if (myRole && myRole !== 'dev') return null // redirecting
 
   return (
@@ -111,6 +188,9 @@ export default function UsersPage() {
         <span style={{ flex: 1 }} />
         <button className="btn sm" onClick={load} disabled={loading}>
           {loading ? '…' : '↻ Refresh'}
+        </button>
+        <button className="btn sm primary" onClick={openAddModal}>
+          + Tambah User
         </button>
       </div>
 
@@ -157,7 +237,7 @@ export default function UsersPage() {
                     <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                       <button
                         className="btn sm ghost"
-                        onClick={() => openModal(u)}
+                        onClick={() => openEditModal(u)}
                         disabled={saving === u.id}
                       >
                         Edit
@@ -179,14 +259,24 @@ export default function UsersPage() {
         )}
       </div>
 
-      {modalUser && (
-        <div className="modal-bg show" onClick={() => setModalUser(null)}>
+      {modalOpen && (
+        <div className="modal-bg show" onClick={closeModal}>
           <div className="modal" onClick={e => e.stopPropagation()}>
-            <h3>Edit User</h3>
+            <h3>{isAdd ? 'Tambah User' : 'Edit User'}</h3>
             <div className="body">
               <div className="field">
                 <label className="fld">Email</label>
-                <input type="text" value={modalUser.email} disabled style={{ opacity: 0.6 }} />
+                {isAdd ? (
+                  <input
+                    type="email"
+                    value={editEmail}
+                    onChange={e => setEditEmail(e.target.value)}
+                    placeholder="cth. budi@perusahaan.com"
+                    autoFocus
+                  />
+                ) : (
+                  <input type="text" value={editEmail} disabled style={{ opacity: 0.6 }} />
+                )}
               </div>
               <div className="field">
                 <label className="fld">Nama tampilan</label>
@@ -205,18 +295,58 @@ export default function UsersPage() {
                   <option value="dev">Dev</option>
                 </select>
               </div>
-              <div style={{ marginTop: 6, padding: '8px 12px', borderRadius: 8, background: 'var(--bg-soft)', fontSize: 11, color: 'var(--ink-soft)' }}>
-                ℹ️ Perubahan role aktif setelah user login ulang.
+              <div className="field">
+                <label className="fld">
+                  {isAdd ? 'Password' : 'Password baru'}
+                  {!isAdd && <span className="hint" style={{ fontWeight: 400 }}> — kosongkan jika tidak diubah</span>}
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={editPassword}
+                    onChange={e => setEditPassword(e.target.value)}
+                    placeholder={isAdd ? 'Minimal 6 karakter' : 'Kosongkan jika tidak diubah'}
+                    style={{ paddingRight: 44, width: '100%', boxSizing: 'border-box' }}
+                    autoComplete="new-password"
+                  />
+                  <button
+                    type="button"
+                    className="btn sm ghost"
+                    onClick={() => setShowPassword(v => !v)}
+                    title={showPassword ? 'Sembunyikan password' : 'Lihat password'}
+                    style={{
+                      position: 'absolute',
+                      right: 4,
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      padding: '2px 8px',
+                      fontSize: 14,
+                      lineHeight: 1,
+                    }}
+                  >
+                    {showPassword ? '🙈' : '👁️'}
+                  </button>
+                </div>
               </div>
+              {modalError && (
+                <div style={{ padding: '8px 12px', borderRadius: 8, background: '#ef444422', color: '#ef4444', fontSize: 12, fontWeight: 600 }}>
+                  {modalError}
+                </div>
+              )}
+              {!isAdd && (
+                <div style={{ marginTop: 6, padding: '8px 12px', borderRadius: 8, background: 'var(--bg-soft)', fontSize: 11, color: 'var(--ink-soft)' }}>
+                  ℹ️ Perubahan role aktif setelah user login ulang.
+                </div>
+              )}
             </div>
             <div className="foot">
-              <button className="btn" onClick={() => setModalUser(null)}>Batal</button>
+              <button className="btn" onClick={closeModal}>Batal</button>
               <button
                 className="btn primary"
                 onClick={saveModal}
-                disabled={saving === modalUser.id}
+                disabled={!!busy}
               >
-                {saving === modalUser.id ? 'Menyimpan…' : 'Simpan'}
+                {busy ? 'Menyimpan…' : isAdd ? 'Tambah' : 'Simpan'}
               </button>
             </div>
           </div>
