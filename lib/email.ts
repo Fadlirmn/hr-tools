@@ -14,6 +14,45 @@
 const EMAIL_SERVICE_URL = process.env.EMAIL_SERVICE_URL || 'http://email_web:3000'
 const EMAIL_SERVICE_API_KEY = process.env.EMAIL_SERVICE_API_KEY || ''
 
+export type BroadcastRecipient = string | { email: string; name?: string; vars?: Record<string, string> }
+
+export interface BroadcastResponse {
+  success: boolean
+  total: number
+  sent: number
+  failed: number
+  invalid: string[]
+  results: { email: string; success: boolean; messageId?: string; error?: string }[]
+}
+
+/**
+ * Kirim satu email ke banyak penerima, masing-masing email terpisah (penerima
+ * tidak saling lihat). subject/html mendukung {{name}}, {{email}}, dan key
+ * dari vars per penerima. Maks 100 penerima per panggilan — pecah di caller
+ * kalau lebih. Partial failure TIDAK di-throw: cek `failed` / `results`.
+ */
+export async function sendBroadcast(opts: {
+  recipients: BroadcastRecipient[]
+  subject: string
+  html: string
+}): Promise<BroadcastResponse> {
+  const res = await fetch(`${EMAIL_SERVICE_URL}/api/emails/broadcast`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-API-Key': EMAIL_SERVICE_API_KEY,
+    },
+    body: JSON.stringify(opts),
+  })
+
+  const data = await res.json().catch(() => null)
+  // 502 = semua gagal kirim tapi body tetap berisi results per penerima.
+  if (!data || (!res.ok && !data.results)) {
+    throw new Error(`Gagal broadcast via Kurma Mail (${res.status}): ${JSON.stringify(data)}`)
+  }
+  return data as BroadcastResponse
+}
+
 export async function sendEmail(opts: { to: string; subject: string; html: string }): Promise<void> {
   const res = await fetch(`${EMAIL_SERVICE_URL}/api/emails/send`, {
     method: 'POST',
