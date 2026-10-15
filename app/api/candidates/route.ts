@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { query } from '@/lib/pg'
 import { getSessionUser } from '@/lib/auth'
+import { isValidPhone, PHONE_ERROR } from '@/lib/phone'
 import { errorMessage } from '@/lib/errors'
 
 async function verifyHr() {
@@ -27,6 +28,9 @@ export async function POST(req: Request) {
   const body = await req.json() as Record<string, unknown>
   if (!(typeof body?.nama === 'string' && body.nama.trim())) {
     return NextResponse.json({ error: 'Nama wajib diisi' }, { status: 400 })
+  }
+  if ('telepon' in body && !isValidPhone(body.telepon)) {
+    return NextResponse.json({ error: PHONE_ERROR }, { status: 400 })
   }
 
   const cols = Object.keys(body)
@@ -55,6 +59,9 @@ export async function PATCH(req: Request) {
   if (body._bulk) {
     const { ids, ...fields } = body._bulk as { ids: string[] } & Record<string, unknown>
     if (!ids || ids.length === 0) return NextResponse.json({ error: 'ids wajib ada' }, { status: 400 })
+    if ('telepon' in fields && !isValidPhone(fields.telepon)) {
+      return NextResponse.json({ error: PHONE_ERROR }, { status: 400 })
+    }
 
     const cols = Object.keys(fields)
     if (cols.length === 0) return NextResponse.json({ error: 'tidak ada field untuk diupdate' }, { status: 400 })
@@ -77,6 +84,9 @@ export async function PATCH(req: Request) {
   // Single update: { id, ...fields }
   const { id, ...fields } = body
   if (!id) return NextResponse.json({ error: 'id wajib ada' }, { status: 400 })
+  if ('telepon' in fields && !isValidPhone(fields.telepon)) {
+    return NextResponse.json({ error: PHONE_ERROR }, { status: 400 })
+  }
 
   const cols = Object.keys(fields)
   if (cols.length === 0) return NextResponse.json({ error: 'tidak ada field untuk diupdate' }, { status: 400 })

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { query } from '@/lib/pg'
 import { getSessionUser } from '@/lib/auth'
+import { isValidPhone, PHONE_ERROR } from '@/lib/phone'
 import { errorMessage } from '@/lib/errors'
 
 /**
@@ -16,6 +17,10 @@ export async function PATCH(req: Request) {
 
   const body = await req.json()
   const fields = Object.fromEntries(Object.entries(body).filter(([k]) => ALLOWED_FIELDS.has(k)))
+
+  if ('telepon' in fields && !isValidPhone(fields.telepon)) {
+    return NextResponse.json({ error: PHONE_ERROR }, { status: 400 })
+  }
 
   if (Object.keys(fields).length === 0) {
     return NextResponse.json({ error: 'Tidak ada field valid untuk diupdate' }, { status: 400 })

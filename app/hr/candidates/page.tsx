@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { getPositions } from '@/lib/db'
 import type { Candidate, Position, PositionWeight } from '@/lib/types'
 import { STAGES, CV_CRITERIA } from '@/lib/constants'
+import { isValidPhone, PHONE_ERROR, PHONE_HINT } from '@/lib/phone'
 import { v4 as uuidv4 } from 'uuid'
 
 function slugifyPosition(name: string) {
@@ -115,6 +116,7 @@ export default function HrCandidatesPage() {
 
   const save = async () => {
     if (!form.nama.trim()) return
+    if (!isValidPhone(form.telepon)) { alert(PHONE_ERROR); return }
     if (editId) {
       // Mode Edit: posisi disembunyikan & tidak dikirim agar data lama tetap.
       const res = await fetch('/api/candidates', {
@@ -301,7 +303,8 @@ export default function HrCandidatesPage() {
                 <div className="field"><label className="fld">Email</label>
                   <input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="email@contoh.com" /></div>
                 <div className="field"><label className="fld">No. HP</label>
-                  <input type="tel" value={form.telepon} onChange={e => setForm({ ...form, telepon: e.target.value })} placeholder="08xx" /></div>
+                  <input type="tel" inputMode="tel" value={form.telepon} onChange={e => setForm({ ...form, telepon: e.target.value })} placeholder="08xxxxxxxxxx" />
+                  <div className="hint" style={{ marginTop: 4 }}>{PHONE_HINT}</div></div>
               </div>
               <div className="field"><label className="fld">Catatan awal</label>
                 <textarea value={form.catatan} onChange={e => setForm({ ...form, catatan: e.target.value })} placeholder="cth. ekspektasi gaji, domisili, dsb."></textarea></div>

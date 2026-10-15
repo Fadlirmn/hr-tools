@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { getCurrentUser } from '@/lib/auth-client'
 import { getCandidateByUserId } from '@/lib/db'
+import { isValidPhone, PHONE_ERROR, PHONE_HINT } from '@/lib/phone'
 
 export default function CandidateProfilePage() {
   const [loading, setLoading] = useState(true)
@@ -34,6 +35,7 @@ export default function CandidateProfilePage() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!candidateId) return
+    if (!isValidPhone(telepon)) { setMsg(PHONE_ERROR); return }
     setSaving(true)
     setMsg('')
     const res = await fetch('/api/candidates/me', {
@@ -43,7 +45,10 @@ export default function CandidateProfilePage() {
       body: JSON.stringify({ nama, email, telepon }),
     })
     setSaving(false)
-    if (!res.ok) setMsg('Gagal menyimpan.')
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}))
+      setMsg('Gagal menyimpan.' + (d.error ? ' ' + d.error : ''))
+    }
     else setMsg('Profil berhasil diperbarui!')
   }
 
@@ -69,7 +74,8 @@ export default function CandidateProfilePage() {
         </div>
         <div className="field">
           <label className="fld">No. Telepon</label>
-          <input type="tel" value={telepon} onChange={e => setTelepon(e.target.value)} placeholder="08xxxxxxxxxx" />
+          <input type="tel" inputMode="tel" value={telepon} onChange={e => setTelepon(e.target.value)} placeholder="08xxxxxxxxxx" />
+          <div className="hint" style={{ marginTop: 4 }}>{PHONE_HINT}</div>
         </div>
         <div className="field">
           <label className="fld">Posisi dilamar</label>

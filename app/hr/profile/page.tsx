@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { getCurrentUser } from '@/lib/auth-client'
+import { isValidPhone, PHONE_ERROR, PHONE_HINT } from '@/lib/phone'
 import type { UserRole } from '@/lib/types'
 
 const ROLE_LABEL: Record<string, { label: string; color: string }> = {
@@ -44,6 +45,7 @@ export default function HrProfilePage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!isValidPhone(telepon)) { setMsg(PHONE_ERROR); return }
     setSaving(true)
     setMsg('')
     const res = await fetch('/api/auth/profile', {
@@ -164,10 +166,12 @@ export default function HrProfilePage() {
             <label className="fld">No. Telepon</label>
             <input
               type="tel"
+              inputMode="tel"
               value={telepon}
               onChange={e => setTelepon(e.target.value)}
               placeholder="08xxxxxxxxxx"
             />
+            <div className="hint" style={{ marginTop: 4 }}>{PHONE_HINT}</div>
           </div>
           <button className="btn primary" type="submit" disabled={saving}>
             {saving ? 'Menyimpan...' : 'Simpan Profil'}
