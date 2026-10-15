@@ -9,6 +9,7 @@ import { v4 as uuidv4 } from 'uuid'
 
 export default function HrSettingsPage() {
   const [positions, setPositions] = useState<Position[]>([])
+  const [newPosName, setNewPosName] = useState('')
 
   const load = async () => {
     setPositions(await getPositions())
@@ -47,13 +48,22 @@ export default function HrSettingsPage() {
     setPositions(positions.map(p => p.id === pid ? { ...p, name: newName } : p))
   }
 
-  const addPos = async () => {
+  const slugifyPosition = (name: string) =>
+    name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30) || 'posisi'
+
+  const addPosManual = async () => {
+    const name = newPosName.trim()
+    if (!name) { alert('Isi nama posisi dulu'); return }
+    if (positions.some(p => p.name.toLowerCase() === name.toLowerCase())) { alert('Nama posisi sudah ada'); return }
+    let id = `${slugifyPosition(name)}-${uuidv4().slice(0, 4)}`
+    if (positions.some(p => p.id === id)) id = `${slugifyPosition(name)}-${uuidv4().slice(0, 4)}`
     const newPos: Position = {
-      id: uuidv4(), name: 'Posisi Baru',
+      id, name,
       weights: Object.fromEntries(CV_CRITERIA.map(c => [c.id, 2])) as unknown as PositionWeight,
     }
     await upsertPosition(newPos)
     setPositions([...positions, newPos])
+    setNewPosName('')
   }
 
   const delPos = async (pid: string) => {
@@ -64,11 +74,13 @@ export default function HrSettingsPage() {
   }
 
   const resetPos = async () => {
-    if (!confirm('Kembalikan posisi & bobot ke pengaturan awal?')) return
-    for (const p of positions) await deletePosition(p.id)
+    if (!confirm('Kembalikan 6 posisi bawaan? Posisi custom manual tidak dihapus.')) return
+    for (const oldId of ['videoeditor', 'sosmed', 'designer', 'admin']) {
+      await deletePosition(oldId)
+    }
     const defaults = JSON.parse(JSON.stringify(POSITIONS_DEFAULT))
     for (const p of defaults) await upsertPosition(p)
-    setPositions(defaults)
+    await load()
   }
 
   const exportData = async () => {
@@ -143,8 +155,12 @@ export default function HrSettingsPage() {
         </div>
       ))}
 
-      <button className="btn primary" onClick={addPos}>＋ Tambah posisi</button>
-      <button className="btn" style={{ marginLeft: 8 }} onClick={resetPos}>Reset ke bawaan</button>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
+        <input type="text" value={newPosName} onChange={e => setNewPosName(e.target.value)}
+          placeholder="cth. Marketing" style={{ maxWidth: 340 }} />
+        <button className="btn primary" onClick={addPosManual}>＋ Tambah manual</button>
+        <button className="btn" onClick={resetPos}>Reset ke bawaan</button>
+      </div>
 
       <div className="card card-p" style={{ marginTop: 22 }}>
         <h4 className="blk" style={{ marginTop: 0 }}>Backup & Pemulihan Data</h4>

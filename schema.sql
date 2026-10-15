@@ -71,13 +71,20 @@ ALTER TABLE candidates ADD COLUMN IF NOT EXISTS iq_time_limit INTEGER DEFAULT NU
 
 -- Insert default positions
 INSERT INTO positions (id, name, weights) VALUES
-  ('copywriter', 'Copywriter / Scriptwriter', '{"exp":3,"skill":3,"portfolio":3,"achiev":2,"edu":1,"stability":1,"fit":2,"salary":1,"cvquality":1,"soft":2}'),
-  ('videoeditor', 'Video Editor', '{"exp":3,"skill":3,"portfolio":3,"achiev":1,"edu":1,"stability":1,"fit":2,"salary":1,"cvquality":1,"soft":1}'),
-  ('creator', 'Content Creator / Talent', '{"exp":2,"skill":2,"portfolio":3,"achiev":2,"edu":1,"stability":1,"fit":3,"salary":1,"cvquality":1,"soft":3}'),
-  ('sosmed', 'Social Media Admin', '{"exp":2,"skill":3,"portfolio":2,"achiev":2,"edu":1,"stability":2,"fit":2,"salary":1,"cvquality":2,"soft":2}'),
-  ('designer', 'Graphic Designer', '{"exp":3,"skill":3,"portfolio":3,"achiev":1,"edu":1,"stability":1,"fit":2,"salary":1,"cvquality":1,"soft":1}'),
-  ('admin', 'Admin Marketplace / Olshop', '{"exp":2,"skill":2,"portfolio":1,"achiev":1,"edu":1,"stability":3,"fit":2,"salary":1,"cvquality":3,"soft":2}')
+  ('marketing', 'Marketing', '{"exp":2,"skill":2,"portfolio":2,"achiev":2,"edu":2,"stability":2,"fit":2,"salary":2,"cvquality":2,"soft":2}'),
+  ('operasional', 'Operasional', '{"exp":2,"skill":2,"portfolio":2,"achiev":2,"edu":2,"stability":2,"fit":2,"salary":2,"cvquality":2,"soft":2}'),
+  ('copywriter', 'Copywriter', '{"exp":2,"skill":2,"portfolio":2,"achiev":2,"edu":2,"stability":2,"fit":2,"salary":2,"cvquality":2,"soft":2}'),
+  ('manager-marketing', 'Manager Marketing', '{"exp":2,"skill":2,"portfolio":2,"achiev":2,"edu":2,"stability":2,"fit":2,"salary":2,"cvquality":2,"soft":2}'),
+  ('creator', 'Content Creator / Talent', '{"exp":2,"skill":2,"portfolio":2,"achiev":2,"edu":2,"stability":2,"fit":2,"salary":2,"cvquality":2,"soft":2}'),
+  ('iklan', 'Iklan', '{"exp":2,"skill":2,"portfolio":2,"achiev":2,"edu":2,"stability":2,"fit":2,"salary":2,"cvquality":2,"soft":2}')
 ON CONFLICT (id) DO NOTHING;
+
+-- Migrasi ke 6 posisi baru (idempotent, aman di-run ulang):
+-- samakan nama & bobot untuk id yang dipakai ulang, hapus 4 id lama.
+-- Kandidat pada id yang dihapus otomatis jadi NULL (FK ON DELETE SET NULL) → tampil '—'.
+UPDATE positions SET name = 'Copywriter', weights = '{"exp":2,"skill":2,"portfolio":2,"achiev":2,"edu":2,"stability":2,"fit":2,"salary":2,"cvquality":2,"soft":2}' WHERE id = 'copywriter';
+UPDATE positions SET name = 'Content Creator / Talent', weights = '{"exp":2,"skill":2,"portfolio":2,"achiev":2,"edu":2,"stability":2,"fit":2,"salary":2,"cvquality":2,"soft":2}' WHERE id = 'creator';
+DELETE FROM positions WHERE id IN ('videoeditor', 'sosmed', 'designer', 'admin');
 
 -- Exam questions
 CREATE TABLE IF NOT EXISTS exam_questions (

@@ -3,9 +3,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getPositions } from '@/lib/db'
-import type { Candidate, Position } from '@/lib/types'
-import { STAGES } from '@/lib/constants'
+import type { Candidate, Position, PositionWeight } from '@/lib/types'
+import { STAGES, CV_CRITERIA } from '@/lib/constants'
 import { v4 as uuidv4 } from 'uuid'
+
+function slugifyPosition(name: string) {
+  const slug = name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30) || 'posisi'
+  return slug
+}
 
 export default function HrCandidatesPage() {
   const router = useRouter()
@@ -18,6 +23,9 @@ export default function HrCandidatesPage() {
   const [showModal, setShowModal] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
   const [form, setForm] = useState({ nama: '', posisi: '', sumber: 'LinkedIn', email: '', telepon: '', catatan: '' })
+  const [showAddPos, setShowAddPos] = useState(false)
+  const [newPosName, setNewPosName] = useState('')
+  const [savingPos, setSavingPos] = useState(false)
 
   const load = async () => {
     const res = await fetch('/api/candidates', { credentials: 'include' })
@@ -38,6 +46,8 @@ export default function HrCandidatesPage() {
           sessionStorage.removeItem('open-add-candidate')
           setEditId(null)
           setForm({ nama: '', posisi: pos[0]?.id || '', sumber: 'LinkedIn', email: '', telepon: '', catatan: '' })
+          setShowAddPos(false)
+          setNewPosName('')
           setShowModal(true)
         }
       } catch { /* abaikan */ }
@@ -46,6 +56,8 @@ export default function HrCandidatesPage() {
     const handler = () => {
       setEditId(null)
       setForm(prev => ({ nama: '', posisi: positionsRef.current[0]?.id || prev.posisi, sumber: 'LinkedIn', email: '', telepon: '', catatan: '' }))
+      setShowAddPos(false)
+      setNewPosName('')
       setShowModal(true)
     }
     window.addEventListener('open-add-candidate', handler)
@@ -58,30 +70,66 @@ export default function HrCandidatesPage() {
   const openAdd = () => {
     setEditId(null)
     setForm({ nama: '', posisi: positions[0]?.id || '', sumber: 'LinkedIn', email: '', telepon: '', catatan: '' })
+    setShowAddPos(false)
+    setNewPosName('')
     setShowModal(true)
   }
 
   const openEdit = (c: Candidate) => {
     setEditId(c.id)
     setForm({ nama: c.nama, posisi: c.posisi, sumber: c.sumber || 'LinkedIn', email: c.email || '', telepon: c.telepon || '', catatan: c.catatan || '' })
+    setShowAddPos(false)
+    setNewPosName('')
     setShowModal(true)
+  }
+
+  const saveQuickPosition = async () => {
+    const name = newPosName.trim()
+    if (!name) { alert('Isi nama posisi dulu'); return }
+    if (positions.some(p => p.name.toLowerCase() === name.toLowerCase())) { alert('Nama posisi sudah ada'); return }
+    setSavingPos(true)
+    try {
+      let id = `${slugifyPosition(name)}-${uuidv4().slice(0, 4)}`
+      if (positions.some(p => p.id === id)) id = `${slugifyPosition(name)}-${uuidv4().slice(0, 4)}`
+      const newPos = {
+        id, name,
+        weights: Object.fromEntries(CV_CRITERIA.map(c => [c.id, 2])) as unknown as PositionWeight,
+      }
+      const res = await fetch('/api/positions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(newPos),
+      })
+      if (!res.ok) { const d = await res.json().catch(() => ({ error: 'gagal' })); alert('Gagal tambah posisi: ' + (d.error || res.status)); return }
+      const next = [...positions, newPos as Position]
+      setPositions(next)
+      positionsRef.current = next
+      setForm(prev => ({ ...prev, posisi: id }))
+      setNewPosName('')
+      setShowAddPos(false)
+    } finally {
+      setSavingPos(false)
+    }
   }
 
   const save = async () => {
     if (!form.nama.trim()) return
     if (editId) {
+      // Mode Edit: posisi disembunyikan & tidak dikirim agar data lama tetap.
       const res = await fetch('/api/candidates', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
           id: editId,
-          nama: form.nama.trim(), posisi: form.posisi, sumber: form.sumber,
+          nama: form.nama.trim(), sumber: form.sumber,
           email: form.email.trim(), telepon: form.telepon.trim(), catatan: form.catatan.trim(),
         }),
       })
       if (!res.ok) { const d = await res.json(); alert('Gagal: ' + d.error); return }
     } else {
+      if (!form.posisi) { alert('Pilih posisi dilamar dulu'); return }
       const newC: Candidate = {
         id: uuidv4(), user_id: null, nama: form.nama.trim(), posisi: form.posisi,
         sumber: form.sumber, email: form.email.trim(), telepon: form.telepon.trim(),
@@ -223,10 +271,25 @@ export default function HrCandidatesPage() {
               <div className="field"><label className="fld">Nama lengkap *</label>
                 <input type="text" value={form.nama} onChange={e => setForm({ ...form, nama: e.target.value })} placeholder="cth. Sarah Putri" /></div>
               <div className="grid2">
-                <div className="field"><label className="fld">Posisi dilamar *</label>
-                  <select value={form.posisi} onChange={e => setForm({ ...form, posisi: e.target.value })}>
-                    {positions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                  </select></div>
+                {editId ? (
+                  <div className="field"><label className="fld">Posisi dilamar</label>
+                    <div className="chip" style={{ width: 'fit-content' }}>{posName(form.posisi)} (terkunci)</div></div>
+                ) : (
+                  <div className="field"><label className="fld">Posisi dilamar *</label>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <select value={form.posisi} onChange={e => setForm({ ...form, posisi: e.target.value })} disabled={positions.length === 0} style={{ flex: 1 }}>
+                        {positions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                      </select>
+                      <button type="button" className="btn sm" onClick={() => setShowAddPos(v => !v)}>＋ Baru</button>
+                    </div>
+                    {positions.length === 0 && <div className="hint" style={{ marginTop: 6 }}>Belum ada posisi — tambah manual dulu.</div>}
+                    {showAddPos && (
+                      <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                        <input type="text" value={newPosName} onChange={e => setNewPosName(e.target.value)} placeholder="cth. Marketing" style={{ flex: 1 }} />
+                        <button type="button" className="btn sm primary" disabled={savingPos} onClick={saveQuickPosition}>{savingPos ? '...' : 'Simpan'}</button>
+                      </div>
+                    )}</div>
+                )}
                 <div className="field"><label className="fld">Sumber</label>
                   <select value={form.sumber} onChange={e => setForm({ ...form, sumber: e.target.value })}>
                     {['LinkedIn', 'Instagram/TikTok', 'JobStreet', 'Glints', 'Referensi', 'Walk-in', 'Lainnya'].map(s =>

@@ -12,28 +12,28 @@ export const STAGES: Record<string, string> = {
 
 export const POSITIONS_DEFAULT: PositionDefault[] = [
   {
-    id: 'copywriter', name: 'Copywriter / Scriptwriter',
-    weights: { exp: 3, skill: 3, portfolio: 3, achiev: 2, edu: 1, stability: 1, fit: 2, salary: 1, cvquality: 1, soft: 2 },
+    id: 'marketing', name: 'Marketing',
+    weights: { exp: 2, skill: 2, portfolio: 2, achiev: 2, edu: 2, stability: 2, fit: 2, salary: 2, cvquality: 2, soft: 2 },
   },
   {
-    id: 'videoeditor', name: 'Video Editor',
-    weights: { exp: 3, skill: 3, portfolio: 3, achiev: 1, edu: 1, stability: 1, fit: 2, salary: 1, cvquality: 1, soft: 1 },
+    id: 'operasional', name: 'Operasional',
+    weights: { exp: 2, skill: 2, portfolio: 2, achiev: 2, edu: 2, stability: 2, fit: 2, salary: 2, cvquality: 2, soft: 2 },
+  },
+  {
+    id: 'copywriter', name: 'Copywriter',
+    weights: { exp: 2, skill: 2, portfolio: 2, achiev: 2, edu: 2, stability: 2, fit: 2, salary: 2, cvquality: 2, soft: 2 },
+  },
+  {
+    id: 'manager-marketing', name: 'Manager Marketing',
+    weights: { exp: 2, skill: 2, portfolio: 2, achiev: 2, edu: 2, stability: 2, fit: 2, salary: 2, cvquality: 2, soft: 2 },
   },
   {
     id: 'creator', name: 'Content Creator / Talent',
-    weights: { exp: 2, skill: 2, portfolio: 3, achiev: 2, edu: 1, stability: 1, fit: 3, salary: 1, cvquality: 1, soft: 3 },
+    weights: { exp: 2, skill: 2, portfolio: 2, achiev: 2, edu: 2, stability: 2, fit: 2, salary: 2, cvquality: 2, soft: 2 },
   },
   {
-    id: 'sosmed', name: 'Social Media Admin',
-    weights: { exp: 2, skill: 3, portfolio: 2, achiev: 2, edu: 1, stability: 2, fit: 2, salary: 1, cvquality: 2, soft: 2 },
-  },
-  {
-    id: 'designer', name: 'Graphic Designer',
-    weights: { exp: 3, skill: 3, portfolio: 3, achiev: 1, edu: 1, stability: 1, fit: 2, salary: 1, cvquality: 1, soft: 1 },
-  },
-  {
-    id: 'admin', name: 'Admin Marketplace / Olshop',
-    weights: { exp: 2, skill: 2, portfolio: 1, achiev: 1, edu: 1, stability: 3, fit: 2, salary: 1, cvquality: 3, soft: 2 },
+    id: 'iklan', name: 'Iklan',
+    weights: { exp: 2, skill: 2, portfolio: 2, achiev: 2, edu: 2, stability: 2, fit: 2, salary: 2, cvquality: 2, soft: 2 },
   },
 ]
 
