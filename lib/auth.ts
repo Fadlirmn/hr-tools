@@ -49,7 +49,15 @@ export async function setSession(userId: string, role: UserRole) {
 
 export async function clearSession() {
   const cookieStore = await cookies()
-  cookieStore.set(SESSION_COOKIE_NAME, '', { maxAge: 0, path: '/' })
+  // Flag harus cocok dengan setSession — kalau tidak, browser menolak
+  // menimpa/menghapus cookie Secure di HTTPS dan logout gagal diam-diam.
+  cookieStore.set(SESSION_COOKIE_NAME, '', {
+    httpOnly: true,
+    secure: COOKIE_SECURE,
+    sameSite: 'lax',
+    maxAge: 0,
+    path: '/',
+  })
 }
 
 async function getUserById(userId: string): Promise<SessionUser | null> {
