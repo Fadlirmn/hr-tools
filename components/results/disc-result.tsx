@@ -5,7 +5,7 @@ import type { DiscResult as DiscResultData, DiscGraphResult, DiscProfileTendenci
 
 interface Props {
   disc: DiscResultData | null | undefined
-  /** Nama kandidat untuk header laporan. */
+  /** Tidak dipakai lagi (header laporan dihilangkan); dibiarkan agar caller kompatibel. */
   nama?: string
   /** Teks saat belum ada hasil (default: sudut pandang kandidat). */
   emptyHint?: string
@@ -94,7 +94,7 @@ function ProfileCard({ styleLabel, graph }: { styleLabel: string; graph: DiscGra
   )
 }
 
-export default function DiscResult({ disc, nama, emptyHint = 'HR belum memasukkan hasil Tes DISC Anda.', showMeta = false }: Props) {
+export default function DiscResult({ disc, emptyHint = 'HR belum memasukkan hasil Tes DISC Anda.', showMeta = false }: Props) {
   if (!disc) {
     return (
       <div className="profile-section">
@@ -106,24 +106,22 @@ export default function DiscResult({ disc, nama, emptyHint = 'HR belum memasukka
 
   return (
     <div className="disc-report">
-      <div className="disc-hero">
-        <div className="disc-hero-kicker">Laporan Hasil Asesmen DISC</div>
-        {nama && <div className="disc-hero-name">{nama}</div>}
-        <div className="disc-hero-meta">
-          Tanggal: {fmtDate(disc.date)} · DISC Assessment
-          {showMeta && <> · {disc.via === 'kandidat' ? 'Dikerjakan mandiri' : 'Diinput HR'}</>}
+      <div className="profile-section" style={{ marginBottom: 16 }}>
+        <h3>🧩 Hasil Tes DISC</h3>
+        <div className="grid2 disc-graphs">
+          <GraphCard title="Adapted Style" graph={disc.adapted} />
+          <GraphCard title="Natural Style" graph={disc.natural} />
         </div>
-      </div>
-
-      <div className="disc-sec-kicker">Grafik Skor DISC</div>
-      <div className="grid2 disc-graphs">
-        <GraphCard title="Graph I — Adapted Style" graph={disc.adapted} />
-        <GraphCard title="Graph II — Natural Style" graph={disc.natural} />
-      </div>
-      <div className="disc-legend">
-        {DIMS.map(d => (
-          <span key={d}><b className={`dim-${d}`}>{d}</b> {DISC_DIMENSION_INFO[d].name}<span className="hint"> — {DISC_DIMENSION_INFO[d].desc}</span></span>
-        ))}
+        <div className="disc-legend">
+          {DIMS.map(d => (
+            <span key={d}><b className={`dim-${d}`}>{d}</b> {DISC_DIMENSION_INFO[d].name}<span className="hint"> — {DISC_DIMENSION_INFO[d].desc}</span></span>
+          ))}
+        </div>
+        {showMeta && (
+          <div className="hint" style={{ marginTop: 10 }}>
+            Tanggal: {fmtDate(disc.date)} · {disc.via === 'kandidat' ? 'Dikerjakan mandiri' : 'Diinput HR'}
+          </div>
+        )}
       </div>
 
       <div className="disc-sec-kicker">Profil Perilaku — Adapted Style</div>

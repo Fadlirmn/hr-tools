@@ -316,19 +316,15 @@ h4.blk{font-size:13.5px;font-weight:800;margin:18px 0 8px;color:var(--ink)}
 
 /* DISC: laporan hasil (meniru layout laporan dampingi) */
 .disc-report{margin-bottom:16px}
-.disc-hero{background:#0B1220;color:#fff;border-radius:var(--radius);padding:36px 32px;margin-bottom:22px}
-.disc-hero-kicker{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#9AA3B5;font-weight:700;margin-bottom:10px}
-.disc-hero-name{font-family:Georgia,'Times New Roman',serif;font-size:36px;font-weight:700;line-height:1.1;margin-bottom:10px}
-.disc-hero-meta{font-size:13px;color:#B8C0D0}
 .disc-sec-kicker{font-size:11.5px;letter-spacing:1.3px;text-transform:uppercase;font-weight:800;color:var(--ink);margin:22px 0 12px}
 .disc-graphs{gap:18px;align-items:stretch}
-.disc-graph{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:22px 24px}
-.disc-graph-title{font-size:12.5px;letter-spacing:.8px;text-transform:uppercase;font-weight:800;color:var(--ink);margin-bottom:14px}
+.disc-graph{background:#FAFAFD;border:1px solid var(--line-soft);border-radius:12px;padding:16px 18px}
+.disc-graph-title{font-size:11.5px;letter-spacing:.8px;text-transform:uppercase;font-weight:800;color:var(--muted);margin-bottom:10px}
 .disc-graph-pattern{display:flex;align-items:center;gap:8px;margin:0 0 16px 10px}
 .disc-pattern-name{font-size:14px;font-weight:700}
 .disc-letter{font-weight:800;font-size:18px;line-height:1}
 .disc-letter.big{font-size:36px;width:56px;text-align:center}
-.disc-bar{display:flex;align-items:center;gap:14px;margin:12px 0}
+.disc-bar{display:flex;align-items:center;gap:14px;margin:9px 0}
 .disc-bar-lbl{width:14px;font-weight:800;font-size:14px}
 .disc-bar-track{position:relative;flex:1;height:8px;background:var(--line-soft);border-radius:5px}
 .disc-bar-track > i{display:block;height:100%;border-radius:5px;opacity:.35}
@@ -350,5 +346,4 @@ h4.blk{font-size:13.5px;font-weight:800;margin:18px 0 8px;color:var(--ink)}
 .disc-tend .v{font-size:13px;color:var(--ink-soft);line-height:1.45}
 .dim-D{color:#C0392B} .dim-I{color:#D98C0E} .dim-S{color:#1E8E5A} .dim-C{color:#1F4E9C}
 .bg-D{background:#C0392B} .bg-I{background:#D98C0E} .bg-S{background:#1E8E5A} .bg-C{background:#1F4E9C}
-@media (max-width:900px){.disc-tend-grid{grid-template-columns:1fr 1fr}.disc-legend{grid-template-columns:1fr}.disc-hero{padding:26px 20px}.disc-hero-name{font-size:28px}}
-@media print{.disc-hero{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+@media (max-width:900px){.disc-tend-grid{grid-template-columns:1fr 1fr}.disc-legend{grid-template-columns:1fr}}
