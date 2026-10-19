@@ -255,6 +255,7 @@ export default function HrCandidatesPage() {
                     )}
                   </td>
                   <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                    <button className="btn sm" onClick={() => router.push(`/hr/candidates/${c.id}`)}>Detail</button>
                     <button className="btn sm ghost" onClick={() => openEdit(c)}>Edit</button>
                     <button className="btn sm danger" onClick={() => deleteC(c.id)}>Hapus</button>
                   </td>
