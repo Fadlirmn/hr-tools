@@ -1,75 +1,136 @@
 'use client'
 
 import { DISC_PROFILE_DESCRIPTIONS, DISC_DIMENSION_INFO } from '@/lib/constants'
-import type { DiscResult as DiscResultData, DiscGraphResult } from '@/lib/types'
+import type { DiscResult as DiscResultData, DiscGraphResult, DiscProfileTendencies } from '@/lib/types'
 
 interface Props {
   disc: DiscResultData | null | undefined
+  /** Nama kandidat untuk header laporan. */
+  nama?: string
   /** Teks saat belum ada hasil (default: sudut pandang kandidat). */
   emptyHint?: string
-  /** Tampilkan tanggal & siapa yang mengerjakan (untuk tampilan HR). */
+  /** Tampilkan siapa yang mengerjakan (untuk tampilan HR). */
   showMeta?: boolean
 }
 
-function DiscGraph({ label, graph }: { label: string; graph: DiscGraphResult }) {
-  const desc = DISC_PROFILE_DESCRIPTIONS[graph.pattern.name]
+type Dim = 'D' | 'I' | 'S' | 'C'
+const DIMS: Dim[] = ['D', 'I', 'S', 'C']
+
+const TENDENCY_LABELS: { key: keyof DiscProfileTendencies; label: string }[] = [
+  { key: 'goal', label: 'Goal' },
+  { key: 'judges', label: 'Judges Others By' },
+  { key: 'influence', label: 'Influences Others By' },
+  { key: 'valueTo', label: 'Value to Organization' },
+  { key: 'overuses', label: 'Overuses' },
+  { key: 'underStress', label: 'Under Stress' },
+  { key: 'fears', label: 'Fears' },
+]
+
+function fmtDate(d?: string) {
+  if (!d) return '—'
+  const dt = new Date(d)
+  if (isNaN(dt.getTime())) return d
+  return dt.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+}
+
+function GraphCard({ title, graph }: { title: string; graph: DiscGraphResult }) {
   return (
-    <div style={{ marginBottom: 20 }}>
-      <div className="verdict-line" style={{ marginBottom: 10 }}>
-        {label}: <b>{graph.pattern.name}</b> (tipe {graph.pattern.type})
+    <div className="disc-graph">
+      <div className="disc-graph-title">{title}</div>
+      <div className="disc-graph-pattern">
+        <span className={`disc-letter dim-${graph.pattern.type}`}>{graph.pattern.type}</span>
+        <span className={`disc-pattern-name dim-${graph.pattern.type}`}>{graph.pattern.name}</span>
       </div>
-      {(['D', 'I', 'S', 'C'] as const).map(d => (
-        <div className="seg" key={d}>
-          <span className="lbl"><b>{d}</b> <span style={{ fontWeight: 500 }}>· {DISC_DIMENSION_INFO[d].name}</span></span>
-          <div className="track"><i style={{ width: graph.scores[d] + '%', background: 'var(--violet)' }}></i></div>
-          <span className="pct">{graph.scores[d]}</span>
+      {DIMS.map(d => (
+        <div className="disc-bar" key={d} title={DISC_DIMENSION_INFO[d].name}>
+          <span className={`disc-bar-lbl dim-${d}`}>{d}</span>
+          <div className="disc-bar-track">
+            <i className={`bg-${d}`} style={{ width: graph.scores[d] + '%' }}></i>
+            <span className="disc-bar-val" style={{ left: `calc(${graph.scores[d]}% + 8px)` }}>{graph.scores[d]}</span>
+          </div>
         </div>
       ))}
-      <div className="disc-dim-note">
-        Tipe dominan: <b>{graph.pattern.type} · {DISC_DIMENSION_INFO[graph.pattern.type].name}</b> — {DISC_DIMENSION_INFO[graph.pattern.type].desc}
-      </div>
-      {desc && (
-        <div className="grid2" style={{ gap: 12, marginTop: 10 }}>
-          <div>
-            <div style={{ fontWeight: 700, fontSize: 12, color: 'var(--muted)', marginBottom: 4 }}>💪 Kekuatan</div>
-            <ul style={{ fontSize: 13, lineHeight: 1.6, paddingLeft: 18 }}>
-              {desc.keyStrengths.map((s, i) => <li key={i}>{s}</li>)}
-            </ul>
-          </div>
-          <div>
-            <div style={{ fontWeight: 700, fontSize: 12, color: 'var(--muted)', marginBottom: 4 }}>📈 Area Pengembangan</div>
-            <ul style={{ fontSize: 13, lineHeight: 1.6, paddingLeft: 18 }}>
-              {desc.improveBy.map((s, i) => <li key={i}>{s}</li>)}
-            </ul>
-          </div>
+    </div>
+  )
+}
+
+function ProfileCard({ styleLabel, graph }: { styleLabel: string; graph: DiscGraphResult }) {
+  const desc = DISC_PROFILE_DESCRIPTIONS[graph.pattern.name]
+  const t = graph.pattern.type
+  return (
+    <div className="disc-profile">
+      <div className="disc-profile-head">
+        <span className={`disc-letter big dim-${t}`}>{t}</span>
+        <div>
+          <div className="disc-profile-name">{graph.pattern.name}</div>
+          <div className="disc-profile-sub">{styleLabel}</div>
         </div>
+      </div>
+      {!desc ? (
+        <div className="hint">Deskripsi profil untuk pola ini belum tersedia.</div>
+      ) : (
+        <>
+          <div className="grid2 disc-profile-cols">
+            <div>
+              <div className="disc-sec-title">💪 Key Strengths</div>
+              <ul className="disc-list">{desc.keyStrengths.map((s, i) => <li key={i}>{s}</li>)}</ul>
+            </div>
+            <div>
+              <div className="disc-sec-title">📈 Improve Effectiveness By</div>
+              <ul className="disc-list">{desc.improveBy.map((s, i) => <li key={i}>{s}</li>)}</ul>
+            </div>
+          </div>
+          <div className="disc-tend-grid">
+            {TENDENCY_LABELS.map(({ key, label }) => (
+              <div className="disc-tend" key={key}>
+                <div className="l">{label}</div>
+                <div className="v">{desc.tendencies[key]}</div>
+              </div>
+            ))}
+          </div>
+        </>
       )}
     </div>
   )
 }
 
-export default function DiscResult({ disc, emptyHint = 'HR belum memasukkan hasil Tes DISC Anda.', showMeta = false }: Props) {
-  return (
-    <div className="profile-section">
-      <h3>🧩 Hasil Tes DISC</h3>
-      {!disc ? (
+export default function DiscResult({ disc, nama, emptyHint = 'HR belum memasukkan hasil Tes DISC Anda.', showMeta = false }: Props) {
+  if (!disc) {
+    return (
+      <div className="profile-section">
+        <h3>🧩 Hasil Tes DISC</h3>
         <div className="empty"><div className="big">◦</div><div style={{ fontWeight: 700 }}>Belum dites</div><div className="hint">{emptyHint}</div></div>
-      ) : (
-        <>
-          <DiscGraph label="Adapted Style (gaya kerja di lingkungan kerja)" graph={disc.adapted} />
-          <DiscGraph label="Natural Style (gaya alami/dasar)" graph={disc.natural} />
-          <div className="disc-legend">
-            <div style={{ fontWeight: 700, fontSize: 12, color: 'var(--muted)', marginBottom: 6 }}>Arti dimensi DISC</div>
-            {(['D', 'I', 'S', 'C'] as const).map(d => (
-              <div className="row" key={d}><b>{d}</b><span><b>{DISC_DIMENSION_INFO[d].name}</b> — {DISC_DIMENSION_INFO[d].desc}</span></div>
-            ))}
-          </div>
-          {showMeta && disc.date && <div className="seg"><span className="lbl">Tanggal</span><b>{disc.date}</b></div>}
-          {disc.via === 'kandidat'
-            ? <span className="chip neutral">Dikerjakan mandiri</span>
-            : showMeta && <span className="chip neutral">Diinput HR</span>}
-        </>
-      )}
+      </div>
+    )
+  }
+
+  return (
+    <div className="disc-report">
+      <div className="disc-hero">
+        <div className="disc-hero-kicker">Laporan Hasil Asesmen DISC</div>
+        {nama && <div className="disc-hero-name">{nama}</div>}
+        <div className="disc-hero-meta">
+          Tanggal: {fmtDate(disc.date)} · DISC Assessment
+          {showMeta && <> · {disc.via === 'kandidat' ? 'Dikerjakan mandiri' : 'Diinput HR'}</>}
+        </div>
+      </div>
+
+      <div className="disc-sec-kicker">Grafik Skor DISC</div>
+      <div className="grid2 disc-graphs">
+        <GraphCard title="Graph I — Adapted Style" graph={disc.adapted} />
+        <GraphCard title="Graph II — Natural Style" graph={disc.natural} />
+      </div>
+      <div className="disc-legend">
+        {DIMS.map(d => (
+          <span key={d}><b className={`dim-${d}`}>{d}</b> {DISC_DIMENSION_INFO[d].name}<span className="hint"> — {DISC_DIMENSION_INFO[d].desc}</span></span>
+        ))}
+      </div>
+
+      <div className="disc-sec-kicker">Profil Perilaku — Adapted Style</div>
+      <ProfileCard styleLabel="Adapted Style" graph={disc.adapted} />
+
+      <div className="disc-sec-kicker">Profil Perilaku — Natural Style</div>
+      <ProfileCard styleLabel="Natural Style" graph={disc.natural} />
     </div>
   )
 }

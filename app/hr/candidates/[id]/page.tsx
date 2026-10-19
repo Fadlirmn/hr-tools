@@ -90,7 +90,7 @@ export default function HrCandidateDetailPage() {
       </div>
 
       <CvResult cv={c.cv} posName={posName} emptyHint="Belum ada penilaian CV untuk kandidat ini." />
-      <DiscResult disc={disc} showMeta emptyHint="Kandidat belum mengerjakan Tes DISC." />
+      <DiscResult disc={disc} nama={c.nama} showMeta emptyHint="Kandidat belum mengerjakan Tes DISC." />
       <IqResult iq={iq} showMeta emptyHint="Kandidat belum mengerjakan Tes IQ." />
       <InterviewResult interview={c.interview} emptyHint="Belum ada penilaian interview untuk kandidat ini." />
       <OnboardingResult onboarding={c.onboarding} emptyHint="Onboarding belum dimulai." />

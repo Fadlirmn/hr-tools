@@ -21,5 +21,5 @@ export default function CandidateHasilTesDiscPage() {
 
   if (!candidate) return null
 
-  return <DiscResult disc={candidate.psikotes_result?.disc} />
+  return <DiscResult disc={candidate.psikotes_result?.disc} nama={candidate.nama} />
 }

@@ -314,8 +314,41 @@ h4.blk{font-size:13.5px;font-weight:800;margin:18px 0 8px;color:var(--ink)}
 .summary-grid .item .s{font-size:12px;color:var(--ink-soft);margin-top:2px}
 @media (max-width:900px){.summary-grid{grid-template-columns:repeat(2,1fr)}}
 
-/* DISC: label dimensi */
-.disc-dim-note{font-size:12.5px;color:var(--ink-soft);margin:6px 0 2px;padding:8px 12px;background:var(--violet-soft);border-radius:8px}
-.disc-legend{margin:4px 0 14px;padding:12px 14px;border:1px solid var(--line-soft);border-radius:10px;background:#FAFAFD}
-.disc-legend .row{display:flex;gap:10px;font-size:12.5px;line-height:1.5;margin:3px 0}
-.disc-legend .row > b{width:16px;flex-shrink:0;color:var(--violet)}
+/* DISC: laporan hasil (meniru layout laporan dampingi) */
+.disc-report{margin-bottom:16px}
+.disc-hero{background:#0B1220;color:#fff;border-radius:var(--radius);padding:36px 32px;margin-bottom:22px}
+.disc-hero-kicker{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#9AA3B5;font-weight:700;margin-bottom:10px}
+.disc-hero-name{font-family:Georgia,'Times New Roman',serif;font-size:36px;font-weight:700;line-height:1.1;margin-bottom:10px}
+.disc-hero-meta{font-size:13px;color:#B8C0D0}
+.disc-sec-kicker{font-size:11.5px;letter-spacing:1.3px;text-transform:uppercase;font-weight:800;color:var(--ink);margin:22px 0 12px}
+.disc-graphs{gap:18px;align-items:stretch}
+.disc-graph{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:22px 24px}
+.disc-graph-title{font-size:12.5px;letter-spacing:.8px;text-transform:uppercase;font-weight:800;color:var(--ink);margin-bottom:14px}
+.disc-graph-pattern{display:flex;align-items:center;gap:8px;margin:0 0 16px 10px}
+.disc-pattern-name{font-size:14px;font-weight:700}
+.disc-letter{font-weight:800;font-size:18px;line-height:1}
+.disc-letter.big{font-size:36px;width:56px;text-align:center}
+.disc-bar{display:flex;align-items:center;gap:14px;margin:12px 0}
+.disc-bar-lbl{width:14px;font-weight:800;font-size:14px}
+.disc-bar-track{position:relative;flex:1;height:8px;background:var(--line-soft);border-radius:5px}
+.disc-bar-track > i{display:block;height:100%;border-radius:5px;opacity:.35}
+.disc-bar-val{position:absolute;top:50%;transform:translateY(-50%);font-size:12.5px;font-weight:700;color:var(--ink-soft);font-variant-numeric:tabular-nums;white-space:nowrap}
+.disc-legend{display:grid;grid-template-columns:1fr 1fr;gap:4px 18px;margin-top:12px;font-size:12px;color:var(--ink-soft)}
+.disc-legend b{font-weight:800;margin-right:2px}
+.disc-profile{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:26px 30px}
+.disc-profile-head{display:flex;align-items:center;gap:16px;margin-bottom:22px}
+.disc-profile-name{font-family:Georgia,'Times New Roman',serif;font-size:22px;font-weight:700;line-height:1.2}
+.disc-profile-sub{font-size:12.5px;color:var(--ink-soft);margin-top:2px}
+.disc-profile-cols{gap:26px;margin-bottom:22px}
+.disc-sec-title{font-size:11.5px;letter-spacing:.8px;text-transform:uppercase;font-weight:800;color:var(--ink);margin-bottom:10px}
+.disc-list{list-style:none;padding:0;margin:0}
+.disc-list li{position:relative;padding-left:22px;font-size:13.5px;line-height:1.5;margin-bottom:8px;color:var(--ink)}
+.disc-list li::before{content:"";position:absolute;left:0;top:10px;width:12px;height:2px;background:var(--ok)}
+.disc-tend-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.disc-tend{border:1px solid var(--line);border-radius:10px;padding:12px 14px;min-height:70px}
+.disc-tend .l{font-size:10.5px;letter-spacing:.6px;text-transform:uppercase;font-weight:800;color:var(--ink);margin-bottom:4px}
+.disc-tend .v{font-size:13px;color:var(--ink-soft);line-height:1.45}
+.dim-D{color:#C0392B} .dim-I{color:#D98C0E} .dim-S{color:#1E8E5A} .dim-C{color:#1F4E9C}
+.bg-D{background:#C0392B} .bg-I{background:#D98C0E} .bg-S{background:#1E8E5A} .bg-C{background:#1F4E9C}
+@media (max-width:900px){.disc-tend-grid{grid-template-columns:1fr 1fr}.disc-legend{grid-template-columns:1fr}.disc-hero{padding:26px 20px}.disc-hero-name{font-size:28px}}
+@media print{.disc-hero{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
