@@ -25,7 +25,7 @@ export default function IqResult({ iq, emptyHint = 'HR belum memasukkan hasil Te
                 <circle cx="64" cy="64" r="54" fill="none" stroke={categoryColor(iq.category)} strokeWidth="12" strokeLinecap="round"
                   strokeDasharray={2 * Math.PI * 54} strokeDashoffset={2 * Math.PI * 54 * (1 - iq.percent / 100)} />
               </svg>
-              <div className="val"><b>{iq.correct}/{iq.total}</b><span>{iq.percent}%</span></div>
+              <div className="val"><b className="sm">{iq.correct}/{iq.total}</b><span>{iq.percent}%</span></div>
             </div>
             {showMeta && (
               <div>

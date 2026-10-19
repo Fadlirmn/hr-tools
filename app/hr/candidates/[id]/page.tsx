@@ -71,23 +71,21 @@ export default function HrCandidateDetailPage() {
           </div>
         </div>
 
-        <div className="profile-section" style={{ marginTop: 16, marginBottom: 0, padding: 16 }}>
-          <div className="detail">
-            <div className="item"><div className="l">Email</div><div>{c.email || '—'}</div></div>
-            <div className="item"><div className="l">Telepon</div><div>{c.telepon || '—'}</div></div>
-            <div className="item" style={{ gridColumn: '1 / -1' }}><div className="l">Catatan</div><div>{c.catatan || '—'}</div></div>
-          </div>
+        <div className="detail-grid" style={{ marginTop: 18, paddingTop: 16, borderTop: '1px solid var(--line-soft)' }}>
+          <div className="item"><div className="l">Email</div><div className="v">{c.email || '—'}</div></div>
+          <div className="item"><div className="l">Telepon</div><div className="v">{c.telepon || '—'}</div></div>
+          <div className="item" style={{ gridColumn: '1 / -1' }}><div className="l">Catatan</div><div className="v" style={{ fontWeight: 500 }}>{c.catatan || '—'}</div></div>
         </div>
       </div>
 
-      <div className="grid2" style={{ gap: 16, alignItems: 'start' }}>
-        <div className="card card-p" style={{ padding: 16 }}>
-          <h4 className="blk" style={{ marginTop: 0 }}>Ringkasan</h4>
-          <div className="seg"><span className="lbl">CV</span><b>{c.cv ? `${c.cv.percent}% · ${c.cv.verdict}` : '—'}</b></div>
-          <div className="seg"><span className="lbl">DISC</span><b>{disc ? `${disc.adapted.pattern.name} (${disc.adapted.pattern.type})` : '—'}</b></div>
-          <div className="seg"><span className="lbl">IQ</span><b>{iq ? `${iq.percent}% · ${iq.category}` : '—'}</b></div>
-          <div className="seg"><span className="lbl">Interview</span><b>{c.interview ? `${c.interview.avg.toFixed(1)} · ${c.interview.verdict}` : '—'}</b></div>
-          <div className="seg"><span className="lbl">Onboarding</span><b>{c.onboarding ? `${c.onboarding.progress}%` : '—'}</b></div>
+      <div className="card card-p summary-card">
+        <h4 className="blk" style={{ margin: '0 0 12px' }}>Ringkasan</h4>
+        <div className="summary-grid">
+          <div className="item"><div className="l">CV</div><div className="v">{c.cv ? `${c.cv.percent}%` : '—'}</div><div className="s">{c.cv?.verdict || 'Belum dinilai'}</div></div>
+          <div className="item"><div className="l">DISC</div><div className="v">{disc ? disc.adapted.pattern.type : '—'}</div><div className="s">{disc ? disc.adapted.pattern.name : 'Belum dites'}</div></div>
+          <div className="item"><div className="l">IQ</div><div className="v">{iq ? `${iq.percent}%` : '—'}</div><div className="s">{iq ? iq.category : 'Belum dites'}</div></div>
+          <div className="item"><div className="l">Interview</div><div className="v">{c.interview ? c.interview.avg.toFixed(1) : '—'}</div><div className="s">{c.interview?.verdict || 'Belum dinilai'}</div></div>
+          <div className="item"><div className="l">Onboarding</div><div className="v">{c.onboarding ? `${c.onboarding.progress}%` : '—'}</div><div className="s">{c.onboarding ? 'Progress' : 'Belum mulai'}</div></div>
         </div>
       </div>
 
