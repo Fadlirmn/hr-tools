@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { fetchCandidates } from '@/lib/db-hr'
 import { getPositions } from '@/lib/db'
 import { loadQuestions } from '@/lib/questions'
@@ -9,9 +10,18 @@ import ExamModal, { type ExamResult } from '@/components/exam-modal'
 import type { Candidate, Position, DiscQuestion, DiscLetter, DiscAnswer } from '@/lib/types'
 
 export default function HrTesDiscPage() {
+  return (
+    <Suspense fallback={<div className="hint">Memuat...</div>}>
+      <HrTesDiscContent />
+    </Suspense>
+  )
+}
+
+function HrTesDiscContent() {
+  const searchParams = useSearchParams()
   const [candidates, setCandidates] = useState<Candidate[]>([])
   const [positions, setPositions] = useState<Position[]>([])
-  const [selId, setSelId] = useState<string>('')
+  const [selId, setSelId] = useState<string>(searchParams.get('candidateId') || '')
   const [discAns, setDiscAns] = useState<Record<number, DiscAnswer>>({})
   const [examOpen, setExamOpen] = useState(false)
   const [discQuestions, setDiscQuestions] = useState<DiscQuestion[]>([])
@@ -33,7 +43,7 @@ export default function HrTesDiscPage() {
 
   useEffect(() => {
     setDiscAns(c?.psikotes_result?.disc ? { ...c.psikotes_result.disc.answers } : {})
-  }, [selId])
+  }, [selId, candidates])
 
   const selectDisc = (qNo: number, letter: DiscLetter, type: 'most' | 'least') => {
     setDiscAns(prev => {

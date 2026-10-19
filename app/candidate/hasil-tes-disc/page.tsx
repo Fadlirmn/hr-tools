@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react'
 import { getCurrentUser } from '@/lib/auth-client'
 import { getCandidateByUserId } from '@/lib/db'
-import { DISC_PROFILE_DESCRIPTIONS } from '@/lib/constants'
-import type { Candidate, DiscGraphResult } from '@/lib/types'
+import DiscResult from '@/components/results/disc-result'
+import type { Candidate } from '@/lib/types'
 
 export default function CandidateHasilTesDiscPage() {
   const [candidate, setCandidate] = useState<Candidate | null>(null)
@@ -21,54 +21,5 @@ export default function CandidateHasilTesDiscPage() {
 
   if (!candidate) return null
 
-  const disc = candidate.psikotes_result?.disc
-
-  const renderDiscGraph = (label: string, graph: DiscGraphResult) => {
-    const desc = DISC_PROFILE_DESCRIPTIONS[graph.pattern.name]
-    return (
-      <div style={{ marginBottom: 20 }}>
-        <div className="verdict-line" style={{ marginBottom: 10 }}>
-          {label}: <b>{graph.pattern.name}</b> (tipe {graph.pattern.type})
-        </div>
-        {(['D', 'I', 'S', 'C'] as const).map(d => (
-          <div className="seg" key={d}>
-            <span className="lbl">{d}</span>
-            <div className="track"><i style={{ width: graph.scores[d] + '%', background: 'var(--violet)' }}></i></div>
-            <span className="pct">{graph.scores[d]}</span>
-          </div>
-        ))}
-        {desc && (
-          <div className="grid2" style={{ gap: 12, marginTop: 10 }}>
-            <div>
-              <div style={{ fontWeight: 700, fontSize: 12, color: 'var(--muted)', marginBottom: 4 }}>💪 Kekuatan</div>
-              <ul style={{ fontSize: 13, lineHeight: 1.6, paddingLeft: 18 }}>
-                {desc.keyStrengths.map((s, i) => <li key={i}>{s}</li>)}
-              </ul>
-            </div>
-            <div>
-              <div style={{ fontWeight: 700, fontSize: 12, color: 'var(--muted)', marginBottom: 4 }}>📈 Area Pengembangan</div>
-              <ul style={{ fontSize: 13, lineHeight: 1.6, paddingLeft: 18 }}>
-                {desc.improveBy.map((s, i) => <li key={i}>{s}</li>)}
-              </ul>
-            </div>
-          </div>
-        )}
-      </div>
-    )
-  }
-
-  return (
-    <div className="profile-section">
-      <h3>🧩 Hasil Tes DISC</h3>
-      {!disc ? (
-        <div className="empty"><div className="big">◦</div><div style={{ fontWeight: 700 }}>Belum dites</div><div className="hint">HR belum memasukkan hasil Tes DISC Anda.</div></div>
-      ) : (
-        <>
-          {renderDiscGraph('Adapted Style (gaya kerja di lingkungan kerja)', disc.adapted)}
-          {renderDiscGraph('Natural Style (gaya alami/dasar)', disc.natural)}
-          {disc.via === 'kandidat' && <span className="chip neutral">Dikerjakan mandiri</span>}
-        </>
-      )}
-    </div>
-  )
+  return <DiscResult disc={candidate.psikotes_result?.disc} />
 }

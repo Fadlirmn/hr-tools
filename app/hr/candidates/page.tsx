@@ -228,7 +228,7 @@ export default function HrCandidatesPage() {
             <tbody>
               {candidates.map(c => (
                 <tr key={c.id}>
-                  <td className="cand-name" onClick={() => router.push(`/hr/cv?candidateId=${c.id}`)}>
+                  <td className="cand-name" onClick={() => router.push(`/hr/candidates/${c.id}`)}>
                     {c.nama}<div className="hint">{c.tanggal || ''}</div>
                   </td>
                   <td>{posName(c.posisi)}</td>

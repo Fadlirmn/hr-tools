@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { fetchCandidates } from '@/lib/db-hr'
 import { getPositions } from '@/lib/db'
 import { loadQuestions } from '@/lib/questions'
@@ -10,9 +11,18 @@ import type { Candidate, Position, IqQuestion, IqResult, IqCategory } from '@/li
 const IQ_CATEGORIES: IqCategory[] = ['Logika', 'Numerik', 'Verbal', 'Spasial']
 
 export default function HrTesIqPage() {
+  return (
+    <Suspense fallback={<div className="hint">Memuat...</div>}>
+      <HrTesIqContent />
+    </Suspense>
+  )
+}
+
+function HrTesIqContent() {
+  const searchParams = useSearchParams()
   const [candidates, setCandidates] = useState<Candidate[]>([])
   const [positions, setPositions] = useState<Position[]>([])
-  const [selId, setSelId] = useState<string>('')
+  const [selId, setSelId] = useState<string>(searchParams.get('candidateId') || '')
   const [iqAns, setIqAns] = useState<Record<number, number>>({})
   const [examOpen, setExamOpen] = useState(false)
   const [iqQuestions, setIqQuestions] = useState<IqQuestion[]>([])
@@ -35,7 +45,7 @@ export default function HrTesIqPage() {
 
   useEffect(() => {
     setIqAns(c?.psikotes_result?.iq ? { ...c.psikotes_result.iq.answers } : {})
-  }, [selId])
+  }, [selId, candidates])
 
   const setIqFn = (i: number, oi: number) => setIqAns(prev => ({ ...prev, [i]: oi }))
 

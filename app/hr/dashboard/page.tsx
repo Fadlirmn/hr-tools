@@ -73,7 +73,7 @@ export default function HrDashboardPage() {
             <tbody>
               {candidates.slice(0, 6).map(c => (
                 <tr key={c.id}>
-                  <td className="cand-name" onClick={() => router.push(`/hr/candidates?id=${c.id}`)}>{c.nama}</td>
+                  <td className="cand-name" onClick={() => router.push(`/hr/candidates/${c.id}`)}>{c.nama}</td>
                   <td>{posName(c.posisi)}</td>
                   <td><span className={`stagepill s-${c.stage}`}>{STAGES[c.stage]}</span></td>
                   <td>{c.cv ? <b>{c.cv.percent}%</b> : <span className="hint">—</span>}</td>
