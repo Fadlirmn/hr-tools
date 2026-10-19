@@ -1,6 +1,6 @@
 'use client'
 
-import { DISC_PROFILE_DESCRIPTIONS } from '@/lib/constants'
+import { DISC_PROFILE_DESCRIPTIONS, DISC_DIMENSION_INFO } from '@/lib/constants'
 import type { DiscResult as DiscResultData, DiscGraphResult } from '@/lib/types'
 
 interface Props {
@@ -20,11 +20,14 @@ function DiscGraph({ label, graph }: { label: string; graph: DiscGraphResult }) 
       </div>
       {(['D', 'I', 'S', 'C'] as const).map(d => (
         <div className="seg" key={d}>
-          <span className="lbl">{d}</span>
+          <span className="lbl"><b>{d}</b> <span style={{ fontWeight: 500 }}>· {DISC_DIMENSION_INFO[d].name}</span></span>
           <div className="track"><i style={{ width: graph.scores[d] + '%', background: 'var(--violet)' }}></i></div>
           <span className="pct">{graph.scores[d]}</span>
         </div>
       ))}
+      <div className="disc-dim-note">
+        Tipe dominan: <b>{graph.pattern.type} · {DISC_DIMENSION_INFO[graph.pattern.type].name}</b> — {DISC_DIMENSION_INFO[graph.pattern.type].desc}
+      </div>
       {desc && (
         <div className="grid2" style={{ gap: 12, marginTop: 10 }}>
           <div>
@@ -55,6 +58,12 @@ export default function DiscResult({ disc, emptyHint = 'HR belum memasukkan hasi
         <>
           <DiscGraph label="Adapted Style (gaya kerja di lingkungan kerja)" graph={disc.adapted} />
           <DiscGraph label="Natural Style (gaya alami/dasar)" graph={disc.natural} />
+          <div className="disc-legend">
+            <div style={{ fontWeight: 700, fontSize: 12, color: 'var(--muted)', marginBottom: 6 }}>Arti dimensi DISC</div>
+            {(['D', 'I', 'S', 'C'] as const).map(d => (
+              <div className="row" key={d}><b>{d}</b><span><b>{DISC_DIMENSION_INFO[d].name}</b> — {DISC_DIMENSION_INFO[d].desc}</span></div>
+            ))}
+          </div>
           {showMeta && disc.date && <div className="seg"><span className="lbl">Tanggal</span><b>{disc.date}</b></div>}
           {disc.via === 'kandidat'
             ? <span className="chip neutral">Dikerjakan mandiri</span>

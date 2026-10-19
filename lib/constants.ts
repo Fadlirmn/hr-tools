@@ -322,3 +322,11 @@ export const ONBOARD: OnboardingGroup[] = [
   { g: 'Orientasi (Hari 1–3)', items: ['Perkenalan dengan tim & atasan langsung', 'Penjelasan visi, misi, & nilai perusahaan', 'Product knowledge & gaya brand', 'Tour alur kerja & ekspektasi harian'] },
   { g: 'Probation 30 / 60 / 90 Hari', items: ['Tetapkan target & KPI 30 hari pertama', 'Tunjuk mentor/buddy pendamping', 'Jadwalkan check-in mingguan', 'Evaluasi akhir masa percobaan'] },
 ]
+
+// Nama & arti singkat tiap dimensi DISC — dipakai di tampilan hasil.
+export const DISC_DIMENSION_INFO: Record<'D' | 'I' | 'S' | 'C', { name: string; desc: string }> = {
+  D: { name: 'Dominance', desc: 'Tegas, berorientasi hasil, suka tantangan & cepat ambil keputusan.' },
+  I: { name: 'Influence', desc: 'Komunikatif, persuasif, antusias & mudah membangun relasi.' },
+  S: { name: 'Steadiness', desc: 'Sabar, stabil, setia, kooperatif & nyaman dengan rutinitas.' },
+  C: { name: 'Compliance', desc: 'Teliti, analitis, taat prosedur & mengutamakan akurasi.' },
+}
