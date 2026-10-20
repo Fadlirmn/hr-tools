@@ -45,6 +45,9 @@ export default function TestGate({ title, status, timeLimit, closeAt, resultHref
         Akses {title} Anda telah dibuka. Anda memiliki waktu <b>{timeLimit} menit</b> untuk menyelesaikan tes.
         Batas akhir pengerjaan: <b>{new Date(closeAt!).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</b>.
       </p>
+      <p style={{ marginBottom: 16, lineHeight: 1.6, color: 'var(--ink-soft)', fontSize: 13.5 }}>
+        Hitung mundur mulai berjalan saat Anda menekan tombol Mulai dan tidak bisa dijeda. Jika waktu habis, jawaban otomatis dikumpulkan.
+      </p>
       <button className="btn primary" onClick={onStart} style={{ fontSize: 15, padding: '12px 32px' }}>
         Mulai {title}
       </button>

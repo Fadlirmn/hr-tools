@@ -58,9 +58,11 @@ export interface Candidate {
   disc_open_at: string | null
   disc_close_at: string | null
   disc_time_limit: number | null
+  disc_started_at: string | null
   iq_open_at: string | null
   iq_close_at: string | null
   iq_time_limit: number | null
+  iq_started_at: string | null
   interview: InterviewAssessment | null
   onboarding: OnboardingProgress | null
 }

@@ -7,6 +7,7 @@ import { calcDiscGraphs } from '@/lib/disc-scoring'
 import { calcIq, estimateIq, classifyIq } from '@/lib/iq-scoring'
 import { sendEmail } from '@/lib/email'
 import type { IqQuestion, DiscAnswer, DiscResult, IqResult } from '@/lib/types'
+import { examColumns, computeDeadlineMs, SUBMIT_GRACE_SEC, type ExamWindowRow } from '@/lib/exam-timing'
 
 /**
  * POST /api/exam-submit
@@ -22,6 +23,12 @@ import type { IqQuestion, DiscAnswer, DiscResult, IqResult } from '@/lib/types'
  *
  * Body (disc): { type: 'disc', candidateId: string, answers: Record<number, {most, least}> }
  * Body (iq):   { type: 'iq', candidateId: string, answers: Record<number,number> }
+ *
+ * Verifikasi server untuk kandidat:
+ * - candidateId harus milik user yang login
+ * - tes harus sudah dimulai lewat /api/exam-start (started_at terisi)
+ * - belum ada hasil untuk tipe tes ini
+ * - now() <= min(started_at + time_limit, close_at) + SUBMIT_GRACE_SEC
  */
 export async function POST(req: Request) {
   const user = await getSessionUser()
@@ -39,6 +46,44 @@ export async function POST(req: Request) {
 
   if (type !== 'disc' && type !== 'iq') {
     return NextResponse.json({ error: 'type harus disc atau iq' }, { status: 400 })
+  }
+
+  // ===== Verifikasi sisi server (kandidat) =====
+  let timing: { startedAt: string | null; deadline: string | null; submittedAt: string; lateBySec: number } | null = null
+  if (isCandidate) {
+    if (!candidateId) return NextResponse.json({ error: 'candidateId wajib' }, { status: 400 })
+    const col = examColumns(type)
+    const chk = await query<ExamWindowRow & { user_id: string | null; has_result: boolean; server_now: Date }>(
+      `SELECT user_id,
+              ${col.openAt} AS open_at, ${col.closeAt} AS close_at,
+              ${col.timeLimit} AS time_limit, ${col.startedAt} AS started_at,
+              (psikotes_result->'${type}') IS NOT NULL AND (psikotes_result->'${type}') <> 'null'::jsonb AS has_result,
+              now() AS server_now
+         FROM candidates WHERE id = $1 LIMIT 1`,
+      [candidateId]
+    )
+    const row = chk.rows[0]
+    if (!row) return NextResponse.json({ error: 'Kandidat tidak ditemukan' }, { status: 404 })
+    if (row.user_id !== user.id) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    if (row.has_result) return NextResponse.json({ error: 'Tes sudah pernah dikumpulkan' }, { status: 409 })
+    if (!row.started_at) return NextResponse.json({ error: 'Tes belum dimulai. Klik Mulai Tes terlebih dahulu.' }, { status: 409 })
+
+    const nowMs = new Date(row.server_now).getTime()
+    const deadlineMs = computeDeadlineMs(row)
+    if (deadlineMs == null) return NextResponse.json({ error: 'Akses tes tidak valid' }, { status: 403 })
+    const lateBySec = Math.max(0, Math.ceil((nowMs - deadlineMs) / 1000))
+    if (lateBySec > SUBMIT_GRACE_SEC) {
+      return NextResponse.json(
+        { error: `Waktu pengerjaan sudah habis (${lateBySec} detik lewat batas). Jawaban tidak diterima.`, code: 'TIME_UP', lateBySec },
+        { status: 410 }
+      )
+    }
+    timing = {
+      startedAt: new Date(row.started_at).toISOString(),
+      deadline: new Date(deadlineMs).toISOString(),
+      submittedAt: new Date(nowMs).toISOString(),
+      lateBySec,
+    }
   }
 
   function parseData<T>(raw: unknown, fallback: T[]): T[] {
@@ -112,5 +157,5 @@ export async function POST(req: Request) {
     }
   }
 
-  return NextResponse.json({ ok: true, result: { ...result, candidateId: candidateId ?? null } })
+  return NextResponse.json({ ok: true, result: { ...result, candidateId: candidateId ?? null }, timing })
 }

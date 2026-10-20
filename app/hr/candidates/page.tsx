@@ -140,7 +140,7 @@ export default function HrCandidatesPage() {
         invite_token: null, cv: null,
         psikotes: null, psikotes_open_at: null, psikotes_close_at: null, psikotes_time_limit: null,
         psikotes_result: null, disc_open_at: null, disc_close_at: null, disc_time_limit: null,
-        iq_open_at: null, iq_close_at: null, iq_time_limit: null,
+        iq_open_at: null, iq_close_at: null, iq_time_limit: null, disc_started_at: null, iq_started_at: null,
         interview: null, onboarding: null,
       }
       const res = await fetch('/api/candidates', {

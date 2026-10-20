@@ -60,8 +60,8 @@ export default function HrPsikotesAksesPage() {
 
   const fieldsFor = (type: TestType, openAt: string | null, closeAt: string | null, timeLimit: number | null) =>
     type === 'disc'
-      ? { disc_open_at: openAt, disc_close_at: closeAt, disc_time_limit: timeLimit }
-      : { iq_open_at: openAt, iq_close_at: closeAt, iq_time_limit: timeLimit }
+      ? { disc_open_at: openAt, disc_close_at: closeAt, disc_time_limit: timeLimit, disc_started_at: null }
+      : { iq_open_at: openAt, iq_close_at: closeAt, iq_time_limit: timeLimit, iq_started_at: null }
 
   const openAccessDialog = (candidate: Candidate, type: TestType) => {
     setAccessTimeLimit('30')

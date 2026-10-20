@@ -68,6 +68,9 @@ ALTER TABLE candidates ADD COLUMN IF NOT EXISTS disc_time_limit INTEGER DEFAULT 
 ALTER TABLE candidates ADD COLUMN IF NOT EXISTS iq_open_at TIMESTAMPTZ DEFAULT NULL;
 ALTER TABLE candidates ADD COLUMN IF NOT EXISTS iq_close_at TIMESTAMPTZ DEFAULT NULL;
 ALTER TABLE candidates ADD COLUMN IF NOT EXISTS iq_time_limit INTEGER DEFAULT NULL;
+-- Waktu mulai tes (diset server saat kandidat klik Mulai) — dasar verifikasi batas waktu di server.
+ALTER TABLE candidates ADD COLUMN IF NOT EXISTS disc_started_at TIMESTAMPTZ DEFAULT NULL;
+ALTER TABLE candidates ADD COLUMN IF NOT EXISTS iq_started_at TIMESTAMPTZ DEFAULT NULL;
 
 -- Insert default positions
 INSERT INTO positions (id, name, weights) VALUES

@@ -30,18 +30,87 @@ export default function ExamModal({ mode, testType, candidate, positions, timeLi
   const [iqAns, setIqAns] = useState<Record<number, number>>({})
   const [name, setName] = useState(candidate?.nama || '')
   const [posId, setPosId] = useState(candidate?.posisi || (positions && positions[0]?.id) || '')
-  const [timeLeft, setTimeLeft] = useState((timeLimit || 30) * 60)
+  // Timer berbasis deadline (epoch ms) di sisi client. Sisa waktu selalu dihitung
+  // dari Date.now() sehingga tidak drift saat tab di-background.
+  const hasTimer = mode === 'candidate' || (timeLimit != null && timeLimit > 0)
+  const deadlineRef = useRef<number | null>(null)
+  const [timeLeft, setTimeLeft] = useState((timeLimit || 0) * 60)
   const [timerActive, setTimerActive] = useState(false)
   const [loaded, setLoaded] = useState(false)
+  const autoSubmittedRef = useRef(false)
+
+  // Persist sesi tes kandidat (deadline + jawaban + posisi) agar refresh tidak reset timer.
+  const storageKey = mode === 'candidate' && candidate ? `exam:${testType}:${candidate.id}` : null
+  const readSession = (): { discAns?: Record<number, DiscAnswer>; iqAns?: Record<number, number>; qIdx?: number } | null => {
+    if (!storageKey) return null
+    try { const raw = localStorage.getItem(storageKey); return raw ? JSON.parse(raw) : null } catch { return null }
+  }
+  const clearSession = useCallback(() => {
+    if (!storageKey) return
+    try { localStorage.removeItem(storageKey) } catch { /* ignore */ }
+  }, [storageKey])
+
+  const [startError, setStartError] = useState<string | null>(null)
+
+  const activateDeadline = (deadline: number) => {
+    deadlineRef.current = deadline
+    setTimeLeft(Math.max(0, Math.ceil((deadline - Date.now()) / 1000)))
+    setTimerActive(true)
+  }
+
+  /**
+   * Mulai timer.
+   * - Mode kandidat: server mencatat started_at (sekali) dan mengembalikan sisa detik
+   *   (min(started_at + time_limit, close_at) - now_server). Client membangun deadline
+   *   lokal = Date.now() + remainingSec*1000 lalu menghitung mundur sendiri — tidak ada
+   *   request berulang ke server, tapi angka awalnya dari server sehingga refresh/ganti
+   *   perangkat tidak mereset waktu.
+   * - Mode HR: murni lokal (timer opsional).
+   */
+  const beginTimer = useCallback(async () => {
+    if (mode === 'candidate') {
+      const saved = readSession()
+      if (saved?.discAns) setDiscAns(saved.discAns)
+      if (saved?.iqAns) setIqAns(saved.iqAns)
+      if (typeof saved?.qIdx === 'number') setQIdx(saved.qIdx)
+      try {
+        const res = await fetch('/api/exam-start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ type: testType }),
+        })
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok) { setStartError(data.error || 'Gagal memulai tes'); return }
+        const remainingSec = Number(data.remainingSec)
+        activateDeadline(Date.now() + (Number.isFinite(remainingSec) ? remainingSec : 0) * 1000)
+      } catch {
+        setStartError('Tidak bisa terhubung ke server untuk memulai tes. Coba lagi.')
+      }
+      return
+    }
+    if (!hasTimer) return
+    activateDeadline(Date.now() + (timeLimit as number) * 60 * 1000)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, testType, hasTimer, timeLimit, storageKey])
 
   useEffect(() => {
     loadQuestions().then(q => {
       setDiscQuestions(q.disc)
       setIqQuestions(q.iq)
       setLoaded(true)
-      if (mode === 'candidate') setTimerActive(true)
+      if (mode === 'candidate') beginTimer()
     })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Simpan progres ke localStorage tiap ada perubahan (mode kandidat).
+  useEffect(() => {
+    if (!storageKey || !timerActive) return
+    try {
+      localStorage.setItem(storageKey, JSON.stringify({ discAns, iqAns, qIdx }))
+    } catch { /* ignore */ }
+  }, [storageKey, timerActive, discAns, iqAns, qIdx])
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const clearTimer = useCallback(() => {
@@ -49,22 +118,32 @@ export default function ExamModal({ mode, testType, candidate, positions, timeLi
   }, [])
 
   useEffect(() => {
-    if (!timerActive || screen !== 'test') return
-    intervalRef.current = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) { clearTimer(); return 0 }
-        return prev - 1
-      })
-    }, 1000)
-    return clearTimer
-  }, [timerActive, screen, clearTimer])
+    if (!timerActive || screen !== 'test' || !hasTimer) return
+    const tick = () => {
+      const dl = deadlineRef.current
+      if (dl == null) return
+      const left = Math.max(0, Math.ceil((dl - Date.now()) / 1000))
+      setTimeLeft(left)
+      if (left === 0) clearTimer()
+    }
+    tick()
+    intervalRef.current = setInterval(tick, 500)
+    const onVisible = () => { if (document.visibilityState === 'visible') tick() }
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('focus', tick)
+    return () => {
+      clearTimer()
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('focus', tick)
+    }
+  }, [timerActive, screen, hasTimer, clearTimer])
 
   const title = testType === 'disc' ? 'Tes DISC' : 'Tes IQ'
 
   const startTest = () => {
     if (mode === 'hr' && !candidate && !name.trim()) { alert('Isi nama kandidat dulu'); return }
     setScreen('test')
-    setTimerActive(true)
+    beginTimer()
   }
 
   const selectDisc = (qNo: number, letter: DiscLetter, type: 'most' | 'least') => {
@@ -89,6 +168,7 @@ export default function ExamModal({ mode, testType, candidate, positions, timeLi
 
     setTimerActive(false)
     clearTimer()
+    clearSession()
 
     if (mode === 'candidate' && candidate) {
       const body = testType === 'disc'
@@ -100,7 +180,13 @@ export default function ExamModal({ mode, testType, candidate, positions, timeLi
         credentials: 'include',
         body: JSON.stringify(body),
       })
-      const data = await res.json()
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        alert(data.error || 'Jawaban tidak diterima server.')
+        setScreen('done')
+        await onSave(null)
+        return
+      }
       setScreen('done')
       await onSave(data.result ?? null)
       return
@@ -141,11 +227,16 @@ export default function ExamModal({ mode, testType, candidate, positions, timeLi
     setScreen('done')
     await onSave({ ...finalResult, candidateId })
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [discAns, iqAns, mode, candidate, name, posId, testType, discQuestions, iqQuestions, onSave, clearTimer])
+  }, [discAns, iqAns, mode, candidate, name, posId, testType, discQuestions, iqQuestions, onSave, clearTimer, clearSession])
 
+  // Auto-submit sekali saat waktu habis (hanya jika timer aktif).
   useEffect(() => {
-    if (timeLeft === 0 && screen === 'test') handleSubmit(true)
-  }, [timeLeft, handleSubmit, screen])
+    if (!hasTimer || !timerActive || screen !== 'test' || !loaded) return
+    if (timeLeft === 0 && !autoSubmittedRef.current) {
+      autoSubmittedRef.current = true
+      handleSubmit(true)
+    }
+  }, [timeLeft, hasTimer, timerActive, screen, loaded, handleSubmit])
 
   if (!loaded) return null
 
@@ -184,7 +275,9 @@ export default function ExamModal({ mode, testType, candidate, positions, timeLi
 
   if (screen === 'done') return doneScreen()
 
-  const m = Math.floor(timeLeft / 60), s = timeLeft % 60
+  const h = Math.floor(timeLeft / 3600), m = Math.floor((timeLeft % 3600) / 60), s = timeLeft % 60
+  const timeLabel = (h > 0 ? `${h}:` : '') + `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+  const timerClass = `exam-timer ${timeLeft <= 30 ? 'crit' : timeLeft <= 120 ? 'warn' : ''}`
   const letters: DiscLetter[] = ['a', 'b', 'c', 'd']
 
   const renderDisc = () => (
@@ -330,16 +423,36 @@ export default function ExamModal({ mode, testType, candidate, positions, timeLi
     </div>
   )
 
+  if (mode === 'candidate' && startError) {
+    return (
+      <div className="login-bg">
+        <div className="login-card" style={{ textAlign: 'center' }}>
+          <div className="logo" style={{ justifyContent: 'center' }}>
+            <div className="mark" style={{ background: 'var(--accent)' }}>!</div>
+            <h1>Tes tidak bisa dimulai</h1>
+          </div>
+          <p style={{ color: 'var(--ink-soft)', margin: '16px 0 24px' }}>{startError}</p>
+          <button className="btn primary" style={{ width: '100%', justifyContent: 'center' }} onClick={onClose}>Kembali</button>
+        </div>
+      </div>
+    )
+  }
+
+  if (mode === 'candidate' && !timerActive) {
+    return <div className="login-bg"><div className="login-card" style={{ textAlign: 'center' }}><p className="hint">Menyiapkan tes…</p></div></div>
+  }
+
   if (mode === 'candidate') {
     return (
       <>
         <div className="exam-top" style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1000 }}>
           <div className="et-brand"><img src="/logo.png" className="mark" alt="" /><span>{title} Kandidat</span></div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            {timeLimit != null && (
-              <span className={`exam-timer ${timeLeft <= 120 ? 'warn' : ''}`}>
-                {String(m).padStart(2, '0')}:{String(s).padStart(2, '0')}
-              </span>
+            {hasTimer && (
+              <div className="exam-timer-wrap" title="Sisa waktu pengerjaan">
+                <span className="exam-timer-lbl">Sisa waktu{timeLimit ? ` · dari ${timeLimit} menit` : ''}</span>
+                <span className={timerClass} aria-live="polite">{timeLabel}</span>
+              </div>
             )}
           </div>
         </div>
@@ -368,10 +481,8 @@ export default function ExamModal({ mode, testType, candidate, positions, timeLi
       <div className="exam-top">
         <div className="et-brand"><img src="/logo.png" className="mark" alt="" /><span>{title} Kandidat</span></div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          {timeLimit != null && (
-            <span className={`exam-timer ${timeLeft <= 120 ? 'warn' : ''}`} style={{ display: screen === 'test' ? '' : 'none' }}>
-              {String(m).padStart(2, '0')}:{String(s).padStart(2, '0')}
-            </span>
+          {hasTimer && screen === 'test' && (
+            <span className={timerClass}>{timeLabel}</span>
           )}
           <button className="btn sm" style={{ background: 'rgba(255,255,255,.15)', color: '#fff', border: 'none' }} onClick={onClose}>Tutup</button>
         </div>
@@ -399,13 +510,13 @@ export default function ExamModal({ mode, testType, candidate, positions, timeLi
                 <ul>
                   <li>Tes terdiri dari <b>{discQuestions.length} soal</b>, masing-masing 4 pilihan kata.</li>
                   <li>Tiap soal: pilih 1 kata <b>Most (M)</b> dan 1 kata <b>Least (L)</b> — tidak boleh sama.</li>
-                  <li>Total waktu <b>{timeLimit || 30} menit</b>; timer berjalan otomatis setelah menekan &quot;Mulai Tes&quot;.</li>
+                  {hasTimer ? <li>Total waktu <b>{timeLimit} menit</b>; timer berjalan otomatis setelah menekan &quot;Mulai Tes&quot;.</li> : <li>Tanpa batas waktu.</li>}
                   <li>Tidak ada jawaban benar/salah pada tes ini.</li>
                 </ul>
               ) : (
                 <ul>
                   <li>Tes terdiri dari <b>{iqQuestions.length} soal</b> dalam {IQ_CATEGORIES.length} kategori: {IQ_CATEGORIES.join(', ')}.</li>
-                  <li>Total waktu <b>{timeLimit || 30} menit</b>; timer berjalan otomatis setelah menekan &quot;Mulai Tes&quot;.</li>
+                  {hasTimer ? <li>Total waktu <b>{timeLimit} menit</b>; timer berjalan otomatis setelah menekan &quot;Mulai Tes&quot;.</li> : <li>Tanpa batas waktu.</li>}
                   <li>Pastikan semua soal terjawab sebelum mengumpulkan.</li>
                 </ul>
               )}

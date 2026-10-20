@@ -6,10 +6,10 @@ import { errorMessage } from '@/lib/errors'
 
 /**
  * PATCH /api/candidates/me — kandidat update field terbatas pada
- * record miliknya sendiri (nama/email/telepon dari halaman Profil Saya,
- * atau psikotes_result/stage saat submit psikotes mandiri).
+ * record miliknya sendiri (nama/email/telepon dari halaman Profil Saya).
+ * Hasil tes & stage hanya boleh ditulis lewat /api/exam-submit (dengan verifikasi waktu).
  */
-const ALLOWED_FIELDS = new Set(['nama', 'email', 'telepon', 'psikotes_result', 'stage'])
+const ALLOWED_FIELDS = new Set(['nama', 'email', 'telepon'])
 
 export async function PATCH(req: Request) {
   const user = await getSessionUser()
