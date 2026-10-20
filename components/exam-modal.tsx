@@ -160,12 +160,7 @@ export default function ExamModal({ mode, testType, candidate, positions, timeLi
   const iqAnsweredCount = Object.keys(iqAns).length
 
   const handleSubmit = useCallback(async (auto: boolean) => {
-    const totalQ = testType === 'disc' ? discQuestions.length : iqQuestions.length
-    const totalAns = testType === 'disc' ? discAnsweredCount : iqAnsweredCount
-    if (!auto && totalAns < totalQ) {
-      if (!confirm(`Masih ada ${totalQ - totalAns} soal belum dijawab. Tetap kumpulkan?`)) return
-    }
-
+    // Submit paksa: tidak ada konfirmasi walau masih ada soal belum dijawab.
     setTimerActive(false)
     clearTimer()
     clearSession()
