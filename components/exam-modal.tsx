@@ -3,7 +3,8 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { loadQuestions } from '@/lib/questions'
 import { calcDiscGraphs } from '@/lib/disc-scoring'
-import type { Candidate, Position, DiscQuestion, DiscLetter, IqQuestion, DiscAnswer, DiscResult, IqResult, IqCategory } from '@/lib/types'
+import { calcIq, IQ_CATEGORIES } from '@/lib/iq-scoring'
+import type { Candidate, Position, DiscQuestion, DiscLetter, IqQuestion, DiscAnswer, DiscResult, IqResult } from '@/lib/types'
 
 export type ExamTestType = 'disc' | 'iq'
 export type ExamResult = (DiscResult | IqResult) & { candidateId?: string | null }
@@ -17,17 +18,6 @@ interface ExamModalProps {
   timeLimit?: number | null
   onClose: () => void
   onSave: (res: ExamResult | null) => Promise<void>
-}
-
-const IQ_CATEGORIES: IqCategory[] = ['Logika', 'Numerik', 'Verbal', 'Spasial']
-
-function calcIq(ans: Record<number, number>, questions: IqQuestion[]) {
-  let correct = 0
-  questions.forEach((q, i) => { if (ans[i] === q.a) correct++ })
-  const total = questions.length
-  const percent = total ? Math.round((correct / total) * 100) : 0
-  const category: IqResult['category'] = percent >= 80 ? 'Tinggi' : percent >= 50 ? 'Rata-rata' : 'Perlu Perhatian'
-  return { correct, total, percent, category }
 }
 
 export default function ExamModal({ mode, testType, candidate, positions, timeLimit, onClose, onSave }: ExamModalProps) {

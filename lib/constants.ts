@@ -1,4 +1,4 @@
-import type { PositionDefault, CvCriterion, DiscQuestion, DiscQuestionMapping, DiscConversionTable, DiscBehavioralGraphMap, DiscProfileDescriptionMap, IqQuestion, IntCompetency, OnboardingGroup } from './types'
+import type { PositionDefault, CvCriterion, DiscQuestion, DiscQuestionMapping, DiscConversionTable, DiscBehavioralGraphMap, DiscProfileDescriptionMap, IqQuestion, IqCategory, IntCompetency, OnboardingGroup } from './types'
 
 export const STAGES: Record<string, string> = {
   screening: 'Screening CV',
@@ -330,3 +330,45 @@ export const DISC_DIMENSION_INFO: Record<'D' | 'I' | 'S' | 'C', { name: string; 
   S: { name: 'Steadiness', desc: 'Sabar, stabil, setia, kooperatif & nyaman dengan rutinitas.' },
   C: { name: 'Compliance', desc: 'Teliti, analitis, taat prosedur & mengutamakan akurasi.' },
 }
+
+// --- Interpretasi hasil Tes IQ (sisi HR) ---
+// Rentang klasifikasi perkiraan IQ, urut dari tertinggi. Dipakai lib/iq-scoring.ts classifyIq().
+export const IQ_CLASSIFICATIONS: { min: number; label: string; desc: string }[] = [
+  { min: 130, label: 'Sangat Superior', desc: 'Kemampuan penalaran sangat tinggi di semua bagian. Cepat menangkap pola kompleks, belajar mandiri, dan nyaman dengan masalah abstrak.' },
+  { min: 120, label: 'Superior', desc: 'Kemampuan kognitif jauh di atas rata-rata. Mampu menganalisis masalah baru dengan cepat dan menarik kesimpulan yang tepat.' },
+  { min: 110, label: 'Di Atas Rata-rata', desc: 'Daya nalar baik dan konsisten. Mudah memahami instruksi, cukup cepat beradaptasi dengan tugas yang menuntut analisis.' },
+  { min: 90, label: 'Rata-rata', desc: 'Kemampuan kognitif sesuai populasi umum. Mampu menyelesaikan tugas rutin dan analitis sederhana dengan baik.' },
+  { min: 80, label: 'Di Bawah Rata-rata', desc: 'Memerlukan waktu lebih untuk memahami pola dan konsep baru. Lebih efektif dengan instruksi yang jelas dan terstruktur.' },
+  { min: 0, label: 'Borderline', desc: 'Hasil tes menunjukkan kesulitan pada sebagian besar bagian. Perlu dicek ulang kondisi saat tes (waktu, fokus) sebelum disimpulkan.' },
+]
+
+// Nama, arti, dan kalimat sifat tiap bagian Tes IQ — dipakai kartu interpretasi.
+export const IQ_SECTION_INFO: Record<IqCategory, { name: string; desc: string; strong: string; weak: string }> = {
+  Logika: {
+    name: 'Logika',
+    desc: 'Penalaran deduktif, pola, dan hubungan sebab-akibat.',
+    strong: 'Berpikir runtut dan sistematis; cepat menemukan pola serta inkonsistensi dalam informasi.',
+    weak: 'Cenderung mengambil kesimpulan terlalu cepat; perlu latihan memecah masalah menjadi langkah-langkah kecil.',
+  },
+  Numerik: {
+    name: 'Numerik',
+    desc: 'Hitungan, deret angka, dan hubungan kuantitatif.',
+    strong: 'Nyaman bekerja dengan angka, target, dan data; cocok untuk tugas yang butuh ketelitian kuantitatif.',
+    weak: 'Kurang nyaman dengan angka dan hitungan; perlu alat bantu atau pengecekan ganda untuk tugas numerik.',
+  },
+  Verbal: {
+    name: 'Verbal',
+    desc: 'Kosakata, analogi kata, dan pemahaman bahasa.',
+    strong: 'Memahami dan menyampaikan ide dengan jelas; kuat dalam komunikasi tulis maupun lisan.',
+    weak: 'Perlu waktu lebih memahami instruksi tertulis yang panjang; lebih efektif dengan contoh konkret.',
+  },
+  Spasial: {
+    name: 'Spasial',
+    desc: 'Visualisasi bentuk, rotasi, dan hubungan ruang.',
+    strong: 'Mudah membayangkan bentuk dan tata letak; cocok untuk desain, visual, dan pekerjaan teknis.',
+    weak: 'Kurang kuat memvisualisasikan objek; tugas visual sebaiknya didukung sketsa atau referensi.',
+  },
+}
+
+export const IQ_DISCLAIMER =
+  'Angka IQ di atas adalah perkiraan dari tes singkat 60 soal (skala linear 70–130), bukan hasil asesmen psikolog bersertifikat. Gunakan sebagai salah satu bahan pertimbangan, bukan penentu tunggal.'

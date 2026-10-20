@@ -210,12 +210,20 @@ export interface IqQuestion {
 
 export type IqResultCategory = 'Tinggi' | 'Rata-rata' | 'Perlu Perhatian'
 
+export interface IqSectionScore {
+  correct: number
+  total: number
+  percent: number
+}
+
 export interface IqResult {
   answers: Record<number, number>
   correct: number
   total: number
   percent: number
   category: IqResultCategory
+  /** Skor per bagian — opsional karena hasil lama di DB belum menyimpannya. */
+  sections?: Record<IqCategory, IqSectionScore>
   date: string
   via: 'kandidat' | 'hr'
 }

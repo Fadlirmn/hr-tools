@@ -6,9 +6,8 @@ import { fetchCandidates } from '@/lib/db-hr'
 import { getPositions } from '@/lib/db'
 import { loadQuestions } from '@/lib/questions'
 import ExamModal, { type ExamResult } from '@/components/exam-modal'
-import type { Candidate, Position, IqQuestion, IqResult, IqCategory } from '@/lib/types'
-
-const IQ_CATEGORIES: IqCategory[] = ['Logika', 'Numerik', 'Verbal', 'Spasial']
+import { calcIq, estimateIq, classifyIq, IQ_CATEGORIES } from '@/lib/iq-scoring'
+import type { Candidate, Position, IqQuestion } from '@/lib/types'
 
 export default function HrTesIqPage() {
   return (
@@ -49,14 +48,8 @@ function HrTesIqContent() {
 
   const setIqFn = (i: number, oi: number) => setIqAns(prev => ({ ...prev, [i]: oi }))
 
-  const iqCalc = useMemo(() => {
-    let correct = 0
-    iqQuestions.forEach((q, i) => { if (iqAns[i] === q.a) correct++ })
-    const total = iqQuestions.length
-    const percent = total ? Math.round((correct / total) * 100) : 0
-    const category: IqResult['category'] = percent >= 80 ? 'Tinggi' : percent >= 50 ? 'Rata-rata' : 'Perlu Perhatian'
-    return { correct, total, percent, category }
-  }, [iqAns, iqQuestions])
+  const iqCalc = useMemo(() => calcIq(iqAns, iqQuestions), [iqAns, iqQuestions])
+  const iqScore = estimateIq(iqCalc.percent)
 
   const answered = Object.keys(iqAns).length
   const totalPct = iqCalc.total ? Math.round((answered / iqCalc.total) * 100) : 0
@@ -173,6 +166,8 @@ function HrTesIqContent() {
         <h4 className="blk" style={{ marginTop: 18 }}>Hasil IQ</h4>
         <div className="seg"><span className="lbl">Skor</span><b>{iqCalc.correct}/{iqCalc.total} ({iqCalc.percent}%)</b></div>
         <div className="seg"><span className="lbl">Kategori</span><b>{iqCalc.category}</b></div>
+        <div className="seg"><span className="lbl">Perkiraan IQ</span><b>{iqScore}</b></div>
+        <div className="seg"><span className="lbl">Klasifikasi</span><b>{classifyIq(iqScore).label}</b></div>
         {c ? (
           <button className="btn primary no-print" style={{ marginTop: 14 }} onClick={saveIq}>💾 Simpan hasil IQ ke {c.nama}</button>
         ) : (

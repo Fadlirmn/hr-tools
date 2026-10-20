@@ -4,6 +4,7 @@ import { getSessionUser } from '@/lib/auth'
 import { errorMessage } from '@/lib/errors'
 import { IQ_QUESTIONS as IQ_FALLBACK } from '@/lib/constants'
 import { calcDiscGraphs } from '@/lib/disc-scoring'
+import { calcIq, estimateIq, classifyIq } from '@/lib/iq-scoring'
 import { sendEmail } from '@/lib/email'
 import type { IqQuestion, DiscAnswer, DiscResult, IqResult } from '@/lib/types'
 
@@ -57,13 +58,7 @@ export async function POST(req: Request) {
     const qRes = await query<{ data: unknown }>(`SELECT data FROM exam_questions WHERE type = 'iq' LIMIT 1`)
     const questions = parseData<IqQuestion>(qRes.rows[0]?.data, IQ_FALLBACK)
 
-    let correct = 0
-    questions.forEach((q, i) => { if (Number(answers[i]) === q.a) correct++ })
-    const total = questions.length
-    const percent = total ? Math.round((correct / total) * 100) : 0
-    const category: IqResult['category'] = percent >= 80 ? 'Tinggi' : percent >= 50 ? 'Rata-rata' : 'Perlu Perhatian'
-
-    result = { answers: { ...answers }, correct, total, percent, category, date: new Date().toISOString().slice(0, 10), via }
+    result = { answers: { ...answers }, ...calcIq(answers || {}, questions), date: new Date().toISOString().slice(0, 10), via }
   }
 
   if (candidateId) {
@@ -97,7 +92,11 @@ export async function POST(req: Request) {
       if (hrEmail && current) {
         const summary = type === 'disc'
           ? `Pola Adapted Style: <b>${(result as DiscResult).adapted.pattern.name}</b> (tipe ${(result as DiscResult).adapted.pattern.type})`
-          : `Skor: <b>${(result as IqResult).correct}/${(result as IqResult).total}</b> (${(result as IqResult).percent}%) — ${(result as IqResult).category}`
+          : (() => {
+              const r = result as IqResult
+              const score = estimateIq(r.percent)
+              return `Skor: <b>${r.correct}/${r.total}</b> (${r.percent}%) — ${r.category} · Perkiraan IQ <b>${score}</b> (${classifyIq(score).label})`
+            })()
         await sendEmail({
           to: hrEmail,
           subject: `Hasil ${type === 'disc' ? 'Tes DISC' : 'Tes IQ'} — ${current.nama}`,

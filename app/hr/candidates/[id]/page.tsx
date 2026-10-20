@@ -5,12 +5,14 @@ import { useParams, useRouter } from 'next/navigation'
 import { fetchCandidates } from '@/lib/db-hr'
 import { getPositions } from '@/lib/db'
 import { STAGES } from '@/lib/constants'
+import { loadQuestions } from '@/lib/questions'
+import { estimateIq, classifyIq } from '@/lib/iq-scoring'
 import CvResult from '@/components/results/cv-result'
 import DiscResult from '@/components/results/disc-result'
 import IqResult from '@/components/results/iq-result'
 import InterviewResult from '@/components/results/interview-result'
 import OnboardingResult from '@/components/results/onboarding-result'
-import type { Candidate, Position } from '@/lib/types'
+import type { Candidate, Position, IqQuestion } from '@/lib/types'
 
 export default function HrCandidateDetailPage() {
   const router = useRouter()
@@ -19,14 +21,16 @@ export default function HrCandidateDetailPage() {
 
   const [candidate, setCandidate] = useState<Candidate | null>(null)
   const [positions, setPositions] = useState<Position[]>([])
+  const [iqQuestions, setIqQuestions] = useState<IqQuestion[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (!id) return
     ;(async () => {
-      const [cands, pos] = await Promise.all([fetchCandidates(), getPositions()])
+      const [cands, pos, q] = await Promise.all([fetchCandidates(), getPositions(), loadQuestions()])
       setCandidate((cands as Candidate[]).find(c => c.id === id) || null)
       setPositions(pos)
+      setIqQuestions(q.iq)
       setLoading(false)
     })()
   }, [id])
@@ -49,6 +53,7 @@ export default function HrCandidateDetailPage() {
   const posName = positions.find(p => p.id === c.posisi)?.name || '—'
   const disc = c.psikotes_result?.disc
   const iq = c.psikotes_result?.iq
+  const iqScore = iq ? estimateIq(iq.percent) : null
 
   return (
     <>
@@ -83,7 +88,7 @@ export default function HrCandidateDetailPage() {
         <div className="summary-grid">
           <div className="item"><div className="l">CV</div><div className="v">{c.cv ? `${c.cv.percent}%` : '—'}</div><div className="s">{c.cv?.verdict || 'Belum dinilai'}</div></div>
           <div className="item"><div className="l">DISC</div><div className="v">{disc ? disc.adapted.pattern.type : '—'}</div><div className="s">{disc ? disc.adapted.pattern.name : 'Belum dites'}</div></div>
-          <div className="item"><div className="l">IQ</div><div className="v">{iq ? `${iq.percent}%` : '—'}</div><div className="s">{iq ? iq.category : 'Belum dites'}</div></div>
+          <div className="item"><div className="l">IQ</div><div className="v">{iqScore != null ? `IQ ${iqScore}` : '—'}</div><div className="s">{iq && iqScore != null ? `${classifyIq(iqScore).label} · ${iq.percent}%` : 'Belum dites'}</div></div>
           <div className="item"><div className="l">Interview</div><div className="v">{c.interview ? c.interview.avg.toFixed(1) : '—'}</div><div className="s">{c.interview?.verdict || 'Belum dinilai'}</div></div>
           <div className="item"><div className="l">Onboarding</div><div className="v">{c.onboarding ? `${c.onboarding.progress}%` : '—'}</div><div className="s">{c.onboarding ? 'Progress' : 'Belum mulai'}</div></div>
         </div>
@@ -91,7 +96,7 @@ export default function HrCandidateDetailPage() {
 
       <CvResult cv={c.cv} posName={posName} emptyHint="Belum ada penilaian CV untuk kandidat ini." />
       <DiscResult disc={disc} nama={c.nama} showMeta emptyHint="Kandidat belum mengerjakan Tes DISC." />
-      <IqResult iq={iq} showMeta emptyHint="Kandidat belum mengerjakan Tes IQ." />
+      <IqResult iq={iq} showMeta detail questions={iqQuestions} emptyHint="Kandidat belum mengerjakan Tes IQ." />
       <InterviewResult interview={c.interview} emptyHint="Belum ada penilaian interview untuk kandidat ini." />
       <OnboardingResult onboarding={c.onboarding} emptyHint="Onboarding belum dimulai." />
     </>

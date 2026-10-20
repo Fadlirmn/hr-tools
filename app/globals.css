@@ -316,6 +316,11 @@ h4.blk{font-size:13.5px;font-weight:800;margin:18px 0 8px;color:var(--ink)}
 
 /* DISC: laporan hasil (meniru layout laporan dampingi) */
 .disc-report{margin-bottom:16px}
+.iq-report{margin-bottom:16px}
+.iq-bar-lbl{width:64px;font-weight:700;font-size:13px}
+.iq-score-big{font-size:36px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.iq-lvl{font-size:10.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;margin-left:6px}
+.iq-lvl.kuat{color:var(--ok)} .iq-lvl.cukup{color:var(--hold)} .iq-lvl.lemah{color:var(--no)}
 .disc-sec-kicker{font-size:11.5px;letter-spacing:1.3px;text-transform:uppercase;font-weight:800;color:var(--ink);margin:22px 0 12px}
 .disc-graphs{gap:18px;align-items:stretch}
 .disc-graph{background:#FAFAFD;border:1px solid var(--line-soft);border-radius:12px;padding:16px 18px}
@@ -346,4 +351,4 @@ h4.blk{font-size:13.5px;font-weight:800;margin:18px 0 8px;color:var(--ink)}
 .disc-tend .v{font-size:13px;color:var(--ink-soft);line-height:1.45}
 .dim-D{color:#C0392B} .dim-I{color:#D98C0E} .dim-S{color:#1E8E5A} .dim-C{color:#1F4E9C}
 .bg-D{background:#C0392B} .bg-I{background:#D98C0E} .bg-S{background:#1E8E5A} .bg-C{background:#1F4E9C}
-@media (max-width:900px){.disc-tend-grid{grid-template-columns:1fr 1fr}.disc-legend{grid-template-columns:1fr}}
+@media (max-width:900px){.disc-tend-grid,.iq-report .disc-tend-grid{grid-template-columns:1fr 1fr!important}.disc-legend{grid-template-columns:1fr}}
