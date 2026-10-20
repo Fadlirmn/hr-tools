@@ -36,15 +36,15 @@ export default function CandidateTesDiscPage() {
 
   return (
     <div className="profile-section">
-      <h3>🧩 Tes DISC</h3>
-      <TestGate
+      {!examOpen && <h3>🧩 Tes DISC</h3>}
+      {!examOpen && <TestGate
         title="Tes DISC"
         status={discStatus}
         timeLimit={candidate.disc_time_limit}
         closeAt={candidate.disc_close_at}
         resultHref="/candidate/hasil-tes-disc"
         onStart={() => setExamOpen(true)}
-      />
+      />}
 
       {examOpen && <ExamModal
         mode="candidate"

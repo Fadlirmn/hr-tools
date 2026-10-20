@@ -36,15 +36,15 @@ export default function CandidateTesIqPage() {
 
   return (
     <div className="profile-section">
-      <h3>🧠 Tes IQ</h3>
-      <TestGate
+      {!examOpen && <h3>🧠 Tes IQ</h3>}
+      {!examOpen && <TestGate
         title="Tes IQ"
         status={iqStatus}
         timeLimit={candidate.iq_time_limit}
         closeAt={candidate.iq_close_at}
         resultHref="/candidate/hasil-tes-iq"
         onStart={() => setExamOpen(true)}
-      />
+      />}
 
       {examOpen && <ExamModal
         mode="candidate"
