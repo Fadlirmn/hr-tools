@@ -35,7 +35,7 @@ function MetaSegs({ iq }: { iq: IqResultData }) {
   return (
     <>
       <div className="seg"><span className="lbl">Tanggal</span><b>{iq.date || '—'}</b></div>
-      <div className="seg"><span className="lbl">Dikerjakan</span><b>{iq.via === 'kandidat' ? 'Mandiri oleh kandidat' : 'Diinput HR'}</b></div>
+      <div className="seg"><span className="lbl">Dikerjakan</span><b>{iq.via === 'kandidat' ? 'Mandiri oleh kandidat' : 'Diinput HR'}{iq.auto ? ' · otomatis (waktu habis)' : ''}</b></div>
     </>
   )
 }

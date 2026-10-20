@@ -172,16 +172,29 @@ export default function ExamModal({ mode, testType, candidate, positions, timeLi
 
     if (mode === 'candidate' && candidate) {
       const body = testType === 'disc'
-        ? { type: 'disc', candidateId: candidate.id, answers: discAns }
-        : { type: 'iq', candidateId: candidate.id, answers: iqAns }
-      const res = await fetch('/api/exam-submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(body),
-      })
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok) {
+        ? { type: 'disc', candidateId: candidate.id, answers: discAns, auto }
+        : { type: 'iq', candidateId: candidate.id, answers: iqAns, auto }
+      // Submit paksa: jawaban dikirim apa adanya (boleh belum lengkap). Jika jaringan
+      // gagal, coba ulang beberapa kali agar hasil tetap tersimpan.
+      let data: { error?: string; result?: ExamResult } = {}
+      let ok = false
+      for (let attempt = 0; attempt < 4 && !ok; attempt++) {
+        try {
+          const res = await fetch('/api/exam-submit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(body),
+          })
+          data = await res.json().catch(() => ({}))
+          ok = res.ok
+          if (!ok && res.status < 500) break // ditolak server (409/403): tidak perlu retry
+        } catch {
+          data = { error: 'Tidak bisa terhubung ke server.' }
+        }
+        if (!ok) await new Promise(r => setTimeout(r, 1000 * (attempt + 1)))
+      }
+      if (!ok) {
         alert(data.error || 'Jawaban tidak diterima server.')
         setScreen('done')
         await onSave(null)

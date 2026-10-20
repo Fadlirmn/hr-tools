@@ -7,7 +7,7 @@ import { calcDiscGraphs } from '@/lib/disc-scoring'
 import { calcIq, estimateIq, classifyIq } from '@/lib/iq-scoring'
 import { sendEmail } from '@/lib/email'
 import type { IqQuestion, DiscAnswer, DiscResult, IqResult } from '@/lib/types'
-import { examColumns, computeDeadlineMs, SUBMIT_GRACE_SEC, type ExamWindowRow } from '@/lib/exam-timing'
+import { examColumns, computeDeadlineMs, type ExamWindowRow } from '@/lib/exam-timing'
 
 /**
  * POST /api/exam-submit
@@ -28,7 +28,8 @@ import { examColumns, computeDeadlineMs, SUBMIT_GRACE_SEC, type ExamWindowRow } 
  * - candidateId harus milik user yang login
  * - tes harus sudah dimulai lewat /api/exam-start (started_at terisi)
  * - belum ada hasil untuk tipe tes ini
- * - now() <= min(started_at + time_limit, close_at) + SUBMIT_GRACE_SEC
+ * - lewat batas waktu TIDAK ditolak: jawaban (walau belum lengkap) tetap
+ *   dinilai & disimpan apa adanya, ditandai auto/lateBySec untuk HR.
  */
 export async function POST(req: Request) {
   const user = await getSessionUser()
@@ -42,7 +43,7 @@ export async function POST(req: Request) {
   }
 
   const body = await req.json()
-  const { type, candidateId } = body as { type: 'disc' | 'iq'; candidateId: string | null }
+  const { type, candidateId, auto } = body as { type: 'disc' | 'iq'; candidateId: string | null; auto?: boolean }
 
   if (type !== 'disc' && type !== 'iq') {
     return NextResponse.json({ error: 'type harus disc atau iq' }, { status: 400 })
@@ -71,13 +72,8 @@ export async function POST(req: Request) {
     const nowMs = new Date(row.server_now).getTime()
     const deadlineMs = computeDeadlineMs(row)
     if (deadlineMs == null) return NextResponse.json({ error: 'Akses tes tidak valid' }, { status: 403 })
+    // Lewat deadline: tetap diterima & disimpan (submit paksa), hanya ditandai.
     const lateBySec = Math.max(0, Math.ceil((nowMs - deadlineMs) / 1000))
-    if (lateBySec > SUBMIT_GRACE_SEC) {
-      return NextResponse.json(
-        { error: `Waktu pengerjaan sudah habis (${lateBySec} detik lewat batas). Jawaban tidak diterima.`, code: 'TIME_UP', lateBySec },
-        { status: 410 }
-      )
-    }
     timing = {
       startedAt: new Date(row.started_at).toISOString(),
       deadline: new Date(deadlineMs).toISOString(),
@@ -98,12 +94,14 @@ export async function POST(req: Request) {
     const { answers } = body as { answers: Record<number, DiscAnswer> }
     const { adapted, natural } = calcDiscGraphs(answers || {})
     result = { answers: { ...answers }, adapted, natural, date: new Date().toISOString().slice(0, 10), via }
+    if (timing) { result.auto = !!auto || timing.lateBySec > 0; result.lateBySec = timing.lateBySec }
   } else {
     const { answers } = body as { answers: Record<number, number> }
     const qRes = await query<{ data: unknown }>(`SELECT data FROM exam_questions WHERE type = 'iq' LIMIT 1`)
     const questions = parseData<IqQuestion>(qRes.rows[0]?.data, IQ_FALLBACK)
 
     result = { answers: { ...answers }, ...calcIq(answers || {}, questions), date: new Date().toISOString().slice(0, 10), via }
+    if (timing) { result.auto = !!auto || timing.lateBySec > 0; result.lateBySec = timing.lateBySec }
   }
 
   if (candidateId) {

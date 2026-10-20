@@ -119,7 +119,7 @@ export default function DiscResult({ disc, emptyHint = 'HR belum memasukkan hasi
         </div>
         {showMeta && (
           <div className="hint" style={{ marginTop: 10 }}>
-            Tanggal: {fmtDate(disc.date)} · {disc.via === 'kandidat' ? 'Dikerjakan mandiri' : 'Diinput HR'}
+            Tanggal: {fmtDate(disc.date)} · {disc.via === 'kandidat' ? 'Dikerjakan mandiri' : 'Diinput HR'}{disc.auto ? ' · Dikumpulkan otomatis (waktu habis)' : ''}
           </div>
         )}
       </div>

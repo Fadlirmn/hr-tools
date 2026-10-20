@@ -4,9 +4,6 @@
  */
 export type ExamType = 'disc' | 'iq'
 
-/** Toleransi (detik) untuk latency jaringan saat submit otomatis tepat di detik terakhir. */
-export const SUBMIT_GRACE_SEC = 30
-
 export interface ExamWindowRow {
   open_at: string | Date | null
   close_at: string | Date | null

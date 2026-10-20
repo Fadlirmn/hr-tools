@@ -198,6 +198,10 @@ export interface DiscResult {
   natural: DiscGraphResult // dihitung dari kolom "Least" — gaya alami/dasar
   date: string
   via: 'kandidat' | 'hr'
+  /** true jika dikumpulkan otomatis karena waktu habis (jawaban bisa belum lengkap). */
+  auto?: boolean
+  /** detik melewati batas waktu saat diterima server (0 = tepat waktu). */
+  lateBySec?: number
 }
 
 // --- Tes IQ ---
@@ -228,6 +232,10 @@ export interface IqResult {
   sections?: Record<IqCategory, IqSectionScore>
   date: string
   via: 'kandidat' | 'hr'
+  /** true jika dikumpulkan otomatis karena waktu habis (jawaban bisa belum lengkap). */
+  auto?: boolean
+  /** detik melewati batas waktu saat diterima server (0 = tepat waktu). */
+  lateBySec?: number
 }
 
 export interface PsikotesResultV2 {
