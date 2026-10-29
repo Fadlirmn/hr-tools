@@ -23,6 +23,7 @@ export default function HrCandidatesPage() {
 
   const [showModal, setShowModal] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
+  const [editOrigPosisi, setEditOrigPosisi] = useState('')
   const [form, setForm] = useState({ nama: '', posisi: '', sumber: 'LinkedIn', email: '', telepon: '', catatan: '' })
   const [showAddPos, setShowAddPos] = useState(false)
   const [newPosName, setNewPosName] = useState('')
@@ -78,6 +79,7 @@ export default function HrCandidatesPage() {
 
   const openEdit = (c: Candidate) => {
     setEditId(c.id)
+    setEditOrigPosisi(c.posisi)
     setForm({ nama: c.nama, posisi: c.posisi, sumber: c.sumber || 'LinkedIn', email: c.email || '', telepon: c.telepon || '', catatan: c.catatan || '' })
     setShowAddPos(false)
     setNewPosName('')
@@ -118,14 +120,18 @@ export default function HrCandidatesPage() {
     if (!form.nama.trim()) return
     if (!isValidPhone(form.telepon)) { alert(PHONE_ERROR); return }
     if (editId) {
-      // Mode Edit: posisi disembunyikan & tidak dikirim agar data lama tetap.
+      if (!form.posisi) { alert('Pilih posisi dilamar dulu'); return }
+      if (form.posisi !== editOrigPosisi) {
+        const ok = confirm(`Ubah posisi dari "${posName(editOrigPosisi)}" ke "${posName(form.posisi)}"?\nHasil tes yang sudah ada tetap memakai bobot posisi lama.`)
+        if (!ok) return
+      }
       const res = await fetch('/api/candidates', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
           id: editId,
-          nama: form.nama.trim(), sumber: form.sumber,
+          nama: form.nama.trim(), posisi: form.posisi, sumber: form.sumber,
           email: form.email.trim(), telepon: form.telepon.trim(), catatan: form.catatan.trim(),
         }),
       })
@@ -274,10 +280,6 @@ export default function HrCandidatesPage() {
               <div className="field"><label className="fld">Nama lengkap *</label>
                 <input type="text" value={form.nama} onChange={e => setForm({ ...form, nama: e.target.value })} placeholder="cth. Sarah Putri" /></div>
               <div className="grid2">
-                {editId ? (
-                  <div className="field"><label className="fld">Posisi dilamar</label>
-                    <div className="chip" style={{ width: 'fit-content' }}>{posName(form.posisi)} (terkunci)</div></div>
-                ) : (
                   <div className="field"><label className="fld">Posisi dilamar *</label>
                     <div style={{ display: 'flex', gap: 8 }}>
                       <select value={form.posisi} onChange={e => setForm({ ...form, posisi: e.target.value })} disabled={positions.length === 0} style={{ flex: 1 }}>
@@ -291,8 +293,10 @@ export default function HrCandidatesPage() {
                         <input type="text" value={newPosName} onChange={e => setNewPosName(e.target.value)} placeholder="cth. Marketing" style={{ flex: 1 }} />
                         <button type="button" className="btn sm primary" disabled={savingPos} onClick={saveQuickPosition}>{savingPos ? '...' : 'Simpan'}</button>
                       </div>
+                    )}
+                    {editId && form.posisi !== editOrigPosisi && (
+                      <div className="hint" style={{ marginTop: 6 }}>Posisi diubah — hasil tes yang sudah ada tetap memakai bobot posisi lama.</div>
                     )}</div>
-                )}
                 <div className="field"><label className="fld">Sumber</label>
                   <select value={form.sumber} onChange={e => setForm({ ...form, sumber: e.target.value })}>
                     {['LinkedIn', 'Instagram/TikTok', 'JobStreet', 'Glints', 'Referensi', 'Walk-in', 'Lainnya'].map(s =>
