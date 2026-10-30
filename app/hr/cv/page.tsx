@@ -29,21 +29,21 @@ function HrCvContent() {
     setPositions(await getPositions())
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    ;(async () => { await load() })()
+  }, [])
 
   const c = candidates.find(x => x.id === selId) || null
   const pos = c ? positions.find(p => p.id === c.posisi) : null
   const weights = (pos ? pos.weights : Object.fromEntries(CV_CRITERIA.map(x => [x.id, 2]))) as Record<string, number>
 
-  useEffect(() => {
-    if (c?.cv) {
-      setScores({ ...c.cv.scores })
-      setNotes(c.cv.notes || '')
-    } else {
-      setScores({})
-      setNotes('')
-    }
-  }, [selId])
+  // Reset form saat kandidat terpilih berubah (adjust state during render)
+  const [prevSelId, setPrevSelId] = useState(selId)
+  if (prevSelId !== selId) {
+    setPrevSelId(selId)
+    setScores(c?.cv ? { ...c.cv.scores } : {})
+    setNotes(c?.cv?.notes || '')
+  }
 
   const setCV = (id: string, n: number) => {
     setScores(prev => ({ ...prev, [id]: n }))
@@ -99,7 +99,7 @@ function HrCvContent() {
         <span className="hint">Pilih kandidat untuk menyimpan hasil ke profilnya.</span>
       </div>
 
-      <div className="notice">ℹ️ Tiap kriteria dinilai <b>1–5</b>. Bobot tiap kriteria mengikuti posisi yang dilamar (atur di menu "Posisi & Bobot"). Skor akhir adalah persentase tertimbang.</div>
+      <div className="notice">ℹ️ Tiap kriteria dinilai <b>1–5</b>. Bobot tiap kriteria mengikuti posisi yang dilamar (atur di menu &quot;Posisi & Bobot&quot;). Skor akhir adalah persentase tertimbang.</div>
 
       <div className="card card-p">
         <div className="section-head" style={{ marginTop: 0 }}>

@@ -18,17 +18,18 @@ export default function HrOnboardingPage() {
     setPositions(await getPositions())
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    ;(async () => { await load() })()
+  }, [])
 
   const c = candidates.find(x => x.id === selId) || null
 
-  useEffect(() => {
-    if (c?.onboarding) {
-      setChecklist({ ...c.onboarding.checklist })
-    } else {
-      setChecklist({})
-    }
-  }, [selId])
+  // Reset checklist saat kandidat terpilih berubah (adjust state during render)
+  const [prevSelId, setPrevSelId] = useState(selId)
+  if (prevSelId !== selId) {
+    setPrevSelId(selId)
+    setChecklist(c?.onboarding ? { ...c.onboarding.checklist } : {})
+  }
 
   const toggle = (key: string) => setChecklist(prev => ({ ...prev, [key]: !prev[key] }))
 

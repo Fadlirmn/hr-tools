@@ -37,13 +37,18 @@ function HrTesDiscContent() {
     setDiscQuestions(q.disc)
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    ;(async () => { await load() })()
+  }, [])
 
   const c = candidates.find(x => x.id === selId) || null
 
-  useEffect(() => {
+  // Sinkron jawaban saat kandidat / data berubah (adjust state during render)
+  const [prevKey, setPrevKey] = useState<{ selId: string; candidates: Candidate[] }>({ selId, candidates })
+  if (prevKey.selId !== selId || prevKey.candidates !== candidates) {
+    setPrevKey({ selId, candidates })
     setDiscAns(c?.psikotes_result?.disc ? { ...c.psikotes_result.disc.answers } : {})
-  }, [selId, candidates])
+  }
 
   const selectDisc = (qNo: number, letter: DiscLetter, type: 'most' | 'least') => {
     setDiscAns(prev => {

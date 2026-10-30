@@ -15,7 +15,9 @@ export default function HrSettingsPage() {
     setPositions(await getPositions())
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    ;(async () => { await load() })()
+  }, [])
 
   const upsertPosition = (p: Position) =>
     fetch('/api/positions', {

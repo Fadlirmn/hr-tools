@@ -38,13 +38,18 @@ function HrTesIqContent() {
     setIqQuestions(q.iq)
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    ;(async () => { await load() })()
+  }, [])
 
   const c = candidates.find(x => x.id === selId) || null
 
-  useEffect(() => {
+  // Sinkron jawaban saat kandidat / data berubah (adjust state during render)
+  const [prevKey, setPrevKey] = useState<{ selId: string; candidates: Candidate[] }>({ selId, candidates })
+  if (prevKey.selId !== selId || prevKey.candidates !== candidates) {
+    setPrevKey({ selId, candidates })
     setIqAns(c?.psikotes_result?.iq ? { ...c.psikotes_result.iq.answers } : {})
-  }, [selId, candidates])
+  }
 
   const setIqFn = (i: number, oi: number) => setIqAns(prev => ({ ...prev, [i]: oi }))
 

@@ -21,23 +21,21 @@ export default function HrInterviewPage() {
     setPositions(await getPositions())
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    ;(async () => { await load() })()
+  }, [])
 
   const c = candidates.find(x => x.id === selId) || null
 
-  useEffect(() => {
-    if (c?.interview) {
-      setScores({ ...c.interview.scores })
-      setBy(c.interview.by || '')
-      setRec(c.interview.rec || 'Lanjut ke offering')
-      setNotes(c.interview.notes || '')
-    } else {
-      setScores({})
-      setBy('')
-      setRec('Lanjut ke offering')
-      setNotes('')
-    }
-  }, [selId])
+  // Reset form saat kandidat terpilih berubah (adjust state during render)
+  const [prevSelId, setPrevSelId] = useState(selId)
+  if (prevSelId !== selId) {
+    setPrevSelId(selId)
+    setScores(c?.interview ? { ...c.interview.scores } : {})
+    setBy(c?.interview?.by || '')
+    setRec(c?.interview?.rec || 'Lanjut ke offering')
+    setNotes(c?.interview?.notes || '')
+  }
 
   const setScore = (id: string, n: number) => setScores(prev => ({ ...prev, [id]: n }))
 

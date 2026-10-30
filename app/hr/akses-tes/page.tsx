@@ -56,7 +56,9 @@ export default function HrPsikotesAksesPage() {
     setLoading(false)
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    ;(async () => { await load() })()
+  }, [])
 
   const fieldsFor = (type: TestType, openAt: string | null, closeAt: string | null, timeLimit: number | null) =>
     type === 'disc'

@@ -21,7 +21,9 @@ export default function CandidateTesDiscPage() {
     setLoading(false)
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    ;(async () => { await load() })()
+  }, [])
 
   if (loading) return null
   if (!candidate) return <div className="empty"><div className="big">◦</div><div>Data tidak ditemukan</div></div>
