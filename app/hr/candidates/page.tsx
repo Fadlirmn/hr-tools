@@ -229,16 +229,17 @@ export default function HrCandidatesPage() {
         </div>
       ) : (
         <div className="card card-p">
+          <div className="table-wrap">
             <table className="tbl">
             <thead><tr><th>Nama</th><th>Posisi</th><th>Sumber</th><th>Tahap</th><th>CV</th><th>DISC</th><th>IQ</th><th>Interview</th><th>Undangan</th><th></th></tr></thead>
             <tbody>
               {candidates.map(c => (
                 <tr key={c.id}>
-                  <td className="cand-name" onClick={() => router.push(`/hr/candidates/${c.id}`)}>
+                  <td className="cand-name nowrap" onClick={() => router.push(`/hr/candidates/${c.id}`)}>
                     {c.nama}<div className="hint">{c.tanggal || ''}</div>
                   </td>
                   <td>{posName(c.posisi)}</td>
-                  <td>{c.sumber || '—'}</td>
+                  <td className="nowrap">{c.sumber || '—'}</td>
                   <td>
                     <select value={c.stage} onChange={e => setStage(c.id, e.target.value)}
                       style={{ width: 'auto', padding: '3px 8px', fontSize: 11, fontWeight: 700, borderRadius: 999, border: '1px solid var(--line)' }}>
@@ -248,10 +249,10 @@ export default function HrCandidatesPage() {
                     </select>
                   </td>
                   <td>{c.cv ? scoreChip(c.cv.verdict, c.cv.percent + '%') : <span className="hint">—</span>}</td>
-                  <td>{c.psikotes_result?.disc ? <b>{c.psikotes_result.disc.adapted.pattern.type}</b> : <span className="hint">—</span>}</td>
-                  <td>{c.psikotes_result?.iq ? <b>{c.psikotes_result.iq.percent}%</b> : <span className="hint">—</span>}</td>
+                  <td className="nowrap">{c.psikotes_result?.disc ? <b>{c.psikotes_result.disc.adapted.pattern.type}</b> : <span className="hint">—</span>}</td>
+                  <td className="nowrap">{c.psikotes_result?.iq ? <b>{c.psikotes_result.iq.percent}%</b> : <span className="hint">—</span>}</td>
                   <td>{c.interview ? scoreChip(c.interview.verdict, c.interview.avg.toFixed(1)) : <span className="hint">—</span>}</td>
-                  <td>
+                  <td className="nowrap">
                     {c.user_id ? (
                       <span className="chip ok">Terdaftar</span>
                     ) : (
@@ -260,7 +261,7 @@ export default function HrCandidatesPage() {
                       </button>
                     )}
                   </td>
-                  <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                  <td className="actions">
                     <button className="btn sm" onClick={() => router.push(`/hr/candidates/${c.id}`)}>Detail</button>
                     <button className="btn sm ghost" onClick={() => openEdit(c)}>Edit</button>
                     <button className="btn sm danger" onClick={() => deleteC(c.id)}>Hapus</button>
@@ -269,6 +270,7 @@ export default function HrCandidatesPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 

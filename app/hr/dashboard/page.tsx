@@ -18,7 +18,9 @@ export default function HrDashboardPage() {
     setPositions(await getPositions())
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    ;(async () => { await load() })()
+  }, [])
 
   const total = candidates.length
   const cnt = (s: string) => candidates.filter(c => c.stage === s).length
@@ -66,8 +68,9 @@ export default function HrDashboardPage() {
           <button className="btn ghost sm" onClick={() => router.push('/hr/candidates')}>Lihat semua →</button>
         </div>
         {total === 0 ? (
-          <div className="empty"><div className="big">◦</div><div style={{ fontWeight: 700, color: 'var(--ink-soft)' }}>Belum ada kandidat</div><div className="hint" style={{ marginTop: 4 }}>Klik "Kandidat Baru" untuk mulai.</div></div>
+          <div className="empty"><div className="big">◦</div><div style={{ fontWeight: 700, color: 'var(--ink-soft)' }}>Belum ada kandidat</div><div className="hint" style={{ marginTop: 4 }}>Klik &quot;Kandidat Baru&quot; untuk mulai.</div></div>
         ) : (
+          <div className="table-wrap">
           <table className="tbl">
             <thead><tr><th>Nama</th><th>Posisi</th><th>Tahap</th><th>Skor CV</th></tr></thead>
             <tbody>
@@ -81,6 +84,7 @@ export default function HrDashboardPage() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </>

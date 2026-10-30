@@ -200,6 +200,7 @@ export default function UsersPage() {
         ) : users.length === 0 ? (
           <div className="empty"><div className="hint">Tidak ada user.</div></div>
         ) : (
+          <div className="table-wrap">
           <table className="tbl">
             <thead>
               <tr>
@@ -256,6 +257,7 @@ export default function UsersPage() {
               })}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 

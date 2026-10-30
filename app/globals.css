@@ -97,6 +97,11 @@ textarea{resize:vertical;min-height:74px}
 .tbl td{padding:12px;border-bottom:1px solid var(--line-soft);font-size:13.5px;vertical-align:middle}
 .tbl tr:last-child td{border-bottom:none}
 .tbl tr:hover td{background:#FAFAFD}
+.table-wrap{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.table-wrap .tbl{min-width:max-content}
+.tbl td.nowrap{white-space:nowrap}
+.tbl td.actions{text-align:right;white-space:nowrap}
+.tbl td.actions .btn+.btn{margin-left:6px}
 .cand-name{font-weight:700;cursor:pointer}
 .cand-name:hover{color:var(--violet)}
 .empty{text-align:center;padding:46px 20px;color:var(--muted)}
@@ -197,6 +202,12 @@ h4.blk{font-size:13.5px;font-weight:800;margin:18px 0 8px;color:var(--ink)}
   .tbl,.tbl tbody,.tbl tr,.tbl td{display:block;width:100%}
   .tbl tr{border:1px solid var(--line);border-radius:12px;margin-bottom:10px;padding:6px}
   .tbl td{border:none;padding:6px 10px}
+  .table-wrap{overflow:visible}
+  .table-wrap .tbl{min-width:0}
+  .tbl td.nowrap{white-space:normal}
+  .tbl td.actions{text-align:left;white-space:normal}
+  .tbl td.actions .btn{margin:2px 6px 2px 0}
+  .tbl td.actions .btn+.btn{margin-left:0}
 }
 @media print{
   .sidebar,.topbar,.selectbar,.no-print,.nav,.btn{display:none!important}
