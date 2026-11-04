@@ -212,7 +212,8 @@ h4.blk{font-size:13.5px;font-weight:800;margin:18px 0 8px;color:var(--ink)}
 @media print{
   .sidebar,.topbar,.selectbar,.no-print,.nav,.btn{display:none!important}
   .content{padding:0;max-width:100%}
-  .card{box-shadow:none;border:1px solid #ccc}
+  .card{box-shadow:none;border:1px solid #ccc;break-inside:avoid;page-break-inside:avoid}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact;color-adjust:exact}
 }
 
 /* Candidate Exam Mode */

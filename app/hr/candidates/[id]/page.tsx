@@ -55,6 +55,14 @@ export default function HrCandidateDetailPage() {
   const iq = c.psikotes_result?.iq
   const iqScore = iq ? estimateIq(iq.percent) : null
 
+  const downloadPdf = () => {
+    const prevTitle = document.title
+    document.title = `Hasil Test - ${c.nama}`
+    const restore = () => { document.title = prevTitle; window.removeEventListener('afterprint', restore) }
+    window.addEventListener('afterprint', restore)
+    window.print()
+  }
+
   return (
     <>
       <div className="card card-p" style={{ marginBottom: 16 }}>
@@ -73,6 +81,7 @@ export default function HrCandidateDetailPage() {
             <button className="btn ghost sm" onClick={() => router.push(`/hr/cv?candidateId=${c.id}`)}>Nilai CV</button>
             <button className="btn ghost sm" onClick={() => router.push(`/hr/tes-disc?candidateId=${c.id}`)}>Form Tes DISC</button>
             <button className="btn ghost sm" onClick={() => router.push(`/hr/tes-iq?candidateId=${c.id}`)}>Form Tes IQ</button>
+            <button className="btn primary sm" onClick={downloadPdf}>⬇ Download PDF</button>
           </div>
         </div>
 
