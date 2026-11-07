@@ -5,4 +5,6 @@
 BEGIN;
 UPDATE candidates SET stage = 'screening' WHERE stage = 'hold';
 DROP TABLE IF EXISTS cv_assessment_history;
+-- Pengaturan AI dari menu Admin (setelah drop, konfigurasi AI kembali ke .env).
+DROP TABLE IF EXISTS app_settings;
 COMMIT;

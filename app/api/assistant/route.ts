@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { getSessionUser } from '@/lib/auth'
 import { chat, AI_OFF_WARNING, type ChatTurn } from '@/lib/assistant'
-import { aiEnabled } from '@/lib/cv-file'
+import { isAiEnabled } from '@/lib/ai-config'
 
 // POST /api/assistant { messages: [{role, content}], context: { path, candidateId } } — HR/dev saja.
 // Jawaban: { text, actions, mode: 'ai' | 'off' | 'error' }. Tanpa AI hanya peringatan, tanpa aksi. Aksi dijalankan di browser (navigasi dsb.),
@@ -35,5 +35,6 @@ export async function POST(req: Request) {
 export async function GET() {
   const user = await getSessionUser()
   if (!user || (user.role !== 'hr' && user.role !== 'dev')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  return NextResponse.json({ aiEnabled: aiEnabled(), warning: aiEnabled() ? null : AI_OFF_WARNING })
+  const on = await isAiEnabled()
+  return NextResponse.json({ aiEnabled: on, warning: on ? null : AI_OFF_WARNING })
 }

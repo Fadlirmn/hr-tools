@@ -74,7 +74,7 @@ export default function HrLayout({ children }: { children: React.ReactNode }) {
             <div><h1>Recruitment Toolkit</h1><p>Screening → Onboarding</p></div>
           </div>
         </div>
-        <HrNav active={activeTab.split('/')[0]} isDev={role === 'dev'} onNavigate={navigate} />
+        <HrNav active={activeTab.split('/')[0]} isAdmin={role === 'hr' || role === 'dev'} onNavigate={navigate} />
         <div className="side-foot">
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             {/* Avatar circle */}

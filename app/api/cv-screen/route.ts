@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { query } from '@/lib/pg'
 import { getSessionUser } from '@/lib/auth'
-import { aiEnabled } from '@/lib/cv-file'
+import { isAiEnabled } from '@/lib/ai-config'
 import { queueScreening } from '@/lib/cv-screening'
 
 // GET /api/cv-screen?candidateId=
@@ -24,14 +24,14 @@ export async function GET(req: NextRequest) {
   const r = await query(
     `SELECT candidate_id, filename, mime, size, uploaded_at, ai_status, ai_result, ai_error
      FROM candidate_cv_files WHERE candidate_id = $1`, [id])
-  return NextResponse.json({ file: r.rows[0] ?? null, aiEnabled: aiEnabled() })
+  return NextResponse.json({ file: r.rows[0] ?? null, aiEnabled: await isAiEnabled() })
 }
 
 // POST /api/cv-screen { candidateId } — jalankan ulang analisis AI (HR/dev)
 export async function POST(req: Request) {
   const user = await getSessionUser()
   if (!user || (user.role !== 'hr' && user.role !== 'dev')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  if (!aiEnabled()) return NextResponse.json({ error: 'Screening otomatis belum aktif (CV_AI_BASE_URL + CV_AI_MODEL atau ANTHROPIC_API_KEY belum diset)' }, { status: 400 })
+  if (!(await isAiEnabled())) return NextResponse.json({ error: 'Screening otomatis belum aktif — atur di menu Admin → Pengaturan AI (atau .env).' }, { status: 400 })
 
   const { candidateId } = await req.json().catch(() => ({}))
   if (!candidateId) return NextResponse.json({ error: 'candidateId wajib ada' }, { status: 400 })

@@ -113,6 +113,16 @@ CREATE TABLE IF NOT EXISTS cv_assessment_history (
 );
 CREATE INDEX IF NOT EXISTS cv_assessment_history_cand_idx ON cv_assessment_history (candidate_id, assessed_at DESC);
 
+-- Pengaturan aplikasi (key → JSON). Key 'ai' = Pengaturan AI dari menu Admin
+-- ({ baseURL, model, apiKey, pdfMode, enabled }) — menimpa nilai .env; field kosong ikut .env.
+-- Rollback: scripts/migrations/2026-11-07-cv-assessment.down.sql
+CREATE TABLE IF NOT EXISTS app_settings (
+  key TEXT PRIMARY KEY,
+  value JSONB NOT NULL,
+  updated_by UUID,
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
 -- Insert default positions
 INSERT INTO positions (id, name, weights) VALUES
   ('marketing', 'Marketing', '{"exp":3,"skill":3,"portfolio":2,"achiev":2,"edu":1,"stability":2,"fit":2,"salary":2,"cvquality":1,"soft":2}'),

@@ -2,7 +2,8 @@
 // percakapan Claude (9router / Anthropic) dengan tools aksi halaman.
 import Anthropic from '@anthropic-ai/sdk'
 import { query } from './pg'
-import { aiConfig, aiEnabled } from './cv-file'
+import { loadAiConfig } from './ai-config'
+import { configReady } from './ai-settings'
 import { getClient, DEFAULT_MODEL } from './cv-screening'
 import { calcCvScore, defaultWeights } from './cv-score'
 import { STAGES, rejectReasonLabel } from './constants'
@@ -88,7 +89,7 @@ export function buildReport(all: Snap[], posisi?: string | null, title?: string)
   }
 }
 
-export const AI_OFF_WARNING = 'Asisten AI belum aktif, jadi perintah tidak dijalankan. Minta admin mengisi CV_AI_BASE_URL dan CV_AI_MODEL (9router) atau ANTHROPIC_API_KEY di server. Sementara itu, gunakan menu di sidebar.'
+export const AI_OFF_WARNING = 'Asisten AI belum aktif, jadi perintah tidak dijalankan. Minta admin mengaktifkan dan mengisi menu Admin → Pengaturan AI (atau CV_AI_BASE_URL + CV_AI_MODEL / ANTHROPIC_API_KEY di .env). Sementara itu, gunakan menu di sidebar.'
 
 const TOOLS: Anthropic.Tool[] = [
   { name: 'go_to_screen', description: 'Pindah ke layar aplikasi HR.', input_schema: { type: 'object', properties: { view: { type: 'string', enum: Object.keys(VIEWS) } }, required: ['view'] } },
@@ -115,9 +116,9 @@ ${JSON.stringify(all)}
 export interface ChatTurn { role: 'user' | 'assistant'; content: string }
 
 export async function chat(turns: ChatTurn[], ctx: { path?: string; candidateId?: string }) {
-  if (!aiEnabled()) return { text: AI_OFF_WARNING, actions: [] as AssistantAction[], mode: 'off' as const }
+  const cfg = await loadAiConfig()
+  if (!configReady(cfg)) return { text: AI_OFF_WARNING, actions: [] as AssistantAction[], mode: 'off' as const }
   const all = await snapshot()
-  const cfg = aiConfig()
   const model = cfg.model || DEFAULT_MODEL
   const actions: AssistantAction[] = []
   const messages: Anthropic.MessageParam[] = turns.map(t => ({ role: t.role, content: t.content }))
@@ -146,7 +147,7 @@ export async function chat(turns: ChatTurn[], ctx: { path?: string; candidateId?
   }
 
   for (let i = 0; i < 5; i++) {
-    const res = await getClient().messages.create({ model, max_tokens: 1500, system, tools: TOOLS, messages })
+    const res = await getClient(cfg).messages.create({ model, max_tokens: 1500, system, tools: TOOLS, messages })
     const toolUses = res.content.filter((b): b is Anthropic.ToolUseBlock => b.type === 'tool_use')
     const text = res.content.map(b => (b.type === 'text' ? b.text : '')).join('').trim()
     if (res.stop_reason !== 'tool_use' || toolUses.length === 0) {

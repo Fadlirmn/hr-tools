@@ -6,6 +6,7 @@ import { getCandidateByUserId } from '@/lib/db'
 import ExamModal, { type ExamResult } from '@/components/exam-modal'
 import TestGate, { gateStatus } from '@/components/test-gate'
 import type { Candidate } from '@/lib/types'
+import { IconPuzzle } from '@/components/icons'
 
 export default function CandidateTesDiscPage() {
   const [candidate, setCandidate] = useState<Candidate | null>(null)
@@ -38,7 +39,7 @@ export default function CandidateTesDiscPage() {
 
   return (
     <div className="profile-section">
-      {!examOpen && <h3>🧩 Tes DISC</h3>}
+      {!examOpen && <h3><IconPuzzle size={17} />Tes DISC</h3>}
       {!examOpen && <TestGate
         title="Tes DISC"
         status={discStatus}

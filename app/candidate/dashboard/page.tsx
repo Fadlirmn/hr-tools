@@ -1,11 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { getCurrentUser } from '@/lib/auth-client'
 import { getCandidateByUserId, getPositions } from '@/lib/db'
 import type { Candidate, Position } from '@/lib/types'
 import { STAGES } from '@/lib/constants'
+import { IconFileCheck, IconPuzzle, IconBrain, IconMic, IconRocket, IconUser, IconArrowRight } from '@/components/icons'
 
 const STAGE_ORDER = ['screening', 'psikotes', 'interview', 'offer', 'onboarding', 'hired']
 
@@ -33,15 +34,18 @@ export default function CandidateDashboardPage() {
 
   const posName = positions.find(p => p.id === candidate.posisi)?.name || '—'
 
-  const cards: { label: string; hint: string; score: string; href: string }[] = [
+  const cards: { label: string; icon: ReactNode; hint: string; score: string; href: string }[] = [
     {
-      label: '📄 Penilaian CV',
-      hint: 'Upload CV kamu & lihat skor kelayakan berkas',
-      score: candidate.cv ? `${candidate.cv.percent}% · ${candidate.cv.verdict}` : 'Belum dinilai',
+      label: 'CV Saya',
+      icon: <IconFileCheck size={17} />,
+      hint: 'Upload CV kamu & pantau status peninjauannya',
+      // Skor & keputusan CV hanya untuk HR — kandidat cukup tahu statusnya.
+      score: candidate.cv ? 'Sudah ditinjau HR' : 'Sedang diproses',
       href: '/candidate/hasil-cv',
     },
     {
-      label: '🧩 Tes DISC',
+      label: 'Tes DISC',
+      icon: <IconPuzzle size={17} />,
       hint: 'Profil kepribadian 4-dimensi',
       score: (() => {
         if (candidate.psikotes_result?.disc) return `Tipe ${candidate.psikotes_result.disc.adapted.pattern.type}`
@@ -55,7 +59,8 @@ export default function CandidateDashboardPage() {
       href: candidate.psikotes_result?.disc ? '/candidate/hasil-tes-disc' : '/candidate/tes-disc',
     },
     {
-      label: '🧠 Tes IQ',
+      label: 'Tes IQ',
+      icon: <IconBrain size={17} />,
       hint: 'Pengukuran kemampuan kognitif',
       score: (() => {
         if (candidate.psikotes_result?.iq) return `${candidate.psikotes_result.iq.percent}% · ${candidate.psikotes_result.iq.category}`
@@ -69,13 +74,15 @@ export default function CandidateDashboardPage() {
       href: candidate.psikotes_result?.iq ? '/candidate/hasil-tes-iq' : '/candidate/tes-iq',
     },
     {
-      label: '🎤 Interview',
+      label: 'Interview',
+      icon: <IconMic size={17} />,
       hint: 'Penilaian wawancara',
       score: candidate.interview ? `${candidate.interview.avg.toFixed(1)}/5 · ${candidate.interview.verdict}` : 'Belum dinilai',
       href: '/candidate/hasil-interview',
     },
     {
-      label: '✅ Onboarding',
+      label: 'Onboarding',
+      icon: <IconRocket size={17} />,
       hint: 'Checklist karyawan baru',
       score: candidate.onboarding ? `${candidate.onboarding.progress}% selesai` : 'Belum mulai',
       href: '/candidate/onboarding',
@@ -102,20 +109,20 @@ export default function CandidateDashboardPage() {
       </div>
 
       {cards.map(card => (
-        <div key={card.href} className="cand-card" onClick={() => router.push(card.href)}>
+        <button type="button" key={card.href} className="cand-card" onClick={() => router.push(card.href)}>
           <div className="info">
-            <h4>{card.label}</h4>
+            <h4>{card.icon}{card.label}</h4>
             <div className="hint">{card.hint}</div>
           </div>
           <div style={{ textAlign: 'right' }}>
             <div style={{ fontWeight: 700, fontSize: 13 }}>{card.score}</div>
           </div>
-          <div className="arrow">→</div>
-        </div>
+          <div className="arrow"><IconArrowRight size={18} /></div>
+        </button>
       ))}
 
       <div className="profile-section">
-        <h3>👤 Data Diri</h3>
+        <h3><IconUser size={17} />Data Diri</h3>
         <div className="detail">
           <div className="item"><div className="l">Email</div><div className="v">{candidate.email || '—'}</div></div>
           <div className="item"><div className="l">No. HP</div><div className="v">{candidate.telepon || '—'}</div></div>

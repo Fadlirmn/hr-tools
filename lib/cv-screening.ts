@@ -4,7 +4,8 @@ import { z } from 'zod'
 import { query } from './pg'
 import { CV_CRITERIA } from './constants'
 import { calcCvScore, defaultWeights } from './cv-score'
-import { aiEnabled, aiConfig } from './cv-file'
+import { loadAiConfig, isAiEnabled } from './ai-config'
+import { DEFAULT_MODEL, type AiConfig } from './ai-settings'
 import { errorMessage } from './errors'
 import { isValidPhone } from './phone'
 import type { CvAiResult, CvScores } from './types'
@@ -12,7 +13,7 @@ import type { CvAiResult, CvScores } from './types'
 // Screening CV otomatis — AI membuat DRAFT penilaian dengan bukti per kriteria.
 // Keputusan tetap di HR: hasil ini tidak pernah mengubah stage kandidat.
 
-export const DEFAULT_MODEL = 'claude-opus-5-5'
+export { DEFAULT_MODEL }
 // PDF dengan teks di bawah ambang ini dianggap hasil scan → kirim file aslinya.
 const MIN_PDF_TEXT = 200
 
@@ -70,16 +71,34 @@ Balas HANYA dengan satu objek JSON (tanpa markdown, tanpa teks lain) dengan bent
 score berupa angka 1-5 atau null.`
 
 let client: Anthropic | null = null
-export function getClient() {
-  if (!client) {
-    const cfg = aiConfig()
+let clientKey = ''
+/**
+ * Client Anthropic untuk konfigurasi efektif (DB menimpa .env). Dibuat ulang bila
+ * endpoint/key berubah (mis. setelah disimpan di halaman Pengaturan AI).
+ */
+export function getClient(cfg: AiConfig) {
+  const key = JSON.stringify([cfg.custom, cfg.baseURL, cfg.apiKey])
+  if (!client || key !== clientKey) {
     // Mode custom: Anthropic SDK diarahkan ke base URL router (format Claude Messages).
     // Key dikirim sebagai Authorization: Bearer; 9router tanpa REQUIRE_API_KEY menerima placeholder.
     client = cfg.custom
       ? new Anthropic({ baseURL: cfg.baseURL, apiKey: cfg.apiKey || 'no-key', maxRetries: 2, timeout: 180_000 })
-      : new Anthropic()
+      : new Anthropic({ apiKey: cfg.apiKey || null })
+    clientKey = key
   }
   return client
+}
+
+/** Pesan error AI yang ramah (Bahasa Indonesia). */
+export function aiErrorMessage(err: unknown): string {
+  if (err instanceof Anthropic.AuthenticationError) return 'API key AI tidak valid (cek API Key di Pengaturan AI / .env).'
+  if (err instanceof Anthropic.PermissionDeniedError) return 'API key tidak punya akses ke model ini.'
+  if (err instanceof Anthropic.NotFoundError) return 'Model atau endpoint tidak ditemukan (cek nama model & Base URL).'
+  if (err instanceof Anthropic.APIConnectionTimeoutError) return 'Endpoint AI tidak merespons (timeout).'
+  if (err instanceof Anthropic.APIConnectionError) return 'Tidak bisa terhubung ke endpoint AI (cek Base URL & 9router berjalan).'
+  if (err instanceof Anthropic.RateLimitError) return 'Batas pemakaian AI tercapai, coba lagi beberapa saat.'
+  if (err instanceof Anthropic.APIError) return `Layanan AI error (${err.status ?? '-'}): ${err.message}`
+  return errorMessage(err)
 }
 
 /** Ambil objek JSON pertama dari teks balasan (toleran terhadap ```json fence). */
@@ -104,10 +123,9 @@ async function pdfText(data: Buffer): Promise<string> {
 
 type Screening = z.infer<typeof ScreeningSchema>
 
-async function callAi(fileBlock: Anthropic.ContentBlockParam, context: string): Promise<{ out: Screening; model: string }> {
-  const cfg = aiConfig()
+async function callAi(cfg: AiConfig, fileBlock: Anthropic.ContentBlockParam, context: string): Promise<{ out: Screening; model: string }> {
   if (!cfg.custom) {
-    const response = await getClient().beta.messages.parse({
+    const response = await getClient(cfg).beta.messages.parse({
       model: cfg.model || DEFAULT_MODEL,
       max_tokens: 16000,
       betas: ['server-side-fallback-2026-07-01'],
@@ -123,7 +141,7 @@ async function callAi(fileBlock: Anthropic.ContentBlockParam, context: string): 
   }
 
   // Endpoint custom: hanya fitur dasar Messages API (tanpa beta/structured outputs/effort).
-  const response = await getClient().messages.create({
+  const response = await getClient(cfg).messages.create({
     model: cfg.model,
     max_tokens: 8000,
     system: SYSTEM_PROMPT + JSON_INSTRUCTION,
@@ -161,9 +179,10 @@ interface ScreenOptions {
  * disimpan ke candidate_cv_files.ai_status / ai_error.
  */
 export async function screenCv(candidateId: string, opts: ScreenOptions = {}): Promise<void> {
-  if (!aiEnabled()) return
+  if (!(await isAiEnabled())) return
   await acquire()
   try {
+    const cfg = await loadAiConfig()
     const fileRes = await query<{ data: Buffer; mime: string; filename: string }>(
       'SELECT data, mime, filename FROM candidate_cv_files WHERE candidate_id = $1', [candidateId])
     const file = fileRes.rows[0]
@@ -192,7 +211,7 @@ export async function screenCv(candidateId: string, opts: ScreenOptions = {}): P
     if (file.mime === 'application/pdf') {
       // Mode custom (router): kirim teks hasil ekstraksi PDF — paling kompatibel lintas provider.
       // PDF hasil scan (teks hampir kosong) tetap dikirim sebagai dokumen asli.
-      const text = aiConfig().custom && aiConfig().pdfMode === 'text' ? await pdfText(file.data) : ''
+      const text = cfg.custom && cfg.pdfMode === 'text' ? await pdfText(file.data) : ''
       fileBlock = text.length >= MIN_PDF_TEXT
         ? { type: 'text', text: `<cv_pelamar>\n${text.slice(0, 60000)}\n</cv_pelamar>` }
         : { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: b64 }, title: 'CV pelamar' }
@@ -200,7 +219,7 @@ export async function screenCv(candidateId: string, opts: ScreenOptions = {}): P
       fileBlock = { type: 'image', source: { type: 'base64', media_type: file.mime as 'image/jpeg' | 'image/png', data: b64 } }
     }
 
-    const { out, model } = await callAi(fileBlock, context)
+    const { out, model } = await callAi(cfg, fileBlock, context)
 
     // Normalisasi: satu entri per kriteria, skor dibulatkan & dibatasi 1–5.
     const byId = new Map(out.criteria.map(c => [c.id, c]))
@@ -241,11 +260,7 @@ export async function screenCv(candidateId: string, opts: ScreenOptions = {}): P
         [candidateId, ex.nama.trim().slice(0, 120), email, isValidPhone(tel) ? tel : ''])
     }
   } catch (err) {
-    let msg = errorMessage(err)
-    if (err instanceof Anthropic.AuthenticationError) msg = 'API key AI tidak valid (cek CV_AI_API_KEY / ANTHROPIC_API_KEY).'
-    else if (err instanceof Anthropic.APIConnectionError) msg = 'Tidak bisa terhubung ke endpoint AI (cek CV_AI_BASE_URL & 9router berjalan).'
-    else if (err instanceof Anthropic.RateLimitError) msg = 'Batas pemakaian AI tercapai, coba lagi beberapa saat.'
-    else if (err instanceof Anthropic.APIError) msg = `Layanan AI error (${err.status ?? '-'}): ${err.message}`
+    const msg = aiErrorMessage(err)
     console.error('[cv-screening]', candidateId, msg)
     await query(`UPDATE candidate_cv_files SET ai_status = 'error', ai_error = $2 WHERE candidate_id = $1`,
       [candidateId, msg.slice(0, 500)]).catch(() => {})
@@ -256,7 +271,7 @@ export async function screenCv(candidateId: string, opts: ScreenOptions = {}): P
 
 /** Tandai processing lalu jalankan di background (tidak di-await oleh request). */
 export async function queueScreening(candidateId: string, opts: ScreenOptions = {}) {
-  if (!aiEnabled()) return false
+  if (!(await isAiEnabled())) return false
   await query(`UPDATE candidate_cv_files SET ai_status = 'processing', ai_error = NULL WHERE candidate_id = $1`, [candidateId])
   void screenCv(candidateId, opts)
   return true

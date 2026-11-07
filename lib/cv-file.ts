@@ -30,27 +30,5 @@ export async function readCvFile(file: unknown): Promise<{ ok: true; buf: Buffer
   return { ok: true, buf, mime, filename }
 }
 
-/**
- * Konfigurasi AI screening (server-side):
- * - Langsung ke Anthropic: ANTHROPIC_API_KEY (model default claude-opus-5-5).
- * - Endpoint custom (mis. 9router): CV_AI_BASE_URL + CV_AI_MODEL (+ CV_AI_API_KEY bila router mewajibkan key).
- */
-export function aiConfig() {
-  // Nama NINEROUTER_* diterima juga (konvensi yang dipakai project lain).
-  const env = (a: string, b: string) => (process.env[a] || process.env[b] || '').trim()
-  const baseURL = env('CV_AI_BASE_URL', 'NINEROUTER_URL').replace(/\/+$/, '').replace(/\/v1$/, '')
-  const model = env('CV_AI_MODEL', 'NINEROUTER_MODEL')
-  const pdfMode: 'text' | 'document' = process.env.CV_AI_PDF_MODE === 'document' ? 'document' : 'text'
-  return {
-    custom: !!baseURL,
-    baseURL,
-    apiKey: env('CV_AI_API_KEY', 'NINEROUTER_API_KEY'),
-    model,
-    pdfMode,
-  }
-}
-
-export function aiEnabled() {
-  const cfg = aiConfig()
-  return cfg.custom ? !!cfg.model : !!process.env.ANTHROPIC_API_KEY
-}
+// Konfigurasi AI screening (server-side) ada di lib/ai-config.ts (loadAiConfig / isAiEnabled):
+// pengaturan dari halaman Admin → Pengaturan AI menimpa .env.

@@ -5,6 +5,36 @@ import { useState, useEffect } from 'react'
 import { getCurrentUser, logout } from '@/lib/auth-client'
 import { getCandidateByUserId } from '@/lib/db'
 import type { Candidate, UserRole } from '@/lib/types'
+import ThemeToggle from '@/components/theme-toggle'
+import {
+  IconHome, IconFileCheck, IconClipboard, IconRocket, IconUser, IconPuzzle, IconBrain, IconMic,
+  IconAward, IconArrowLeft,
+} from '@/components/icons'
+
+type Leaf = { tab: string; label: string; icon: React.ReactNode }
+type Branch = { id: string; label: string; icon: React.ReactNode; children: Leaf[] }
+type Group = { group?: string; items: (Leaf | Branch)[] }
+
+// Menu kandidat dikelompokkan (gaya sama dengan sidebar HR). URL tiap halaman tidak berubah.
+const NAV: Group[] = [
+  { items: [
+    { tab: 'candidate/dashboard', label: 'Dashboard', icon: <IconHome size={17} /> },
+    { tab: 'candidate/hasil-cv', label: 'CV Saya', icon: <IconFileCheck size={17} /> },
+    { id: 'tes', label: 'Tes', icon: <IconClipboard size={17} />, children: [
+      { tab: 'candidate/tes-disc', label: 'Tes DISC', icon: <IconPuzzle size={15} /> },
+      { tab: 'candidate/tes-iq', label: 'Tes IQ', icon: <IconBrain size={15} /> },
+    ] },
+    { id: 'hasil', label: 'Hasil', icon: <IconAward size={17} />, children: [
+      { tab: 'candidate/hasil-tes-disc', label: 'Hasil Tes DISC', icon: <IconPuzzle size={15} /> },
+      { tab: 'candidate/hasil-tes-iq', label: 'Hasil Tes IQ', icon: <IconBrain size={15} /> },
+      { tab: 'candidate/hasil-interview', label: 'Hasil Interview', icon: <IconMic size={15} /> },
+    ] },
+    { tab: 'candidate/onboarding', label: 'Onboarding', icon: <IconRocket size={17} /> },
+  ] },
+  { group: 'Akun', items: [
+    { tab: 'candidate/profile', label: 'Profil Saya', icon: <IconUser size={17} /> },
+  ] },
+]
 
 export default function CandidateLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
@@ -30,19 +60,6 @@ export default function CandidateLayout({ children }: { children: React.ReactNod
     router.push('/login')
   }
 
-  const nav = [
-    { tab: 'candidate/dashboard', label: 'Dashboard' },
-    { tab: 'candidate/hasil-cv', label: 'Hasil CV' },
-    { tab: 'candidate/tes-disc', label: 'Tes DISC' },
-    { tab: 'candidate/tes-iq', label: 'Tes IQ' },
-    { tab: 'candidate/hasil-tes-disc', label: 'Hasil Tes DISC' },
-    { tab: 'candidate/hasil-tes-iq', label: 'Hasil Tes IQ' },
-    { tab: 'candidate/hasil-interview', label: 'Hasil Interview' },
-    { tab: 'candidate/onboarding', label: 'Onboarding' },
-    { sep: 'Akun' },
-    { tab: 'candidate/profile', label: 'Profil Saya' },
-  ]
-
   // Gunakan pathname langsung untuk match yang akurat (tanpa leading slash)
   const active = pathname.startsWith('/') ? pathname.slice(1) : pathname
 
@@ -57,23 +74,38 @@ export default function CandidateLayout({ children }: { children: React.ReactNod
             <div><h1>Recruitment Toolkit</h1><p>{role === 'dev' ? 'Developer Mode' : 'Portal Kandidat'}</p></div>
           </div>
         </div>
-        <nav className="nav">
+        <nav className="nav" aria-label="Menu kandidat">
           {role === 'dev' && (
-            <button onClick={() => router.push('/hr/dashboard')}
-              style={{ background: 'var(--side-hover)', color: 'var(--side-strong)', marginBottom: 6 }}>
-              <span className="ico">←</span> Ke Dashboard HR
+            <button type="button" className="dev-back" onClick={() => router.push('/hr/dashboard')}>
+              <span className="ico"><IconArrowLeft size={17} /></span> Ke Dashboard HR
             </button>
           )}
-          {nav.map((item, i) =>
-            'sep' in item ? (
-              <div className="sep" key={i}>{item.sep}</div>
-            ) : (
-              <button key={item.tab} className={active === item.tab ? 'active' : ''}
-                onClick={() => router.push('/' + item.tab)}>
-                <span className="ico">{'▦'}</span> {item.label}
-              </button>
-            )
-          )}
+          {NAV.map((g, gi) => (
+            <div key={g.group || gi} role="group" aria-label={g.group || 'Menu utama'}>
+              {g.group && <div className="sep">{g.group}</div>}
+              {g.items.map(it => 'children' in it ? (
+                // Submenu selalu tampil (tanpa dropdown)
+                <div key={it.id} role="group" aria-labelledby={`cnav-${it.id}`}>
+                  <div className={`parent-label ${it.children.some(c => c.tab === active) ? 'has-active' : ''}`} id={`cnav-${it.id}`}>
+                    <span className="ico">{it.icon}</span> {it.label}
+                  </div>
+                  <div className="sub">
+                    {it.children.map(c => (
+                      <button key={c.tab} type="button" className={active === c.tab ? 'active' : ''}
+                        aria-current={active === c.tab ? 'page' : undefined} onClick={() => router.push('/' + c.tab)}>
+                        <span className="ico">{c.icon}</span>{c.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <button key={it.tab} type="button" className={active === it.tab ? 'active' : ''}
+                  aria-current={active === it.tab ? 'page' : undefined} onClick={() => router.push('/' + it.tab)}>
+                  <span className="ico">{it.icon}</span> {it.label}
+                </button>
+              ))}
+            </div>
+          ))}
         </nav>
         <div className="side-foot">
           <div style={{ marginBottom: 6 }}>
@@ -83,9 +115,9 @@ export default function CandidateLayout({ children }: { children: React.ReactNod
           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
             {role === 'dev' && <span style={{ color: 'var(--accent)', fontWeight: 700, fontSize: 10 }}>DEV</span>}
             <span style={{ flex: 1 }}></span>
-            <span style={{ cursor: 'pointer' }} onClick={() => router.push('/candidate/profile')}>Profil</span>
-            <span style={{ color: 'var(--side-muted)' }}>·</span>
-            <span style={{ cursor: 'pointer' }} onClick={handleLogout}>Keluar</span>
+            <button type="button" className="side-link" onClick={() => router.push('/candidate/profile')}>Profil</button>
+            <span style={{ color: 'var(--side-muted)' }} aria-hidden="true">·</span>
+            <button type="button" className="side-link" onClick={handleLogout}>Keluar</button>
           </div>
         </div>
       </aside>
@@ -98,7 +130,10 @@ export default function CandidateLayout({ children }: { children: React.ReactNod
               <div className="sub">Portal kandidat — lihat hasil seleksi Anda</div>
             </div>
           </div>
-          <button className="btn ghost sm" onClick={handleLogout}>Keluar</button>
+          <div className="cand-topbar-actions">
+            <ThemeToggle />
+            <button type="button" className="btn ghost sm" onClick={handleLogout}>Keluar</button>
+          </div>
         </div>
         <div className="content">{children}</div>
       </main>

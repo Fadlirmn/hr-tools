@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { CV_ACCEPT, CV_FORMAT_HINT, CV_MAX_BYTES } from '@/lib/cv-file'
-import { IconPaperclip } from './icons'
+import { IconPaperclip, IconCheckCircle } from './icons'
 
 interface MyCvFile { filename: string; size: number; uploaded_at: string }
 
@@ -52,7 +52,7 @@ export default function CvUpload() {
       <h3><IconPaperclip size={16} /> Upload CV</h3>
       {file && (
         <div className="notice" style={{ marginBottom: 12 }}>
-          ✅ CV terkirim: <b>{file.filename}</b> ({(file.size / 1024).toFixed(0)} KB) · {new Date(file.uploaded_at).toLocaleString('id-ID')}
+          <IconCheckCircle size={15} style={{ color: 'var(--ok)', verticalAlign: -3 }} /> CV terkirim: <b>{file.filename}</b> ({(file.size / 1024).toFixed(0)} KB) · {new Date(file.uploaded_at).toLocaleString('id-ID')}
         </div>
       )}
       <label className={`cv-drop${over ? ' over' : ''}`} style={{ display: 'block', opacity: busy ? 0.6 : 1 }}

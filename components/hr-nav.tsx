@@ -3,12 +3,12 @@
 import type { ReactNode } from 'react'
 import {
   IconHome, IconUsers, IconFileCheck, IconMonitor, IconClipboard, IconRocket, IconSettings,
-  IconKey, IconBook, IconSliders, IconShield,
+  IconKey, IconBook, IconSliders, IconShield, IconSparkle,
 } from './icons'
 
 type Leaf = { tab: string; label: string; icon: ReactNode }
 type Branch = { id: string; label: string; icon: ReactNode; children: Leaf[] }
-type Group = { group: string; items: (Leaf | Branch)[]; devOnly?: boolean }
+type Group = { group: string; items: (Leaf | Branch)[]; adminOnly?: boolean }
 
 /**
  * Menu HR dikelompokkan berdasarkan perilaku:
@@ -38,8 +38,10 @@ export const NAV: Group[] = [
       { tab: 'settings', label: 'Posisi & Bobot', icon: <IconSliders size={15} /> },
     ] },
   ] },
-  { group: 'Developer', devOnly: true, items: [
+  // Admin: role hr & dev (HR = admin secara default)
+  { group: 'Admin', adminOnly: true, items: [
     { tab: 'users', label: 'Manajemen User', icon: <IconShield size={17} /> },
+    { tab: 'ai-settings', label: 'Pengaturan AI', icon: <IconSparkle size={17} /> },
   ] },
 ]
 
@@ -56,13 +58,14 @@ export const PAGE_TITLES: Record<string, [string, string]> = {
   profile: ['Profil Saya', 'Kelola data akun Anda'],
   questions: ['Bank Soal', 'Pengaturan Tes · soal Tes DISC & Tes IQ'],
   settings: ['Posisi & Bobot', 'Pengaturan Tes · posisi, kualifikasi & bobot kriteria CV'],
-  users: ['Manajemen User', 'Kelola role & akses pengguna aplikasi'],
+  users: ['Manajemen User', 'Admin · kelola role & akses pengguna aplikasi'],
+  'ai-settings': ['Pengaturan AI', 'Admin · endpoint, model & API key untuk screening CV dan asisten'],
 }
 
-export default function HrNav({ active, isDev, onNavigate }: { active: string; isDev: boolean; onNavigate: (tab: string) => void }) {
+export default function HrNav({ active, isAdmin, onNavigate }: { active: string; isAdmin: boolean; onNavigate: (tab: string) => void }) {
   return (
     <nav className="nav" aria-label="Menu HR">
-      {NAV.filter(g => !g.devOnly || isDev).map(g => (
+      {NAV.filter(g => !g.adminOnly || isAdmin).map(g => (
         <div key={g.group} role="group" aria-label={g.group}>
           <div className="sep">{g.group}</div>
           {g.items.map(it => 'children' in it ? (

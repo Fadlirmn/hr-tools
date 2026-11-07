@@ -74,6 +74,19 @@ export interface Candidate {
   ai_status?: CvAiStatus | null
 }
 
+// Tampilan CV untuk kandidat: hanya status "sudah ditinjau HR" — tanpa skor,
+// verdict, keputusan, alasan, maupun catatan HR. Lihat lib/candidate-public.ts.
+export interface CandidateCvView {
+  reviewed: true
+  date: string | null
+}
+
+// Baris kandidat versi kandidat-facing (GET /api/candidates/by-user untuk role
+// candidate, GET /api/invite-candidate). `cv` diganti status tinjauan.
+export type CandidateView = Omit<Candidate, 'cv' | 'has_cv_file' | 'ai_percent' | 'ai_status'> & {
+  cv: CandidateCvView | null
+}
+
 export interface CvScores {
   [key: string]: number
 }

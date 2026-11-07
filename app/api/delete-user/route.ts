@@ -40,8 +40,10 @@ export async function POST(req: Request) {
   // ON DELETE CASCADE/SET NULL tidak dipasang untuk users->candidates agar
   // penghapusan kandidat tidak otomatis menghapus akun user; hapus manual di
   // sini supaya akun login kandidat ikut hilang saat kandidat dihapus HR.
-  if (userId) {
-    await query('DELETE FROM users WHERE id = $1', [userId])
+  // Hanya akun ber-role 'candidate' yang ikut dihapus — akun admin (hr/dev) yang
+  // tertaut ke data kandidat (mis. akun uji) tidak pernah ikut terhapus.
+  if (userId && userId !== user.id) {
+    await query(`DELETE FROM users WHERE id = $1 AND role = 'candidate'`, [userId])
   }
 
   try {

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getCurrentUser } from '@/lib/auth-client'
 import type { UserRole } from '@/lib/types'
+import { IconRefresh, IconUser, IconEdit, IconTrash, IconEye, IconInfo } from '@/components/icons'
 
 interface AppUser {
   id: string
@@ -14,17 +15,19 @@ interface AppUser {
   last_sign_in_at: string | null
 }
 
-const ROLE_LABELS: Record<string, { label: string; color: string }> = {
-  dev:       { label: 'Dev',       color: 'var(--accent)' },
-  hr:        { label: 'HR',        color: '#22c55e' },
-  candidate: { label: 'Kandidat', color: '#f59e0b' },
-  '':        { label: '—',        color: 'var(--ink-soft)' },
+// Chip role — kelas .chip yang sama dengan halaman lain
+const ROLE_LABELS: Record<string, { label: string; cls: string; title: string }> = {
+  dev:       { label: 'Admin Dev', cls: 'violet',  title: 'Admin penuh (developer)' },
+  hr:        { label: 'HR',        cls: 'ok',      title: 'HR — termasuk akses Admin' },
+  candidate: { label: 'Kandidat',  cls: 'neutral', title: 'Akun kandidat' },
+  '':        { label: '—',         cls: 'neutral', title: 'Role tidak dikenal' },
 }
 
 export default function UsersPage() {
   const router = useRouter()
 
   const [myRole, setMyRole] = useState<UserRole | ''>('')
+  const [myId, setMyId] = useState('')
   const [users, setUsers] = useState<AppUser[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null) // userId being saved, 'new' saat tambah
@@ -55,13 +58,14 @@ export default function UsersPage() {
     setLoading(false)
   }
 
-  // Check current user is dev
+  // Halaman admin: role hr & dev
   useEffect(() => {
     ;(async () => {
       const user = await getCurrentUser()
       const role = (user?.role as UserRole) || ''
       setMyRole(role)
-      if (role !== 'dev') {
+      setMyId(user?.id || '')
+      if (role !== 'hr' && role !== 'dev') {
         router.replace('/hr/dashboard')
         return
       }
@@ -160,14 +164,23 @@ export default function UsersPage() {
   const deleteUser = async (u: AppUser) => {
     if (!confirm(`Hapus user "${u.email}"?\nAksi ini tidak bisa dibatalkan.`)) return
     setSaving(u.id)
-    await fetch('/api/manage-user', {
+    const res = await fetch('/api/manage-user', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId: u.id }),
     })
+    const data = await res.json().catch(() => ({}))
     setSaving(null)
+    if (!res.ok) alert(data.error || 'Gagal menghapus user.')
     await load()
   }
+
+  // Aturan yang sama dengan API: tidak bisa hapus/ubah role akun sendiri;
+  // HR tidak bisa hapus/ubah role/password akun Admin Dev, dan tidak bisa memberi role Dev.
+  const isSelf = (u: AppUser) => u.id === myId
+  const isProtected = (u: AppUser) => myRole !== 'dev' && u.role === 'dev'
+  const deleteBlockReason = (u: AppUser) =>
+    isSelf(u) ? 'Tidak bisa menghapus akun sendiri' : isProtected(u) ? 'Akun Admin Dev hanya bisa dihapus oleh Dev' : ''
 
   const fmtDate = (s: string | null) => {
     if (!s) return '—'
@@ -176,8 +189,10 @@ export default function UsersPage() {
 
   const isAdd = modalMode === 'add'
   const busy = isAdd ? saving === 'new' : (!!modalUser && saving === modalUser.id)
+  const roleLocked = !isAdd && !!modalUser && (isSelf(modalUser) || isProtected(modalUser))
+  const passwordLocked = !isAdd && !!modalUser && isProtected(modalUser)
 
-  if (myRole && myRole !== 'dev') return null // redirecting
+  if (myRole && myRole !== 'hr' && myRole !== 'dev') return null // redirecting
 
   return (
     <>
@@ -186,11 +201,11 @@ export default function UsersPage() {
           {users.length} user terdaftar
         </span>
         <span style={{ flex: 1 }} />
-        <button className="btn sm" onClick={load} disabled={loading}>
-          {loading ? '…' : '↻ Refresh'}
+        <button className="btn sm" onClick={load} disabled={loading} aria-busy={loading}>
+          <IconRefresh size={14} />{loading ? 'Memuat…' : 'Refresh'}
         </button>
         <button className="btn sm primary" onClick={openAddModal}>
-          + Tambah User
+          <IconUser size={14} />Tambah User
         </button>
       </div>
 
@@ -201,55 +216,53 @@ export default function UsersPage() {
           <div className="empty"><div className="hint">Tidak ada user.</div></div>
         ) : (
           <div className="table-wrap">
-          <table className="tbl">
+          <table className="tbl tbl-fit">
             <thead>
               <tr>
-                <th>Email</th>
-                <th>Nama</th>
+                <th>User</th>
                 <th>Role</th>
                 <th>Bergabung</th>
                 <th>Login Terakhir</th>
-                <th />
+                <th><span className="sr-only">Aksi</span></th>
               </tr>
             </thead>
             <tbody>
               {users.map(u => {
                 const roleInfo = ROLE_LABELS[u.role] ?? ROLE_LABELS['']
+                const blocked = deleteBlockReason(u)
+                const label = u.nama || u.email
                 return (
                   <tr key={u.id}>
-                    <td style={{ fontWeight: 600 }}>{u.email}</td>
-                    <td>{u.nama || <span className="hint">—</span>}</td>
-                    <td>
-                      <span style={{
-                        display: 'inline-block',
-                        padding: '2px 10px',
-                        borderRadius: 999,
-                        fontSize: 11,
-                        fontWeight: 700,
-                        background: roleInfo.color + '22',
-                        color: roleInfo.color,
-                        border: `1px solid ${roleInfo.color}55`,
-                      }}>
-                        {roleInfo.label}
-                      </span>
+                    <td style={{ minWidth: 0 }}>
+                      <div style={{ fontWeight: 600, overflowWrap: 'anywhere' }}>
+                        {u.nama || <span className="hint">Tanpa nama</span>}
+                        {isSelf(u) && <span className="hint" style={{ fontWeight: 500 }}> (Anda)</span>}
+                      </div>
+                      <div className="hint" style={{ overflowWrap: 'anywhere' }}>{u.email}</div>
                     </td>
-                    <td className="hint">{fmtDate(u.created_at)}</td>
-                    <td className="hint">{fmtDate(u.last_sign_in_at)}</td>
-                    <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                    <td className="nowrap">
+                      <span className={`chip ${roleInfo.cls}`} title={roleInfo.title}>{roleInfo.label}</span>
+                    </td>
+                    <td className="hint nowrap">{fmtDate(u.created_at)}</td>
+                    <td className="hint nowrap">{fmtDate(u.last_sign_in_at)}</td>
+                    <td className="actions">
                       <button
-                        className="btn sm ghost"
+                        className="btn sm icon-btn"
                         onClick={() => openEditModal(u)}
                         disabled={saving === u.id}
+                        aria-label={`Edit ${label}`}
+                        title="Edit"
                       >
-                        Edit
+                        <IconEdit size={15} />
                       </button>
                       <button
-                        className="btn sm danger"
+                        className="btn sm danger icon-btn"
                         onClick={() => deleteUser(u)}
-                        disabled={saving === u.id}
-                        style={{ marginLeft: 6 }}
+                        disabled={saving === u.id || !!blocked}
+                        aria-label={`Hapus ${label}`}
+                        title={blocked || 'Hapus'}
                       >
-                        {saving === u.id ? '…' : 'Hapus'}
+                        <IconTrash size={15} />
                       </button>
                     </td>
                   </tr>
@@ -291,11 +304,16 @@ export default function UsersPage() {
               </div>
               <div className="field">
                 <label className="fld">Role</label>
-                <select value={editRole} onChange={e => setEditRole(e.target.value)}>
-                  <option value="hr">HR</option>
+                <select value={editRole} onChange={e => setEditRole(e.target.value)} disabled={roleLocked}>
+                  <option value="hr">HR (Admin)</option>
                   <option value="candidate">Kandidat</option>
-                  <option value="dev">Dev</option>
+                  {(myRole === 'dev' || editRole === 'dev') && <option value="dev">Admin Dev</option>}
                 </select>
+                {roleLocked && (
+                  <div className="hint" style={{ marginTop: 4 }}>
+                    {modalUser && isSelf(modalUser) ? 'Role akun sendiri tidak bisa diubah.' : 'Role akun Admin Dev hanya bisa diubah oleh Dev.'}
+                  </div>
+                )}
               </div>
               <div className="field">
                 <label className="fld">
@@ -307,7 +325,8 @@ export default function UsersPage() {
                     type={showPassword ? 'text' : 'password'}
                     value={editPassword}
                     onChange={e => setEditPassword(e.target.value)}
-                    placeholder={isAdd ? 'Minimal 6 karakter' : 'Kosongkan jika tidak diubah'}
+                    placeholder={passwordLocked ? 'Hanya bisa diubah oleh Dev' : isAdd ? 'Minimal 6 karakter' : 'Kosongkan jika tidak diubah'}
+                    disabled={passwordLocked}
                     style={{ paddingRight: 44, width: '100%', boxSizing: 'border-box' }}
                     autoComplete="new-password"
                   />
@@ -315,6 +334,9 @@ export default function UsersPage() {
                     type="button"
                     className="btn sm ghost"
                     onClick={() => setShowPassword(v => !v)}
+                    disabled={passwordLocked}
+                    aria-pressed={showPassword}
+                    aria-label={showPassword ? 'Sembunyikan password' : 'Lihat password'}
                     title={showPassword ? 'Sembunyikan password' : 'Lihat password'}
                     style={{
                       position: 'absolute',
@@ -326,18 +348,18 @@ export default function UsersPage() {
                       lineHeight: 1,
                     }}
                   >
-                    {showPassword ? '🙈' : '👁️'}
+                    <IconEye size={15} style={{ opacity: showPassword ? 1 : 0.6 }} />
                   </button>
                 </div>
               </div>
               {modalError && (
-                <div style={{ padding: '8px 12px', borderRadius: 8, background: '#ef444422', color: '#ef4444', fontSize: 12, fontWeight: 600 }}>
+                <div role="alert" style={{ padding: '8px 12px', borderRadius: 8, background: '#ef444422', color: '#ef4444', fontSize: 12, fontWeight: 600 }}>
                   {modalError}
                 </div>
               )}
               {!isAdd && (
-                <div style={{ marginTop: 6, padding: '8px 12px', borderRadius: 8, background: 'var(--bg-soft)', fontSize: 11, color: 'var(--ink-soft)' }}>
-                  ℹ️ Perubahan role aktif setelah user login ulang.
+                <div style={{ marginTop: 6, padding: '8px 12px', borderRadius: 8, background: 'var(--bg-soft)', fontSize: 11, color: 'var(--ink-soft)', display: 'flex', gap: 6, alignItems: 'center' }}>
+                  <IconInfo size={14} /> Perubahan role aktif setelah user login ulang.
                 </div>
               )}
             </div>

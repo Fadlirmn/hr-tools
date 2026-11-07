@@ -51,3 +51,9 @@ export const IconClock = (p: P) => <Svg {...p}><circle cx="12" cy="12" r="9" /><
 export const IconPause = (p: P) => <Svg {...p}><rect x="6" y="5" width="4" height="14" rx="1" /><rect x="14" y="5" width="4" height="14" rx="1" /></Svg>
 export const IconEdit = (p: P) => <Svg {...p}><path d="M4 20h4L19 9l-4-4L4 16z" /><path d="m13.5 6.5 4 4" /></Svg>
 export const IconEye = (p: P) => <Svg {...p}><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" /></Svg>
+export const IconPuzzle = (p: P) => <Svg {...p}><path d="M10 4a2 2 0 1 1 4 0v1h4a1 1 0 0 1 1 1v4h-1a2 2 0 1 0 0 4h1v4a1 1 0 0 1-1 1h-4v-1a2 2 0 1 0-4 0v1H6a1 1 0 0 1-1-1v-4h1a2 2 0 1 0 0-4H5V6a1 1 0 0 1 1-1h4z" /></Svg>
+export const IconBrain = (p: P) => <Svg {...p}><path d="M9.5 3A2.5 2.5 0 0 0 7 5.5a2.5 2.5 0 0 0-2.5 2.7A3 3 0 0 0 4 13.5 3 3 0 0 0 6.5 18 3 3 0 0 0 12 19.5V4.5A2.5 2.5 0 0 0 9.5 3z" /><path d="M14.5 3A2.5 2.5 0 0 1 17 5.5a2.5 2.5 0 0 1 2.5 2.7 3 3 0 0 1 .5 5.3 3 3 0 0 1-2.5 4.5 3 3 0 0 1-5.5 1.5" /></Svg>
+export const IconMic = (p: P) => <Svg {...p}><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3M9 21h6" /></Svg>
+export const IconUser = (p: P) => <Svg {...p}><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></Svg>
+export const IconArrowLeft = (p: P) => <Svg {...p}><path d="M19 12H5m6-6-6 6 6 6" /></Svg>
+export const IconAward = (p: P) => <Svg {...p}><circle cx="12" cy="9" r="6" /><path d="m8.5 14-1.5 7 5-3 5 3-1.5-7" /></Svg>
