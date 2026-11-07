@@ -1,3 +1,5 @@
+import { pdfThreats, imageSize, safeFilename, MAX_IMAGE_SIDE } from './upload-guard'
+
 // Validasi file CV — server-side. Hanya PDF/JPG/PNG/WEBP (format yang bisa dibaca
 // langsung oleh screening AI). Tipe ditentukan dari magic bytes, bukan dari
 // ekstensi/Content-Type kiriman browser (keduanya bisa dipalsukan).
@@ -43,8 +45,15 @@ export async function readCvFile(file: unknown): Promise<{ ok: true; buf: Buffer
     const real = describeUnsupported(buf)
     return { ok: false, error: `Format tidak didukung${real ? `: isi file ${real}` : ''}. ${CV_FORMAT_HINT}` }
   }
-  const filename = (f.name || 'cv').replace(/[\r\n"\\]/g, '').slice(0, 200) || 'cv'
-  return { ok: true, buf, mime, filename }
+  if (mime === 'application/pdf') {
+    const risky = pdfThreats(buf)
+    if (risky.length) return { ok: false, error: `PDF ditolak karena berisi ${risky.join(', ')}. Simpan ulang sebagai PDF biasa (Print → Save as PDF).` }
+  } else {
+    const size = imageSize(buf, mime)
+    if (!size || !size.w || !size.h) return { ok: false, error: 'File gambar rusak atau tidak lengkap.' }
+    if (size.w > MAX_IMAGE_SIDE || size.h > MAX_IMAGE_SIDE) return { ok: false, error: 'Resolusi gambar terlalu besar.' }
+  }
+  return { ok: true, buf, mime, filename: safeFilename(f.name, mime) }
 }
 
 // Konfigurasi AI screening (server-side) ada di lib/ai-config.ts (loadAiConfig / isAiEnabled):

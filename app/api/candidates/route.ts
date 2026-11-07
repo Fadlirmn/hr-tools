@@ -3,9 +3,7 @@ import { query } from '@/lib/pg'
 import { getSessionUser } from '@/lib/auth'
 import { isValidPhone, PHONE_ERROR } from '@/lib/phone'
 import { errorMessage } from '@/lib/errors'
-
-// Kolom turunan dari GET (bukan kolom tabel) — dibuang bila ikut terkirim balik
-const DERIVED_COLS = ['has_cv_file', 'ai_percent', 'ai_status']
+import { pickCandidateFields } from '@/lib/candidate-columns'
 
 async function verifyHr() {
   const user = await getSessionUser()
@@ -43,9 +41,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: PHONE_ERROR }, { status: 400 })
   }
 
-  for (const k of DERIVED_COLS) delete body[k]
-  const cols = Object.keys(body)
-  const vals = cols.map(c => body[c])
+  const fields = pickCandidateFields(body, ['id'])
+  const cols = Object.keys(fields)
+  const vals = cols.map(c => fields[c])
   const placeholders = cols.map((_, i) => `$${i + 1}`)
 
   try {
@@ -68,7 +66,8 @@ export async function PATCH(req: Request) {
 
   // Bulk update: { _bulk: { ids: string[], ...fields } }
   if (body._bulk) {
-    const { ids, ...fields } = body._bulk as { ids: string[] } & Record<string, unknown>
+    const { ids, ...raw } = body._bulk as { ids: string[] } & Record<string, unknown>
+    const fields = pickCandidateFields(raw)
     if (!ids || ids.length === 0) return NextResponse.json({ error: 'ids wajib ada' }, { status: 400 })
     if ('telepon' in fields && !isValidPhone(fields.telepon)) {
       return NextResponse.json({ error: PHONE_ERROR }, { status: 400 })
@@ -93,8 +92,8 @@ export async function PATCH(req: Request) {
   }
 
   // Single update: { id, ...fields }
-  const { id, ...fields } = body
-  for (const k of DERIVED_COLS) delete fields[k]
+  const { id, ...raw } = body
+  const fields = pickCandidateFields(raw)
   if (!id) return NextResponse.json({ error: 'id wajib ada' }, { status: 400 })
   if ('telepon' in fields && !isValidPhone(fields.telepon)) {
     return NextResponse.json({ error: PHONE_ERROR }, { status: 400 })

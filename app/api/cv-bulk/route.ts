@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { query } from '@/lib/pg'
 import { getSessionUser } from '@/lib/auth'
 import { readCvFile } from '@/lib/cv-file'
+import { uploadPrecheck, verifyCvParses } from '@/lib/cv-file-server'
 import { queueScreening } from '@/lib/cv-screening'
 import { errorMessage } from '@/lib/errors'
 
@@ -13,6 +14,8 @@ import { errorMessage } from '@/lib/errors'
 export async function POST(req: Request) {
   const user = await getSessionUser()
   if (!user || (user.role !== 'hr' && user.role !== 'dev')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const blocked = uploadPrecheck(req, user.id, true)
+  if (blocked) return blocked
 
   let form: FormData
   try { form = await req.formData() } catch { return NextResponse.json({ error: 'Form upload tidak valid' }, { status: 400 }) }
@@ -25,9 +28,11 @@ export async function POST(req: Request) {
 
   const parsed = await readCvFile(form.get('file'))
   if (!parsed.ok) return NextResponse.json({ error: parsed.error }, { status: 400 })
+  const broken = await verifyCvParses(parsed.buf, parsed.mime)
+  if (broken) return NextResponse.json({ error: broken }, { status: 400 })
 
   const id = uuidv4()
-  const tempName = '[CV] ' + parsed.filename.replace(/\.(pdf|jpe?g|png)$/i, '').slice(0, 100)
+  const tempName = '[CV] ' + parsed.filename.replace(/\.(pdf|jpe?g|png|webp)$/i, '').slice(0, 100)
   try {
     await query(
       `INSERT INTO candidates (id, nama, posisi, sumber, stage, tanggal) VALUES ($1, $2, $3, $4, 'screening', $5)`,

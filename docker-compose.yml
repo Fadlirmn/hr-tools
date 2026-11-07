@@ -29,6 +29,12 @@ services:
       - CV_AI_MODEL=${CV_AI_MODEL:-}
       - CV_AI_API_KEY=${CV_AI_API_KEY:-}
       - CV_AI_PDF_MODE=${CV_AI_PDF_MODE:-text}
+    # Container tanpa hak istimewa: tidak bisa naik ke root walau ada celah di aplikasi
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 512
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
