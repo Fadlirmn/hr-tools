@@ -50,6 +50,13 @@ export default function HrSettingsPage() {
     setPositions(positions.map(p => p.id === pid ? { ...p, name: newName } : p))
   }
 
+  const setDescription = async (pid: string, description: string) => {
+    const pos = positions.find(p => p.id === pid)
+    if (!pos || (pos.description || '') === description) return
+    await upsertPosition({ ...pos, description })
+    setPositions(positions.map(p => p.id === pid ? { ...p, description } : p))
+  }
+
   const slugifyPosition = (name: string) =>
     name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30) || 'posisi'
 
@@ -136,6 +143,11 @@ export default function HrSettingsPage() {
               onBlur={e => rename(p.id, e.target.value)}
               style={{ maxWidth: 340, fontWeight: 700 }} />
             <button className="btn sm danger" onClick={() => delPos(p.id)}>Hapus posisi</button>
+          </div>
+          <div className="field" style={{ marginTop: 12, marginBottom: 0 }}>
+            <label className="fld">Kualifikasi / deskripsi posisi <span className="hint">(dipakai screening CV otomatis)</span></label>
+            <textarea defaultValue={p.description || ''} onBlur={e => setDescription(p.id, e.target.value.trim())}
+              placeholder="cth. Min. 1 tahun pengalaman digital marketing, menguasai Meta Ads & TikTok Ads, punya portofolio kampanye, domisili Jakarta/bisa WFO." />
           </div>
           <div style={{ marginTop: 14 }}>
             {CV_CRITERIA.map(cr => {

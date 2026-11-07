@@ -4,6 +4,9 @@ import { getSessionUser } from '@/lib/auth'
 import { isValidPhone, PHONE_ERROR } from '@/lib/phone'
 import { errorMessage } from '@/lib/errors'
 
+// Kolom turunan dari GET (bukan kolom tabel) — dibuang bila ikut terkirim balik
+const DERIVED_COLS = ['has_cv_file', 'ai_percent', 'ai_status']
+
 async function verifyHr() {
   const user = await getSessionUser()
   if (!user) return null
@@ -16,7 +19,14 @@ export async function GET() {
   const user = await verifyHr()
   if (!user) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-  const res = await query('SELECT * FROM candidates ORDER BY tanggal DESC')
+  // has_cv_file & ai_percent: turunan dari candidate_cv_files (tanpa menarik data biner)
+  const res = await query(
+    `SELECT c.*, (f.candidate_id IS NOT NULL) AS has_cv_file,
+       CASE WHEN f.ai_status = 'done' THEN (f.ai_result->>'percent')::int ELSE NULL END AS ai_percent,
+       f.ai_status
+     FROM candidates c LEFT JOIN candidate_cv_files f ON f.candidate_id = c.id
+     ORDER BY c.tanggal DESC, c.id`
+  )
   return NextResponse.json({ candidates: res.rows })
 }
 
@@ -33,6 +43,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: PHONE_ERROR }, { status: 400 })
   }
 
+  for (const k of DERIVED_COLS) delete body[k]
   const cols = Object.keys(body)
   const vals = cols.map(c => body[c])
   const placeholders = cols.map((_, i) => `$${i + 1}`)
@@ -83,6 +94,7 @@ export async function PATCH(req: Request) {
 
   // Single update: { id, ...fields }
   const { id, ...fields } = body
+  for (const k of DERIVED_COLS) delete fields[k]
   if (!id) return NextResponse.json({ error: 'id wajib ada' }, { status: 400 })
   if ('telepon' in fields && !isValidPhone(fields.telepon)) {
     return NextResponse.json({ error: PHONE_ERROR }, { status: 400 })

@@ -1,0 +1,1024 @@
+<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>[hidden]{display:none!important}body{margin:0}</style></head><body><title>Screening CV Kurma HR</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<script>try{var _t=localStorage.getItem("kurma-hr-theme");if(_t==="light"||_t==="dark")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+/* Layout: shell aplikasi HR (sidebar putih di tema terang, indigo di tema gelap) yang meniru app asli, tiap layar fitur = tab yang bisa dicoba */
+:root{
+  --bg:#F7F7FB; --card:#FFFFFF; --ink:#1C1A2E; --ink-soft:#595672; --muted:#8B889E;
+  --line:#E7E5EF; --line-soft:#F0EFF5; --hover:#FAFAFD;
+  --brand:#2E2756; --brand-ink:#E9E7F4; --brand-muted:#B9B5D6;
+  --side-bg:#FFFFFF; --side-ink:#4A4766; --side-strong:#1C1A2E; --side-muted:#6E6B85; --side-line:#E7E5EF; --side-hover:#F1EFFA; --side-badge:#EEEBFC; --side-badge-ink:#5B4BE0;
+  --accent:#FF6B57; --accent-d:#F0533E; --accent-soft:#FFE9E5;
+  --violet:#5B4BE0; --violet-soft:#EEEBFC;
+  --ok:#12A06A; --ok-bg:#E4F5EE; --hold:#CC8A14; --hold-bg:#FAF0DA; --no:#E04A4A; --no-bg:#FBE7E7;
+  --neutral-bg:#EEF0F4; --paper:#FFFFFF; --paper-ink:#23212f; --overlay:rgba(20,18,40,.45);
+  --shadow:0 1px 2px rgba(28,26,46,.05),0 8px 24px rgba(28,26,46,.06);
+  --btn-bg:#E6E2FB; --btn-ink:#3A2E9E; --btn-line:#C9C1F4; --btn-hover:#D9D3F8;
+  --rate-bg:#F1EFFA; --rate-line:#D6D1EE; --danger-line:#F2C2C2; --bubble-me:#5B4BE0; --bubble-me-ink:#FFFFFF;
+  --font:'Plus Jakarta Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,'SFMono-Regular',Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#14121F; --card:#1E1B2E; --ink:#ECEAF6; --ink-soft:#B4B0CC; --muted:#8C88A8;
+  --line:#2F2B45; --line-soft:#272439; --hover:#242036;
+  --brand:#1A1730; --brand-ink:#E9E7F4; --brand-muted:#9C98BF;
+  --side-bg:#1A1730; --side-ink:#C9C5E2; --side-strong:#FFFFFF; --side-muted:#9C98BF; --side-line:rgba(255,255,255,.08); --side-hover:rgba(255,255,255,.07); --side-badge:rgba(255,255,255,.18); --side-badge-ink:#FFFFFF;
+  --accent:#FF7A67; --accent-d:#FF8F7F; --accent-soft:#3F2420; --violet:#8F84F5; --violet-soft:#2A2550;
+  --ok:#3FCB92; --ok-bg:#16352A; --hold:#E9AE45; --hold-bg:#3A2E14; --no:#F27878; --no-bg:#3D1F24;
+  --neutral-bg:#2A2740; --paper:#F7F6FB; --paper-ink:#23212f; --overlay:rgba(0,0,0,.6);
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25);
+  --btn-bg:#3A3370; --btn-ink:#E4E0FF; --btn-line:#5A50A8; --btn-hover:#463E86;
+  --rate-bg:#2A2645; --rate-line:#4A4470; --danger-line:#6A3038; --bubble-me:#6F62F0; --bubble-me-ink:#FFFFFF; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#14121F; --card:#1E1B2E; --ink:#ECEAF6; --ink-soft:#B4B0CC; --muted:#8C88A8;
+  --line:#2F2B45; --line-soft:#272439; --hover:#242036;
+  --brand:#1A1730; --brand-ink:#E9E7F4; --brand-muted:#9C98BF;
+  --side-bg:#1A1730; --side-ink:#C9C5E2; --side-strong:#FFFFFF; --side-muted:#9C98BF; --side-line:rgba(255,255,255,.08); --side-hover:rgba(255,255,255,.07); --side-badge:rgba(255,255,255,.18); --side-badge-ink:#FFFFFF;
+  --accent:#FF7A67; --accent-d:#FF8F7F; --accent-soft:#3F2420; --violet:#8F84F5; --violet-soft:#2A2550;
+  --ok:#3FCB92; --ok-bg:#16352A; --hold:#E9AE45; --hold-bg:#3A2E14; --no:#F27878; --no-bg:#3D1F24;
+  --neutral-bg:#2A2740; --paper:#F7F6FB; --paper-ink:#23212f; --overlay:rgba(0,0,0,.6);
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25);
+  --btn-bg:#3A3370; --btn-ink:#E4E0FF; --btn-line:#5A50A8; --btn-hover:#463E86;
+  --rate-bg:#2A2645; --rate-line:#4A4470; --danger-line:#6A3038; --bubble-me:#6F62F0; --bubble-me-ink:#FFFFFF; color-scheme:dark}
+
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;font-family:var(--font);background:var(--bg);color:var(--ink);font-size:14.5px;line-height:1.5;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{margin:0;text-wrap:balance}
+p{margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--violet);outline-offset:2px}
+
+.app{display:flex;min-height:100vh}
+.sidebar{width:236px;flex-shrink:0;background:var(--side-bg);color:var(--side-ink);border-right:1px solid var(--side-line);display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+.brandbox{padding:20px 18px 16px;border-bottom:1px solid var(--side-line);display:flex;gap:10px;align-items:center}
+.mark{width:32px;height:32px;border-radius:9px;background:var(--accent);display:grid;place-items:center;font-weight:800;color:#fff}
+.brandbox b{display:block;font-size:14.5px;color:var(--side-strong)}
+.brandbox small{font-size:11px;color:var(--side-muted)}
+.nav{padding:10px;display:flex;flex-direction:column;gap:2px}
+.nav .sep{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--side-muted);padding:12px 12px 4px;font-weight:700}
+.nav a{display:flex;gap:10px;align-items:center;padding:9px 12px;border-radius:10px;color:var(--side-ink);text-decoration:none;font-size:13px;font-weight:600}
+.nav a:hover{background:var(--side-hover);color:var(--side-strong)}
+.nav a.active{background:var(--accent);color:#fff}
+.nav a .ico{width:16px;text-align:center}
+.nav a .new{margin-left:auto;font-size:9.5px;font-weight:800;letter-spacing:.5px;background:var(--side-badge);color:var(--side-badge-ink);padding:1px 6px;border-radius:5px}
+.nav a.active .new{background:rgba(255,255,255,.24);color:#fff}
+.nav a.dim{opacity:.45;pointer-events:none}
+.side-foot{margin-top:auto;padding:14px;font-size:11px;color:var(--side-muted);border-top:1px solid var(--side-line)}
+
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{background:var(--card);border-bottom:1px solid var(--line);padding-block:14px;padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px));display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.topbar h2{font-size:18px;font-weight:800}
+.topbar p{font-size:12.5px;color:var(--muted)}
+.mvp{font-family:var(--mono);font-size:11px;background:var(--violet-soft);color:var(--violet);padding:4px 9px;border-radius:6px;white-space:nowrap}
+.top-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.theme-toggle{display:inline-flex;gap:2px;padding:2px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+.theme-toggle button{border:0;background:transparent;color:var(--ink-soft);font-weight:700;font-size:12px;padding:5px 11px;border-radius:8px;cursor:pointer}
+.theme-toggle button:hover{color:var(--ink)}
+.theme-toggle button[aria-pressed="true"]{background:var(--violet-soft);color:var(--violet)}
+.content{padding-block:22px 60px;padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px));min-width:0}
+.mobile-tabs{display:none}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);min-width:0}
+.pad{padding:20px}
+.notice{font-size:13px;color:var(--ink-soft);background:var(--violet-soft);border-radius:10px;padding:11px 14px;margin-bottom:16px}
+.hint{font-size:12px;color:var(--muted)}
+.btn{display:inline-flex;align-items:center;gap:6px;justify-content:center;font-weight:700;font-size:13px;border-radius:10px;padding:9px 14px;border:1px solid var(--btn-line);background:var(--btn-bg);cursor:pointer;color:var(--btn-ink);text-decoration:none;white-space:nowrap;transition:background .15s,border-color .15s}
+.btn:hover{background:var(--btn-hover);border-color:var(--violet)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 2px 8px rgba(255,107,87,.3)}
+.btn.primary:hover{background:var(--accent-d);border-color:var(--accent-d)}
+.btn.ghost{background:transparent;border-color:var(--btn-line);color:var(--btn-ink)}
+.btn.ghost:hover{background:var(--btn-bg)}
+.btn.danger{background:var(--no-bg);border-color:var(--danger-line);color:var(--no)}
+.btn.danger:hover{border-color:var(--no)}
+.btn.sm{padding:6px 11px;font-size:12px;border-radius:8px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:999px;white-space:nowrap}
+.chip.ok{background:var(--ok-bg);color:var(--ok)} .chip.hold{background:var(--hold-bg);color:var(--hold)}
+.chip.no{background:var(--no-bg);color:var(--no)} .chip.neutral{background:var(--neutral-bg);color:var(--ink-soft)}
+.chip.violet{background:var(--violet-soft);color:var(--violet)}
+.tag{font-size:10.5px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;background:var(--violet-soft);color:var(--violet);padding:3px 8px;border-radius:6px}
+.head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.head h3{font-size:15.5px;font-weight:800}
+.head .meta{margin-left:auto;font-size:12px;color:var(--muted)}
+.selectbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:14px}
+select,input[type=text],textarea{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:8px 11px;font-size:13.5px;max-width:100%}
+textarea{width:100%;min-height:88px;resize:vertical}
+label.fld{display:block;font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:6px}
+
+/* Penilaian CV */
+.split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:16px;align-items:start}
+.preview{position:sticky;top:16px}
+.filebar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.filebar .fname{flex:1;min-width:120px;font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.viewer{background:var(--line-soft);border:1px solid var(--line);border-radius:10px;padding:16px;height:640px;overflow:auto}
+.paper{background:var(--paper);color:var(--paper-ink);max-width:470px;margin:0 auto;padding:30px 30px 34px;box-shadow:0 2px 12px rgba(0,0,0,.12);font-size:11.5px;line-height:1.55}
+.paper h4{font-size:19px;font-weight:800;letter-spacing:-.2px;color:#1d1b2b}
+.paper .role{color:#6a5fd6;font-weight:700;margin-top:2px}
+.paper .contact{color:#666;margin-top:4px;font-size:10.5px}
+.paper h5{margin:14px 0 4px;font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:#6a5fd6;border-bottom:1px solid #e4e2ee;padding-bottom:3px}
+.paper ul{margin:3px 0 0;padding-left:16px}
+.paper .job{display:flex;justify-content:space-between;gap:8px;font-weight:700;margin-top:6px}
+.paper .job span{font-weight:500;color:#777;white-space:nowrap}
+.paper mark{background:#fff1a8;color:inherit;padding:0 1px}
+.ai-card{margin-bottom:16px}
+.ai-top{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ai-top .sp{flex:1}
+.ai-sum{margin-top:12px;font-size:13.5px}
+.ai-cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:12px;font-size:13px}
+.ai-cols ul{margin:4px 0 0;padding-left:18px}
+.ai-cols b{font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--ink-soft)}
+details{margin-top:10px;font-size:13px}
+summary{cursor:pointer;font-weight:700}
+.processing{display:flex;gap:10px;align-items:center;font-size:13px;color:var(--ink-soft)}
+.spinner{width:16px;height:16px;border-radius:50%;border:2px solid var(--line);border-top-color:var(--violet);animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.crit{padding:13px 0;border-bottom:1px solid var(--line-soft)}
+.crit:last-of-type{border-bottom:none}
+.crit .top{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;flex-wrap:wrap}
+.crit .name{font-weight:700;font-size:13.5px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.crit .w{font-size:10.5px;color:var(--violet);font-weight:700;background:var(--violet-soft);padding:1px 7px;border-radius:6px}
+.crit .desc{font-size:12px;color:var(--muted);margin-top:2px}
+.evidence{margin-top:6px;padding:5px 10px;border-left:3px solid var(--violet-soft);font-size:12px;color:var(--ink-soft)}
+.evidence q{font-style:italic;display:block}
+.rate{display:flex;gap:5px}
+.rate button{width:34px;height:34px;border:1px solid var(--rate-line);background:var(--rate-bg);color:var(--ink);border-radius:8px;font-weight:700;cursor:pointer;font-variant-numeric:tabular-nums}
+.rate button:hover{border-color:var(--violet)}
+.rate button.on{background:var(--violet);border-color:var(--violet);color:#fff}
+.rate button.ai{box-shadow:inset 0 -3px 0 var(--accent)}
+.rate.scale button{transition:background .12s,border-color .12s,transform .12s}
+.rate.scale button:hover{transform:translateY(-1px);border-color:var(--accent)}
+.rate.scale button.ai{box-shadow:none;border:2px dashed var(--accent);background:var(--accent-soft);color:var(--ink)}
+.rate.scale button.on{background:var(--accent);border:1px solid var(--accent);color:#fff;font-weight:800;box-shadow:0 2px 8px rgba(255,107,87,.3)}
+.scorecard{display:flex;gap:22px;align-items:center;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:18px;margin-top:6px}
+.gauge{position:relative;width:118px;height:118px;flex-shrink:0}
+.gauge svg{transform:rotate(-90deg)}
+.gauge .val{position:absolute;inset:0;display:grid;place-content:center;text-align:center}
+.gauge .val b{font-size:28px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
+.gauge .val span{font-size:11px;color:var(--muted);font-weight:600}
+.seg{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px dashed var(--line);font-size:13px;font-variant-numeric:tabular-nums}
+.seg .lbl{color:var(--muted)}
+.cmp{font-size:12px;color:var(--muted);margin-top:8px}
+.sumbar{position:sticky;top:10px;z-index:6;display:flex;align-items:center;gap:8px 14px;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:10px 14px;margin-bottom:16px}
+.sumbar .sum-score{display:flex;align-items:center;gap:10px}
+.sumbar .sum-score b{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1;min-width:3.2ch}
+.sumbar .sum-meta{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.sumbar .sum-actions{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.sumbar .sum-msg{flex-basis:100%;font-size:12px;color:var(--muted)}
+.decision{display:flex;gap:8px;flex-wrap:wrap}
+.decision button{flex:1;min-width:120px;border:1px solid var(--line);background:var(--card);color:var(--ink-soft);font-weight:700;font-size:13px;border-radius:10px;padding:9px 12px;cursor:pointer;transition:background .12s,border-color .12s}
+.decision button:hover{border-color:var(--violet)}
+.decision button[aria-pressed="true"][data-d="lanjut"]{background:var(--ok-bg);border-color:var(--ok);color:var(--ok)}
+.decision button[aria-pressed="true"][data-d="tahan"]{background:var(--hold-bg);border-color:var(--hold);color:var(--hold)}
+.decision button[aria-pressed="true"][data-d="tolak"]{background:var(--no-bg);border-color:var(--no);color:var(--no)}
+
+/* Tabel kandidat */
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:760px}
+th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);padding:10px 12px;border-bottom:1px solid var(--line)}
+td{padding:11px 12px;border-bottom:1px solid var(--line-soft);font-size:13px;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:var(--hover)}
+.nowrap{white-space:nowrap}
+.nm{font-weight:700}
+.stage{font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;background:var(--neutral-bg);color:var(--ink-soft);white-space:nowrap}
+.stage.psi{background:var(--violet-soft);color:var(--violet)}
+.stage.hold{background:var(--hold-bg);color:var(--hold)}
+.stage.no{background:var(--no-bg);color:var(--no)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;font-size:12px;color:var(--muted)}
+
+/* Modal */
+.overlay{position:fixed;inset:0;background:var(--overlay);display:grid;place-items:center;padding:16px;z-index:40}
+.modal{background:var(--card);border-radius:16px;width:100%;max-width:520px;max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal h3{padding:20px 22px 0;font-size:17px;font-weight:800}
+.modal .body{padding:16px 22px;display:flex;flex-direction:column;gap:12px}
+.modal .foot{padding:12px 22px 20px;display:flex;gap:10px;justify-content:flex-end}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid2 select{width:100%}
+.dropzone{border:2px dashed var(--line);border-radius:12px;padding:20px;text-align:center;cursor:pointer;background:transparent;width:100%}
+.dropzone:hover,.dropzone.over{border-color:var(--violet);background:var(--violet-soft)}
+.filelist{display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line-soft);padding-top:10px}
+.filerow{display:flex;gap:8px;align-items:center;font-size:13px}
+.filerow span:first-child{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Sisi kandidat */
+.cand-wrap{max-width:640px;display:flex;flex-direction:column;gap:16px}
+.phone-note{display:flex;gap:10px;align-items:center;font-size:12.5px;color:var(--muted)}
+.consent{display:flex;gap:10px;align-items:flex-start;font-size:13px;margin-top:12px}
+.consent input{margin-top:3px;accent-color:var(--violet)}
+.sent{display:flex;gap:10px;align-items:center;background:var(--ok-bg);color:var(--ok);border-radius:10px;padding:10px 14px;font-size:13px;font-weight:600;margin-bottom:12px}
+.err{color:var(--no);font-size:12.5px;margin-top:8px}
+
+/* Posisi */
+.pos-desc textarea{min-height:110px}
+.wrow{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 0;border-bottom:1px dashed var(--line);font-size:13px;flex-wrap:wrap}
+.wrow .rate button{width:30px;height:30px}
+
+/* Alur */
+.flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.step{padding:16px}
+.step .n{font-family:var(--mono);font-size:11px;color:var(--violet)}
+.step h4{font-size:14px;font-weight:800;margin:6px 0 4px}
+.step p{font-size:12.5px;color:var(--ink-soft)}
+.principles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:16px}
+.principles .card{padding:16px}
+.principles h4{font-size:13.5px;font-weight:800;margin-bottom:4px}
+.principles p{font-size:12.5px;color:var(--ink-soft)}
+.spec{margin-top:16px}
+.spec table{min-width:560px}
+.spec code{font-family:var(--mono);font-size:12px;background:var(--line-soft);padding:1px 6px;border-radius:5px}
+
+/* Asisten chat */
+.chat-fab{position:fixed;right:calc(20px + env(safe-area-inset-right,0px));bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:50;display:flex;align-items:center;gap:8px;background:var(--side-bg);color:var(--side-strong);border:2px solid var(--accent);border-radius:999px;padding:11px 18px 11px 14px;font-weight:800;font-size:13.5px;cursor:pointer;box-shadow:0 8px 24px rgba(28,26,46,.3)}
+.chat-fab .dot{width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-size:14px}
+.chat-fab:hover{transform:translateY(-1px)}
+.chat{position:fixed;right:calc(20px + env(safe-area-inset-right,0px));bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:55;width:400px;max-width:calc(100vw - 32px);height:min(640px,calc(100vh - 40px));background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.28);display:flex;flex-direction:column;overflow:hidden}
+.chat-head{background:var(--side-bg);color:var(--side-strong);border-bottom:1px solid var(--side-line);padding:13px 14px;display:flex;align-items:center;gap:10px}
+.chat-head .dot{width:30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:800}
+.chat-head b{display:block;font-size:14px}
+.chat-head small{font-size:11px;color:var(--side-muted)}
+.chat-head .x{margin-left:auto;background:var(--side-hover);border:none;color:var(--side-strong);width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:16px}
+.chat-log{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;background:var(--bg)}
+.msg{max-width:88%;padding:9px 12px;border-radius:12px;font-size:13px;line-height:1.5;overflow-wrap:anywhere}
+.msg.bot{background:var(--card);border:1px solid var(--line);align-self:flex-start;border-bottom-left-radius:4px}
+.msg.me{background:var(--bubble-me);color:var(--bubble-me-ink);align-self:flex-end;border-bottom-right-radius:4px}
+.msg.sys{align-self:center;background:transparent;color:var(--muted);font-size:11.5px;padding:2px 6px}
+.msg ul{margin:4px 0;padding-left:18px}
+.msg p+p{margin-top:6px}
+.msg .typing{color:var(--muted)}
+.report{align-self:stretch;max-width:100%;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;font-size:12.5px}
+.report h5{margin:0 0 8px;font-size:13px;font-weight:800}
+.report .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px}
+.report .kpi{background:var(--bg);border-radius:8px;padding:7px;text-align:center}
+.report .kpi b{display:block;font-size:17px;font-variant-numeric:tabular-nums}
+.report .kpi span{font-size:10.5px;color:var(--muted)}
+.report table{min-width:0;width:100%}
+.report th,.report td{padding:5px 6px;font-size:12px}
+.report .bar{height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin-top:3px}
+.report .bar i{display:block;height:100%;background:var(--violet)}
+.report .srcrow{display:grid;grid-template-columns:110px 1fr 28px;gap:8px;align-items:center;margin:4px 0}
+.chips{display:flex;gap:6px;flex-wrap:wrap;padding:8px 12px 0;background:var(--card);border-top:1px solid var(--line)}
+.chips button{border:1px solid var(--btn-line);background:var(--btn-bg);color:var(--btn-ink);border-radius:999px;padding:5px 10px;font-size:11.5px;font-weight:700;cursor:pointer}
+.chips button:hover{border-color:var(--violet)}
+.chat-form{display:flex;gap:8px;padding:10px 12px 12px;background:var(--card)}
+.chat-form input{flex:1;min-width:0;border:1px solid var(--line);border-radius:10px;padding:9px 11px;font-size:13px;background:var(--bg)}
+.chat-mode{font-size:10.5px;color:var(--muted);padding:0 12px 8px;background:var(--card)}
+
+@media (max-width:960px){
+  .split,.ai-cols{grid-template-columns:1fr}
+  .preview{position:static}
+  .viewer{height:480px}
+  .flow{grid-template-columns:1fr 1fr}
+}
+@media (max-width:760px){
+  .sidebar{display:none}
+  .mobile-tabs{display:flex;gap:6px;overflow-x:auto;padding:10px max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px));background:var(--side-bg);border-bottom:1px solid var(--side-line)}
+  .mobile-tabs a{flex-shrink:0;color:var(--side-ink);text-decoration:none;font-size:12.5px;font-weight:700;padding:7px 12px;border-radius:9px}
+  .mobile-tabs a.active{background:var(--accent);color:#fff}
+  .topbar,.content{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .grid2,.principles,.flow{grid-template-columns:1fr}
+  .paper{padding:20px}
+  .chat{right:0;left:0;bottom:0;width:100%;max-width:100%;height:85vh;border-radius:16px 16px 0 0;padding-bottom:env(safe-area-inset-bottom,0px)}
+  .chat-fab{padding:11px 14px}
+  .chat-fab .lbl{display:none}
+  .report .kpis{grid-template-columns:repeat(2,1fr)}
+}
+@media (prefers-reduced-motion:reduce){.spinner{animation:none}}
+</style>
+
+<div class="app">
+  <aside class="sidebar" aria-label="Menu HR">
+    <div class="brandbox"><div class="mark">K</div><div><b>Kurma HR</b><small>Recruitment Toolkit</small></div></div>
+    <nav class="nav" id="nav">
+      <a class="dim"><span class="ico">▦</span>Dashboard</a>
+      <a href="#kandidat" data-v="kandidat"><span class="ico">☰</span>Daftar Kandidat</a>
+      <a href="#penilaian" data-v="penilaian"><span class="ico">▤</span>Penilaian CV<span class="new">BARU</span></a>
+      <a class="dim"><span class="ico">◈</span>Tes DISC</a>
+      <a class="dim"><span class="ico">⬢</span>Tes IQ</a>
+      <a class="dim"><span class="ico">◔</span>Interview</a>
+      <div class="sep">Pengaturan</div>
+      <a href="#posisi" data-v="posisi"><span class="ico">◇</span>Posisi &amp; Bobot</a>
+      <div class="sep">Tampilan kandidat</div>
+      <a href="#upload-kandidat" data-v="upload-kandidat"><span class="ico">📎</span>Upload CV (kandidat)</a>
+      <div class="sep">Ringkasan</div>
+      <a href="#alur" data-v="alur"><span class="ico">→</span>Alur &amp; cara kerja</a>
+    </nav>
+    <div class="side-foot">Prototipe MVP · data contoh</div>
+  </aside>
+
+  <div class="main">
+    <nav class="mobile-tabs" id="mtabs" aria-label="Layar">
+      <a href="#penilaian" data-v="penilaian">Penilaian CV</a>
+      <a href="#kandidat" data-v="kandidat">Kandidat</a>
+      <a href="#upload-kandidat" data-v="upload-kandidat">Upload (kandidat)</a>
+      <a href="#posisi" data-v="posisi">Posisi</a>
+      <a href="#alur" data-v="alur">Alur</a>
+    </nav>
+    <header class="topbar">
+      <div><h2 id="t-title">Penilaian CV / Resume</h2><p id="t-sub">Skor kelayakan berkas pelamar</p></div>
+      <div class="top-actions">
+        <span class="mvp">MVP · data contoh, bisa diklik</span>
+        <div class="theme-toggle" role="group" aria-label="Tema tampilan">
+          <button type="button" id="th-light" aria-pressed="false">Putih</button>
+          <button type="button" id="th-dark" aria-pressed="false">Gelap</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="content">
+
+      <!-- ============ PENILAIAN CV ============ -->
+      <section data-view="penilaian">
+        <div class="selectbar">
+          <label class="fld" for="sel-cand" style="margin:0">Kandidat</label>
+          <select id="sel-cand">
+            <option value="budi">📎 Budi Santoso · Marketing</option>
+            <option value="sari">📎 Sari Wulandari · Copywriter</option>
+            <option value="raka">Raka Pratama · Content Creator / Talent</option>
+          </select>
+          <span class="hint">📎 = CV sudah diupload</span>
+        </div>
+        <div class="notice">Tiap kriteria dinilai <b>1–5</b>, bobot mengikuti posisi. Skor AI hanya <b>draft</b>, keputusan akhir tetap di penilai. Tombol pucat dengan garis putus-putus oranye = saran AI, oranye penuh = nilai yang kamu pilih. Skor dihitung dari kriteria yang sudah dinilai, jadi kriteria "tidak ada info" tidak menurunkan skor.</div>
+
+        <div class="split" id="split">
+          <div class="card pad preview" id="preview-card"></div>
+          <div>
+            <div class="sumbar" id="sumbar">
+              <div class="sum-score"><b id="sb-pct">0%</b><span class="chip neutral" id="sb-verdict">Data belum cukup</span></div>
+              <div class="sum-meta" id="sb-meta">0/10 dinilai</div>
+              <div class="sum-actions">
+                <button class="btn sm" id="btn-save" type="button">Simpan</button>
+                <button class="btn primary sm" id="btn-next" type="button">Simpan &amp; berikutnya →</button>
+              </div>
+              <div class="sum-msg" id="save-msg" role="status">Pilih keputusan, lalu Simpan.</div>
+            </div>
+            <div class="card pad ai-card" id="ai-card"></div>
+            <div class="card pad">
+              <div class="head"><span class="tag">CV</span><h3>Form Penilaian CV / Resume</h3><span class="meta" id="pos-name">Marketing</span></div>
+              <div id="crit-list"></div>
+              <div class="scorecard">
+                <div class="gauge">
+                  <svg width="118" height="118" aria-hidden="true">
+                    <circle cx="59" cy="59" r="49" fill="none" stroke="var(--line)" stroke-width="11"/>
+                    <circle id="g-arc" cx="59" cy="59" r="49" fill="none" stroke="var(--no)" stroke-width="11" stroke-linecap="round" stroke-dasharray="307.9" stroke-dashoffset="307.9"/>
+                  </svg>
+                  <div class="val"><b id="g-val">0%</b><span>yang dinilai</span></div>
+                </div>
+                <div style="flex:1;min-width:200px">
+                  <span class="chip no" id="g-verdict" style="font-size:12.5px;padding:5px 13px">Tidak Lolos</span>
+                  <div class="seg"><span class="lbl">Poin dari kriteria yang dinilai</span><b id="g-got">0 / 0</b></div>
+                  <div class="seg"><span class="lbl">Skor minimum (sisanya dianggap 0)</span><b id="g-min">0%</b></div>
+                  <div class="seg"><span class="lbl">Kriteria dinilai</span><b id="g-filled">0/10</b></div>
+                  <div class="cmp" id="g-cmp"></div>
+                </div>
+              </div>
+              <div style="margin-top:18px" id="decision">
+                <div id="dec-lbl" style="font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:6px">Keputusan</div>
+                <div class="decision" role="group" aria-labelledby="dec-lbl">
+                  <button type="button" data-d="lanjut" aria-pressed="false">Lanjut Psikotes</button>
+                  <button type="button" data-d="tahan" aria-pressed="false">Tahan</button>
+                  <button type="button" data-d="tolak" aria-pressed="false">Tidak lanjut</button>
+                </div>
+                <div id="dec-reason" hidden style="margin-top:10px">
+                  <label class="fld" for="reason">Alasan tidak lanjut</label>
+                  <select id="reason"><option value="">Pilih alasan…</option><option>Pengalaman kurang relevan</option><option>Skill teknis belum sesuai</option><option>Ekspektasi gaji di luar budget</option><option>Tidak bersedia WFO / domisili tidak cocok</option><option>Portofolio kurang meyakinkan</option><option>Lainnya (tulis di catatan)</option></select>
+                </div>
+                <div class="hint" id="dec-hint" style="margin-top:8px"></div>
+              </div>
+              <div style="margin-top:16px">
+                <label class="fld" for="notes">Catatan penilai</label>
+                <textarea id="notes" placeholder="Kekuatan, kelemahan, hal yang perlu digali saat interview..."></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ DAFTAR KANDIDAT ============ -->
+      <section data-view="kandidat" hidden>
+        <div class="toolbar">
+          <button class="btn primary">＋ Kandidat Baru</button>
+          <button class="btn" id="btn-bulk">⬆ Upload CV massal</button>
+        </div>
+        <div class="card pad">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Nama</th><th>Posisi</th><th>Sumber</th><th>Tahap</th><th>CV</th><th>DISC</th><th>IQ</th><th></th></tr></thead>
+              <tbody id="cand-body"></tbody>
+            </table>
+          </div>
+          <div class="legend"><span>📎 file CV ada</span><span><span class="chip neutral">AI 62%</span> draft AI, belum dinilai HR</span><span><span class="chip ok">81%</span> sudah dinilai HR</span></div>
+        </div>
+      </section>
+
+      <!-- ============ UPLOAD (KANDIDAT) ============ -->
+      <section data-view="upload-kandidat" hidden>
+        <div class="cand-wrap">
+          <div class="phone-note">Ini tampilan dari akun kandidat, menu <b>Hasil CV</b>. Skor AI tidak pernah ditampilkan ke kandidat.</div>
+          <div class="card pad">
+            <div class="head"><h3>📎 Upload CV</h3></div>
+            <div class="sent" id="c-sent" hidden>✅ <span id="c-sent-txt"></span></div>
+            <button type="button" class="dropzone" id="c-drop">
+              <div style="font-weight:700" id="c-drop-txt">Klik atau seret file CV ke sini</div>
+              <div class="hint" style="margin-top:4px">Format PDF, JPG, atau PNG, maks. 5 MB. File Word (.docx) silakan export ke PDF dulu.</div>
+            </button>
+            <label class="consent" for="c-consent">
+              <input type="checkbox" id="c-consent">
+              <span>Saya menyetujui CV dan data pribadi saya diproses oleh tim HR, termasuk analisis berbantuan AI, untuk keperluan seleksi rekrutmen ini.</span>
+            </label>
+            <div class="err" id="c-err" hidden></div>
+          </div>
+          <div class="card pad">
+            <div class="head"><h3>📄 Hasil Penilaian CV</h3></div>
+            <div style="text-align:center;padding:18px 0;color:var(--muted)"><div style="font-size:28px">◦</div><b style="color:var(--ink-soft)">Belum dinilai</b><div class="hint">HR belum melakukan penilaian CV untuk Anda.</div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ POSISI ============ -->
+      <section data-view="posisi" hidden>
+        <div class="notice">Atur bobot tiap kriteria CV per posisi (skala 1–3). Kolom kualifikasi dikirim ke AI sebagai acuan menilai.</div>
+        <div class="card pad" style="max-width:820px">
+          <input type="text" id="pos-title" value="Marketing" aria-label="Nama posisi" style="font-weight:700;max-width:320px">
+          <div class="pos-desc" style="margin-top:14px">
+            <label class="fld" for="pos-desc">Kualifikasi / deskripsi posisi <span class="hint">(dipakai screening CV otomatis)</span></label>
+            <textarea id="pos-desc">Min. 1 tahun pengalaman digital marketing (FMCG/fashion lebih disukai). Menguasai Meta Ads & TikTok Ads, bisa baca data campaign (ROAS, CPA, CTR). Punya portofolio campaign. Bisa WFO di Jakarta Selatan, Senin–Sabtu. Budget gaji Rp5–7 juta.</textarea>
+          </div>
+          <div style="margin-top:14px" id="w-list"></div>
+        </div>
+      </section>
+
+      <!-- ============ ALUR ============ -->
+      <section data-view="alur" hidden>
+        <div class="flow">
+          <div class="card step"><div class="n">Langkah 1</div><h4>CV masuk</h4><p>Kandidat upload sendiri dari akunnya, atau HR upload massal CV dari Instagram, Glints, dan KitaLulus. Satu file jadi satu kandidat.</p></div>
+          <div class="card step"><div class="n">Langkah 2</div><h4>Disimpan &amp; dicek</h4><p>File disimpan permanen di PostgreSQL. Hanya PDF/JPG/PNG maks. 5 MB, dicek dari isi file, bukan nama file.</p></div>
+          <div class="card step"><div class="n">Langkah 3</div><h4>AI membuat draft</h4><p>Lewat 9router: PDF diubah jadi teks, dinilai per kriteria dengan kutipan bukti. Nama, email, dan HP diisi otomatis.</p></div>
+          <div class="card step"><div class="n">Langkah 4</div><h4>HR memutuskan</h4><p>HR membaca CV di sebelah form, pakai atau ubah skor AI, memilih keputusan (Lanjut Psikotes, Tahan, atau Tidak lanjut dengan alasan), lalu Simpan. Baru di sini tahap kandidat berubah.</p></div>
+        </div>
+        <div class="principles">
+          <div class="card"><h4>AI tidak menolak kandidat</h4><p>Draft AI tidak pernah mengubah tahap kandidat. Semua keputusan lewat tombol Simpan oleh HR.</p></div>
+          <div class="card"><h4>Tidak ada info, tidak ditebak</h4><p>Kriteria yang tidak terlihat di CV (misalnya ekspektasi gaji) ditandai "tidak ada info" dan diisi HR setelah ditanya.</p></div>
+          <div class="card"><h4>Mengurangi bias</h4><p>AI diinstruksikan mengabaikan nama, gender, usia, agama, suku, foto, status pernikahan, dan alamat.</p></div>
+          <div class="card"><h4>Bisa diaudit</h4><p>Hasil AI disimpan terpisah dari penilaian HR, jadi selisih skor AI dan HR bisa ditinjau kapan saja.</p></div>
+        </div>
+        <div class="card pad spec">
+          <div class="head"><span class="tag">Teknis</span><h3>Konfigurasi MVP</h3></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Bagian</th><th>Isi</th></tr></thead>
+              <tbody>
+                <tr><td class="nm">Endpoint AI</td><td><code>CV_AI_BASE_URL</code> = URL publik 9router, route <code>/v1/messages</code></td></tr>
+                <tr><td class="nm">Model</td><td><code>CV_AI_MODEL</code> = nama model/combo di dashboard 9router</td></tr>
+                <tr><td class="nm">Key</td><td><code>CV_AI_API_KEY</code> dikirim sebagai <code>Authorization: Bearer</code></td></tr>
+                <tr><td class="nm">Format file</td><td>PDF (dikirim sebagai teks; hasil scan dikirim sebagai file), JPG, PNG · maks. 5 MB</td></tr>
+                <tr><td class="nm">Antrian</td><td>Maks. 3 CV dianalisis bersamaan, status diperbarui tiap 3 detik</td></tr>
+                <tr><td class="nm">Akses</td><td>File &amp; hasil AI hanya untuk HR/dev. Kandidat hanya bisa upload untuk dirinya sendiri.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<div class="overlay" id="bulk" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="bulk-title">
+    <h3 id="bulk-title">Upload CV Massal</h3>
+    <div class="body">
+      <div class="hint">Setiap file CV menjadi satu kandidat baru (tahap Screening CV). Nama, email, dan no. HP diisi dari CV, lalu draft skor AI muncul di menu Penilaian CV.</div>
+      <div class="grid2">
+        <div><label class="fld" for="b-pos">Posisi dilamar *</label><select id="b-pos"><option>Marketing</option><option>Copywriter</option><option>Content Creator / Talent</option></select></div>
+        <div><label class="fld" for="b-src">Sumber</label><select id="b-src"><option>Glints</option><option>KitaLulus</option><option>Instagram/TikTok</option><option>LinkedIn</option></select></div>
+      </div>
+      <button type="button" class="dropzone" id="b-pick"><b>Pilih file CV</b><div class="hint">Contoh: 4 file dari folder unduhan Glints</div></button>
+      <div class="filelist" id="b-list" hidden></div>
+    </div>
+    <div class="foot">
+      <button class="btn" id="b-close">Tutup</button>
+      <button class="btn primary" id="b-run" disabled>Upload CV</button>
+    </div>
+  </div>
+</div>
+
+<button class="chat-fab" id="chat-fab" aria-label="Buka Asisten Screening"><span class="dot">✦</span><span class="lbl">Asisten Screening</span></button>
+<section class="chat" id="chat" hidden aria-label="Asisten Screening">
+  <div class="chat-head">
+    <div class="dot">✦</div>
+    <div><b>Asisten Screening</b><small id="chat-sub">Navigasi, bantu nilai CV, dan laporan</small></div>
+    <button class="x" id="chat-x" aria-label="Tutup asisten">×</button>
+  </div>
+  <div class="chat-log" id="chat-log" aria-live="polite"></div>
+  <div class="chips" id="chat-chips">
+    <button data-q="Siapa saja yang perlu saya nilai sekarang?">Perlu dinilai</button>
+    <button data-q="Buatkan laporan hasil screening hari ini">Laporan screening</button>
+    <button data-q="Buka CV Budi dan pakai skor AI-nya">Nilai Budi</button>
+    <button data-q="Bandingkan kandidat Marketing">Bandingkan Marketing</button>
+    <button data-q="Upload CV massal dari Glints">Upload massal</button>
+  </div>
+  <form class="chat-form" id="chat-form">
+    <input id="chat-in" type="text" autocomplete="off" placeholder="Tanya atau beri perintah, mis. buka posisi Marketing" aria-label="Pesan untuk asisten">
+    <button class="btn primary sm" id="chat-send" type="submit">Kirim</button>
+    <button class="btn sm" id="chat-stop" type="button" hidden>Stop</button>
+  </form>
+  <div class="chat-mode" id="chat-mode">Menyiapkan asisten…</div>
+</section>
+
+<script>
+(function(){
+  var CRIT=[
+    ['exp','Kesesuaian pengalaman dengan posisi','Pengalaman kerja relevan langsung dengan tugas posisi yang dilamar.'],
+    ['skill','Skill teknis & penguasaan tools','Menguasai aplikasi/tools yang dibutuhkan (cth. CapCut, Canva, Excel, copywriting).'],
+    ['portfolio','Portofolio / hasil karya','Ada link/contoh karya nyata yang relevan dan berkualitas.'],
+    ['achiev','Pencapaian terukur','Punya hasil/angka konkret (cth. naikkan views, omzet, follower).'],
+    ['edu','Pendidikan & sertifikasi','Latar pendidikan/pelatihan mendukung posisi.'],
+    ['stability','Stabilitas & lama bekerja','Tidak terlalu sering pindah kerja tanpa alasan jelas.'],
+    ['fit','Kecocokan budaya & domisili','Domisili, kesediaan WFO/jam kerja, dan gaya kerja cocok.'],
+    ['salary','Ekspektasi gaji vs budget','Ekspektasi masuk akal dan sesuai anggaran posisi.'],
+    ['cvquality','Kelengkapan & kerapian CV','CV lengkap, rapi, mudah dibaca, dan bebas typo.'],
+    ['soft','Indikasi soft skill','Terlihat komunikatif, inisiatif, atau pengalaman organisasi/tim.']
+  ];
+  var W={exp:3,skill:3,portfolio:2,achiev:2,edu:1,stability:2,fit:2,salary:2,cvquality:1,soft:2};
+
+  var CANDS={
+    budi:{pos:'Marketing',file:'CV_Budi_Santoso_2026.pdf',size:'184 KB',status:'done',
+      ai:{
+        scores:{exp:4,skill:5,portfolio:3,achiev:5,edu:4,stability:3,fit:null,salary:null,cvquality:4,soft:3},
+        ev:{
+          exp:['3 tahun Digital Marketing Executive di agensi, pegang 6 brand fashion & FMCG','Pengalaman langsung di Meta & TikTok Ads, sesuai kualifikasi min. 1 tahun.'],
+          skill:['Meta Ads Manager, TikTok Ads, GA4, Looker Studio, Canva','Semua tools wajib di kualifikasi posisi tercantum dan dipakai di pekerjaan.'],
+          portfolio:['Link: drive.google.com/… (case study 2 campaign)','Ada portofolio, tapi hanya 2 contoh. Perlu dicek isinya saat interview.'],
+          achiev:['ROAS rata-rata 4,2x dengan budget Rp50 jt/bulan; penjualan klien naik 120% dalam 6 bulan','Pencapaian spesifik dan terukur.'],
+          edu:['S1 Manajemen Pemasaran, 2020 · Sertifikat Meta Blueprint','Relevan dan didukung sertifikasi platform.'],
+          stability:['2020–2021 (1 th), 2021–2023 (1 th 8 bln), 2023–sekarang','Rata-rata ~1,5 tahun per tempat. Wajar untuk agensi, tapi tanyakan alasan pindah.'],
+          fit:['','CV tidak menyebut kesediaan WFO Senin–Sabtu. Perlu ditanyakan.'],
+          salary:['','Ekspektasi gaji tidak dicantumkan. Bandingkan dengan budget Rp5–7 juta saat interview.'],
+          cvquality:['Struktur rapi, 1 halaman, ada ringkasan & angka','Lengkap dan mudah dibaca; 1 typo kecil.'],
+          soft:['Memimpin tim 2 orang ads specialist','Ada indikasi kepemimpinan, belum ada contoh komunikasi dengan klien.']
+        },
+        summary:'Digital marketer 3 tahun di agensi, fokus performance ads (Meta & TikTok) untuk brand fashion dan FMCG, dengan hasil terukur.',
+        meta:'S1 Manajemen Pemasaran · 3 th pengalaman · Meta Ads, TikTok Ads, GA4, Looker Studio, Canva',
+        strengths:['ROAS 4,2x pada budget Rp50 jt/bulan','Menguasai semua tools di kualifikasi','Sertifikat Meta Blueprint'],
+        concerns:['Ekspektasi gaji belum ada','Kesediaan WFO Senin–Sabtu belum jelas','Pindah kerja tiap ~1,5 tahun'],
+        questions:['Ceritakan satu campaign dengan ROAS tertinggi. Apa yang Anda ubah di tengah jalan?','Kenapa pindah dari agensi kedua setelah 1 tahun 8 bulan?','Berapa ekspektasi gaji Anda, dan apakah bisa WFO Senin–Sabtu di Jakarta Selatan?','Bagaimana Anda membagi budget antara Meta dan TikTok untuk produk fashion?']
+      }, hr:null},
+    sari:{pos:'Copywriter',file:'Sari W - Portfolio CV.png',size:'1,2 MB',status:'processing',ai:null,hr:null},
+    raka:{pos:'Content Creator / Talent',file:null,status:'none',ai:null,hr:null}
+  };
+
+  var cur='budi', scores={}, decision=null, reason='';
+
+  // Skor dihitung dari kriteria yang SUDAH dinilai; kriteria "tidak ada info" tidak dianggap 0.
+  // Skor minimum = jika semua kriteria yang belum dinilai dianggap 0.
+  // Jika bobot yang dinilai < 60% dari total, verdict ditahan ("Data belum cukup").
+  function calc(s){
+    var got=0,max=0,maxFilled=0,filled=0;
+    CRIT.forEach(function(c){var w=W[c[0]]||1;max+=5*w;if(s[c[0]]){got+=s[c[0]]*w;maxFilled+=5*w;filled++;}});
+    var p=maxFilled?Math.round(got/maxFilled*100):0, fl=max?Math.round(got/max*100):0;
+    var v=(max&&maxFilled/max<0.6)?'Data belum cukup':p>=75?'Lolos':p>=60?'Pertimbangkan':'Tidak Lolos';
+    return {got:got,max:max,maxFilled:maxFilled,percent:p,floor:fl,filled:filled,verdict:v};
+  }
+  function vClass(v){return v==='Lolos'?'ok':v==='Pertimbangkan'?'hold':v==='Tidak Lolos'?'no':'neutral';}
+  function vColor(v){return v==='Lolos'?'var(--ok)':v==='Pertimbangkan'?'var(--hold)':v==='Tidak Lolos'?'var(--no)':'var(--muted)';}
+  function esc(t){return String(t).replace(/[&<>"]/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m];});}
+
+  function cvPaper(){
+    return '<div class="paper">'+
+      '<h4>Budi Santoso</h4><div class="role">Digital Marketing Specialist</div>'+
+      '<div class="contact">budi.santoso@contoh.id · 0812-3456-7890 · linkedin.com/in/budisantoso</div>'+
+      '<h5>Ringkasan</h5><p>Digital marketer dengan 3 tahun pengalaman mengelola performance ads untuk brand fashion dan FMCG.</p>'+
+      '<h5>Pengalaman</h5>'+
+      '<div class="job">Digital Marketing Executive · Agensi Lumbung Digital <span>2023–sekarang</span></div>'+
+      '<ul><li>Mengelola Meta Ads &amp; TikTok Ads untuk 6 brand fashion &amp; FMCG</li><li><mark>ROAS rata-rata 4,2x dengan budget Rp50 jt/bulan</mark></li><li>Memimpin tim 2 orang ads specialist</li></ul>'+
+      '<div class="job">Ads Specialist · PT Ritel Nusantara <span>2021–2023</span></div>'+
+      '<ul><li><mark>Menaikkan penjualan online klien fashion 120% dalam 6 bulan</mark></li><li>Membuat dashboard campaign di Looker Studio</li></ul>'+
+      '<div class="job">Social Media Intern · Kopi Kenangan Senja <span>2020–2021</span></div>'+
+      '<ul><li>Membuat konten harian Instagram &amp; laporan insight bulanan</li></ul>'+
+      '<h5>Pendidikan</h5><p>S1 Manajemen Pemasaran, Universitas Indonesia (2020)</p>'+
+      '<h5>Sertifikasi</h5><p>Meta Certified Media Buying Professional (Blueprint), 2024</p>'+
+      '<h5>Skill</h5><p>Meta Ads Manager, TikTok Ads, Google Analytics 4, Looker Studio, Canva, copywriting iklan</p>'+
+      '<h5>Portofolio</h5><p>drive.google.com/… (case study 2 campaign)</p>'+
+    '</div>';
+  }
+  function imgPlaceholder(){
+    return '<div class="paper" style="text-align:center;padding:60px 30px"><div style="font-size:34px">🖼</div><b>Sari W - Portfolio CV.png</b><p style="color:#777;margin-top:6px">CV berbentuk gambar ditampilkan apa adanya di sini.</p></div>';
+  }
+
+  function renderPreview(){
+    var c=CANDS[cur], el=document.getElementById('preview-card');
+    var h='<div class="head"><span class="tag">File</span><h3>CV Kandidat</h3></div>';
+    if(c.file){
+      h+='<div class="filebar"><span class="fname" title="'+esc(c.file)+'">'+esc(c.file)+' · '+c.size+'</span>'+
+         '<button class="btn sm ghost">Buka</button><button class="btn sm ghost">Unduh</button><button class="btn sm danger">Hapus</button></div>'+
+         '<div class="viewer">'+(cur==='budi'?cvPaper():imgPlaceholder())+'</div>';
+    } else {
+      h+='<div style="text-align:center;padding:40px 10px;color:var(--muted)"><div style="font-size:28px">◦</div><b style="color:var(--ink-soft)">CV belum diupload</b><div class="hint">Format PDF, JPG, atau PNG, maks. 5 MB.</div></div>';
+    }
+    h+='<button class="btn primary sm" style="margin-top:12px" id="btn-upload">⬆ '+(c.file?'Ganti CV':'Upload CV')+'</button>';
+    el.innerHTML=h;
+    document.getElementById('btn-upload').onclick=function(){
+      if(cur==='raka'){c.file='CV_Raka_Pratama.pdf';c.size='96 KB';c.status='processing';render();setTimeout(function(){c.status='error';if(cur==='raka')render();},2200);}
+    };
+  }
+
+  function renderAi(){
+    var c=CANDS[cur], el=document.getElementById('ai-card');
+    if(!c.file){el.hidden=true;return;}
+    el.hidden=false;
+    var h='<div class="head"><span class="tag">AI</span><h3>Draft Screening Otomatis</h3>'+(c.ai?'<span class="meta">7/11/2026 10.42 · cc/claude-opus-4-6</span>':'')+'</div>';
+    if(c.status==='processing'){
+      h+='<div class="processing"><span class="spinner"></span>Sedang menganalisis CV… (biasanya kurang dari 1 menit)</div>';
+    } else if(c.status==='error'){
+      h+='<div style="color:var(--no);font-size:13px">Analisis gagal: Tidak bisa terhubung ke endpoint AI (cek CV_AI_BASE_URL &amp; 9router berjalan).</div><button class="btn sm" style="margin-top:8px" id="btn-retry">↻ Coba lagi</button>';
+    } else if(c.ai){
+      var a=c.ai, r=calc(a.scores);
+      h+='<div class="ai-top"><span class="chip '+vClass(r.verdict)+'" style="font-size:12.5px;padding:5px 13px">AI: '+r.percent+'% · '+r.verdict+'</span>'+
+         '<span class="hint">'+r.filled+'/10 kriteria bisa dinilai dari CV · minimum '+r.floor+'%</span><span class="sp"></span>'+
+         '<button class="btn sm primary" id="btn-apply">Pakai skor AI</button><button class="btn sm ghost" id="btn-re">↻ Analisis ulang</button></div>'+
+         '<p class="ai-sum">'+esc(a.summary)+'</p><div class="hint" style="margin-top:4px">'+esc(a.meta)+'</div>'+
+         '<div class="ai-cols"><div><b>Kekuatan</b><ul>'+a.strengths.map(function(s){return '<li>'+esc(s)+'</li>';}).join('')+'</ul></div>'+
+         '<div><b>Perlu digali</b><ul>'+a.concerns.map(function(s){return '<li>'+esc(s)+'</li>';}).join('')+'</ul></div></div>'+
+         '<details><summary>Saran pertanyaan interview ('+a.questions.length+')</summary><ol style="margin:8px 0 0;padding-left:20px">'+a.questions.map(function(q){return '<li>'+esc(q)+'</li>';}).join('')+'</ol></details>'+
+         '<div class="hint" style="margin-top:10px">Draft dibuat oleh AI dan bisa keliru. Cek bukti tiap kriteria sebelum menyimpan.</div>';
+    }
+    el.innerHTML=h;
+    var b;
+    if((b=document.getElementById('btn-apply')))b.onclick=function(){
+      var a=c.ai; scores={}; Object.keys(a.scores).forEach(function(k){if(a.scores[k])scores[k]=a.scores[k];});
+      var n=document.getElementById('notes');
+      if(!n.value.trim())n.value='Ringkasan: '+a.summary+'\nKekuatan: '+a.strengths.join('; ')+'\nPerlu digali: '+a.concerns.join('; ');
+      renderCrit();renderScore();
+      document.getElementById('save-msg').textContent='Skor AI dipakai. Isi "Kecocokan budaya" dan "Ekspektasi gaji" setelah ditanya ke kandidat.';
+    };
+    if((b=document.getElementById('btn-re')))b.onclick=function(){c.status='processing';render();setTimeout(function(){c.status='done';if(cur==='budi')render();},1800);};
+    if((b=document.getElementById('btn-retry')))b.onclick=function(){c.status='processing';render();setTimeout(function(){c.status='error';if(cur==='raka')render();},1800);};
+  }
+
+  function renderCrit(){
+    var c=CANDS[cur], a=c.status==='done'?c.ai:null, h='';
+    CRIT.forEach(function(cr){
+      var id=cr[0], val=scores[id]||0, ai=a?a.scores[id]:undefined;
+      var chip='';
+      if(a){chip=ai==null?'<span class="chip neutral">AI: tidak ada info</span>':'<span class="chip '+(ai>=4?'ok':ai>=3?'hold':'no')+'">AI: '+ai+'</span>';}
+      var ev='';
+      if(a){var e=a.ev[id];ev='<div class="evidence">'+(e[0]?'<q>'+esc(e[0])+'</q>':'')+'<div>'+esc(e[1])+'</div></div>';}
+      var btns='';
+      for(var n=1;n<=5;n++){btns+='<button data-id="'+id+'" data-n="'+n+'" class="'+(val===n?'on ':'')+(ai===n?'ai':'')+'" aria-label="'+esc(cr[1])+' nilai '+n+(ai===n?' (saran AI)':'')+'"'+(ai===n?' title="Saran AI"':'')+'>'+n+'</button>';}
+      h+='<div class="crit"><div class="top"><div style="flex:1;min-width:220px"><div class="name">'+esc(cr[1])+' <span class="w">bobot '+W[id]+'</span>'+chip+'</div><div class="desc">'+esc(cr[2])+'</div>'+ev+'</div><div class="rate scale" role="group" aria-label="Nilai 1 sampai 5">'+btns+'</div></div></div>';
+    });
+    var list=document.getElementById('crit-list');
+    list.innerHTML=h;
+    list.querySelectorAll('.rate button').forEach(function(b){b.onclick=function(){scores[b.dataset.id]=+b.dataset.n;renderCrit();renderScore();};});
+  }
+
+  function renderScore(){
+    var r=calc(scores), C=307.9;
+    var arc=document.getElementById('g-arc');
+    arc.setAttribute('stroke-dashoffset',String(C*(1-r.percent/100)));
+    arc.setAttribute('stroke',vColor(r.verdict));
+    document.getElementById('g-val').textContent=r.percent+'%';
+    var v=document.getElementById('g-verdict');v.textContent=r.verdict;v.className='chip '+vClass(r.verdict);
+    document.getElementById('g-got').textContent=r.got+' / '+r.maxFilled;
+    document.getElementById('g-min').textContent=r.floor+'%';
+    document.getElementById('sb-pct').textContent=r.percent+'%';document.getElementById('sb-pct').style.color=r.verdict==='Data belum cukup'?'var(--muted)':'';
+    var sv=document.getElementById('sb-verdict');sv.textContent=r.verdict;sv.className='chip '+vClass(r.verdict);
+    document.getElementById('sb-meta').textContent=r.filled+'/10 dinilai · minimum '+r.floor+'%';
+    renderDecision(r);
+    document.getElementById('g-filled').textContent=r.filled+'/10';
+    var c=CANDS[cur];
+    document.getElementById('g-cmp').textContent=(c.ai&&c.status==='done')?'Draft AI: '+calc(c.ai.scores).percent+'%. Skor HR dan AI disimpan terpisah untuk audit.':'';
+  }
+
+  function render(){
+    document.getElementById('pos-name').textContent=CANDS[cur].pos;
+    renderPreview();renderAi();renderCrit();renderScore();
+  }
+
+  var DEFAULT_MSG='Pilih keputusan, lalu Simpan.';
+  var STAGE={lanjut:'Psikotes',tahan:'Ditahan',tolak:'Tidak lanjut'}, DEC_NAME={lanjut:'Lanjut Psikotes',tahan:'Tahan',tolak:'Tidak lanjut'};
+  function renderDecision(r){
+    var sug=r.verdict==='Lolos'?'lanjut':r.verdict==='Pertimbangkan'?'tahan':r.verdict==='Tidak Lolos'?'tolak':null;
+    document.querySelectorAll('#decision [data-d]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.d===decision));});
+    document.getElementById('dec-reason').hidden=decision!=='tolak';
+    document.getElementById('reason').value=reason;
+    document.getElementById('dec-hint').textContent=sug?'Saran dari skor: '+DEC_NAME[sug]+'. Keputusan tetap di kamu, bukan di AI.':'Nilai lebih banyak kriteria, atau tanyakan ke kandidat, untuk mendapat saran.';
+  }
+  document.querySelectorAll('#decision [data-d]').forEach(function(b){b.onclick=function(){decision=b.dataset.d;if(decision!=='tolak')reason='';renderDecision(calc(scores));};});
+  document.getElementById('reason').onchange=function(e){reason=e.target.value;};
+  function rowOf(id){return ROWS.filter(function(x){return x.id===id;})[0];}
+  document.getElementById('sel-cand').onchange=function(e){
+    cur=e.target.value;var sv=CANDS[cur].saved,rw=rowOf(cur);
+    scores=sv?Object.assign({},sv.scores):{};
+    decision=sv?sv.decision:null;reason=sv?sv.reason:'';
+    document.getElementById('notes').value=sv?sv.notes:'';
+    delete document.getElementById('btn-save').dataset.warned;
+    document.getElementById('save-msg').textContent=(sv&&rw&&rw.hr)?'Sudah dinilai: '+rw.hr.percent+'% · '+rw.hr.verdict+'. Ubah nilai lalu Simpan untuk memperbarui.':DEFAULT_MSG;
+    render();
+  };
+  function doSave(goNext){
+    var r=calc(scores),m=document.getElementById('save-msg'),b=document.getElementById('btn-save');
+    if(!decision){m.textContent='Pilih keputusan dulu: Lanjut Psikotes, Tahan, atau Tidak lanjut.';return;}
+    if(decision==='tolak'&&!reason){m.textContent='Pilih alasan tidak lanjut dulu.';return;}
+    if(r.verdict==='Data belum cukup'&&!b.dataset.warned){
+      b.dataset.warned='1';
+      m.textContent='Baru '+r.filled+'/10 kriteria dinilai, datanya belum cukup. Klik sekali lagi untuk tetap menyimpan.';return;
+    }
+    delete b.dataset.warned;
+    var row=rowOf(cur);
+    if(row){row.hr=r;row.decision=decision;row.reason=reason;row.stage=STAGE[decision];renderTable();}
+    CANDS[cur].saved={scores:Object.assign({},scores),notes:document.getElementById('notes').value,decision:decision,reason:reason};
+    var sel=document.getElementById('sel-cand'),opt=sel.options[sel.selectedIndex];
+    if(opt.textContent.indexOf('✓')<0)opt.textContent+=' · ✓ dinilai';
+    var done='Tersimpan: '+r.percent+'% · '+r.verdict+'. Tahap kandidat → '+STAGE[decision]+(decision==='tolak'?' (alasan: '+reason+')':'')+' (contoh).';
+    if(!goNext){m.textContent=done;return;}
+    var keys=Object.keys(CANDS),start=keys.indexOf(cur),next=null;
+    for(var i=1;i<keys.length;i++){var k=keys[(start+i)%keys.length],rw=rowOf(k);if(CANDS[k].file&&rw&&!rw.hr){next=k;break;}}
+    if(!next){m.textContent=done+' Tidak ada lagi CV yang perlu dinilai.';return;}
+    sel.value=next;sel.onchange({target:sel});
+    m.textContent=done+' Dibuka: '+rowOf(next).n+'.';
+    try{window.scrollTo(0,0);}catch(e){}
+  }
+  document.getElementById('btn-save').onclick=function(){doSave(false);};
+  document.getElementById('btn-next').onclick=function(){doSave(true);};
+
+  // Simulasi: CV Sari selesai dianalisis setelah beberapa detik
+  setTimeout(function(){
+    CANDS.sari.status='done';
+    CANDS.sari.ai={
+      scores:{exp:3,skill:4,portfolio:5,achiev:3,edu:3,stability:4,fit:null,salary:4,cvquality:5,soft:4},
+      ev:{exp:['2 tahun content writer di startup edukasi','Relevan, tapi belum pernah copywriting iklan berbayar.'],skill:['Copywriting, SEO, Canva, Notion','Tools utama ada; belum terlihat tools ads.'],portfolio:['Portofolio lengkap: 12 contoh caption & landing page','Karya nyata, banyak, dan relevan.'],achiev:['Artikel blog mencapai 40 rb pembaca/bulan','Ada angka, tapi belum terkait konversi.'],edu:['D3 Komunikasi, 2022','Mendukung posisi.'],stability:['2022–sekarang di satu perusahaan','Stabil.'],fit:['','Kesediaan WFO belum disebut.'],salary:['Ekspektasi Rp5,5 juta','Masuk rentang budget.'],cvquality:['Desain rapi dan mudah dibaca','Sangat baik.'],soft:['Ketua divisi media di organisasi kampus','Indikasi komunikasi & inisiatif.']},
+      summary:'Content writer 2 tahun dengan portofolio caption dan landing page yang kuat.',
+      meta:'D3 Komunikasi · 2 th pengalaman · Copywriting, SEO, Canva',
+      strengths:['Portofolio 12 karya relevan','Ekspektasi gaji masuk budget'],concerns:['Belum ada pengalaman copy iklan berbayar','Kesediaan WFO belum jelas'],
+      questions:['Ceritakan copy yang paling berpengaruh ke penjualan.','Bagaimana Anda menulis hook untuk iklan TikTok 15 detik?','Apakah bisa WFO Senin–Sabtu?']
+    };
+    ROWS[1].ai=calc(CANDS.sari.ai.scores).percent;renderTable();
+    if(cur==='sari')render();
+  },6000);
+
+  // ===== Tabel kandidat =====
+  var ROWS=[
+    {id:'budi',n:'Budi Santoso',d:'2026-11-07',p:'Marketing',s:'KitaLulus',stage:'Screening CV',file:true,ai:calc(CANDS.budi.ai.scores).percent,hr:null,disc:'—',iq:'—'},
+    {id:'sari',n:'Sari Wulandari',d:'2026-11-07',p:'Copywriter',s:'Instagram/TikTok',stage:'Screening CV',file:true,ai:null,proc:true,hr:null,disc:'—',iq:'—'},
+    {id:'dewi',n:'Dewi Anggraini',d:'2026-11-05',p:'Marketing',s:'Glints',stage:'Psikotes',file:true,ai:78,hr:{percent:81,verdict:'Lolos'},disc:'DI',iq:'72%'},
+    {id:'raka',n:'Raka Pratama',d:'2026-11-04',p:'Content Creator / Talent',s:'Referensi',stage:'Screening CV',file:false,ai:null,hr:null,disc:'—',iq:'—'}
+  ];
+  function renderTable(){
+    document.getElementById('cand-body').innerHTML=ROWS.map(function(r){
+      var cv=(r.file?'<span title="CV sudah diupload">📎</span> ':'')+
+        (r.hr?'<span class="chip '+vClass(r.hr.verdict)+'">'+r.hr.percent+'%</span>':
+         r.ai!=null?'<span class="chip neutral" title="Draft AI, belum dinilai HR">AI '+r.ai+'%</span>':
+         r.proc?'<span class="hint">menganalisis…</span>':'<span class="hint">—</span>');
+      return '<tr><td class="nowrap"><span class="nm">'+esc(r.n)+'</span><div class="hint">'+r.d+'</div></td><td>'+esc(r.p)+'</td><td class="nowrap">'+esc(r.s)+'</td>'+
+        '<td><span class="stage'+(r.stage==='Psikotes'?' psi':r.stage==='Ditahan'?' hold':r.stage==='Tidak lanjut'?' no':'')+'"'+(r.reason?' title="Alasan: '+esc(r.reason)+'"':'')+'>'+r.stage+'</span></td><td class="nowrap">'+cv+'</td><td><b>'+r.disc+'</b></td><td><b>'+r.iq+'</b></td>'+
+        '<td class="nowrap" style="text-align:right"><a class="btn sm" href="#penilaian">Nilai CV</a></td></tr>';
+    }).join('');
+  }
+
+  // ===== Upload massal =====
+  var bulk=document.getElementById('bulk'), bList=document.getElementById('b-list'), bRun=document.getElementById('b-run');
+  var SAMPLE=[['CV_Andini_Putri.pdf','ok'],['Resume-Fajar-Nugroho.pdf','ok'],['cv rizky (scan).jpg','ok'],['CV_Lama_Hendra.docx','bad']];
+  var picked=false;
+  document.getElementById('btn-bulk').onclick=function(){bulk.hidden=false;picked=false;bList.hidden=true;bRun.disabled=true;bRun.textContent='Upload CV';};
+  document.getElementById('b-close').onclick=function(){bulk.hidden=true;};
+  bulk.onclick=function(e){if(e.target===bulk)bulk.hidden=true;};
+  document.getElementById('b-pick').onclick=function(){
+    picked=true;bList.hidden=false;
+    bList.innerHTML=SAMPLE.map(function(f,i){return '<div class="filerow"><span>'+esc(f[0])+'</span><span class="chip neutral" id="bf'+i+'">Antri</span></div>';}).join('');
+    bRun.disabled=false;bRun.textContent='Upload '+SAMPLE.length+' CV';
+  };
+  bRun.onclick=function(){
+    if(!picked)return;bRun.disabled=true;bRun.textContent='Memproses…';
+    var src=document.getElementById('b-src').value,pos=document.getElementById('b-pos').value;
+    SAMPLE.forEach(function(f,i){
+      setTimeout(function(){
+        var el=document.getElementById('bf'+i);el.className='chip hold';el.textContent='Mengupload…';
+        setTimeout(function(){
+          if(f[1]==='bad'){el.className='chip no';el.textContent='Format tidak didukung (export ke PDF)';}
+          else{el.className='chip ok';el.textContent='Tersimpan · AI menganalisis';
+            var nm=['Andini Putri','Fajar Nugroho','Rizky Maulana'][i];
+            ROWS.unshift({id:nm.toLowerCase().split(' ')[0],n:nm,d:'2026-11-07',p:pos,s:src,stage:'Screening CV',file:true,ai:null,proc:true,hr:null,disc:'—',iq:'—'});renderTable();
+            setTimeout(function(){ROWS.forEach(function(r){if(r.n===nm){r.proc=false;r.ai=[71,58,66][i];}});renderTable();},2500+i*700);
+          }
+          if(i===SAMPLE.length-1){bRun.textContent='Selesai';picked=false;}
+        },700);
+      },i*900);
+    });
+  };
+
+  // ===== Upload kandidat =====
+  var cDrop=document.getElementById('c-drop'),cErr=document.getElementById('c-err');
+  cDrop.onclick=function(){
+    cErr.hidden=true;
+    if(!document.getElementById('c-consent').checked){cErr.textContent='Centang persetujuan terlebih dahulu.';cErr.hidden=false;return;}
+    document.getElementById('c-drop-txt').textContent='Mengupload…';
+    setTimeout(function(){
+      document.getElementById('c-sent').hidden=false;
+      document.getElementById('c-sent-txt').innerHTML='CV terkirim: <b>CV_Raka_Pratama.pdf</b> (96 KB) · 7/11/2026 10.51';
+      document.getElementById('c-drop-txt').textContent='Klik atau seret file untuk mengganti CV';
+    },900);
+  };
+  cDrop.ondragover=function(e){e.preventDefault();cDrop.classList.add('over');};
+  cDrop.ondragleave=function(){cDrop.classList.remove('over');};
+  cDrop.ondrop=function(e){e.preventDefault();cDrop.classList.remove('over');cDrop.onclick();};
+
+  // ===== Posisi =====
+  function renderW(){
+    document.getElementById('w-list').innerHTML=CRIT.map(function(c){
+      var b='';for(var n=1;n<=3;n++)b+='<button class="'+(W[c[0]]===n?'on':'')+'" data-id="'+c[0]+'" data-n="'+n+'" aria-label="Bobot '+esc(c[1])+' '+n+'">'+n+'</button>';
+      return '<div class="wrow"><span>'+esc(c[1])+'</span><div class="rate">'+b+'</div></div>';
+    }).join('');
+    document.querySelectorAll('#w-list button').forEach(function(b){b.onclick=function(){W[b.dataset.id]=+b.dataset.n;renderW();render();};});
+  }
+
+  // ===== Routing =====
+  var TITLES={penilaian:['Penilaian CV / Resume','Skor kelayakan berkas pelamar'],kandidat:['Daftar Kandidat','Semua pelamar & tahap seleksi'],
+    'upload-kandidat':['Hasil CV (akun kandidat)','Tampilan yang dilihat pelamar'],posisi:['Posisi & Bobot Penilaian','Atur posisi, kualifikasi, dan bobot kriteria CV'],alur:['Alur & Cara Kerja','Ringkasan fitur upload & screening CV']};
+  function route(){
+    var v=(location.hash||'#penilaian').slice(1); if(!TITLES[v])v='penilaian';
+    document.querySelectorAll('[data-view]').forEach(function(s){s.hidden=s.dataset.view!==v;});
+    document.querySelectorAll('#nav a[data-v],#mtabs a').forEach(function(a){a.classList.toggle('active',a.dataset.v===v);});
+    document.getElementById('t-title').textContent=TITLES[v][0];document.getElementById('t-sub').textContent=TITLES[v][1];
+  }
+  window.addEventListener('hashchange',route);
+
+  // ===== Asisten chat =====
+  var chat=document.getElementById('chat'), fab=document.getElementById('chat-fab'), log=document.getElementById('chat-log');
+  var cin=document.getElementById('chat-in'), sendBtn=document.getElementById('chat-send'), stopBtn=document.getElementById('chat-stop');
+  var modeEl=document.getElementById('chat-mode');
+  var sample=null, aiOn=false, busy=false, ctl=null, turns=[];
+  var VIEW_NAMES={penilaian:'Penilaian CV',kandidat:'Daftar Kandidat','upload-kandidat':'Upload CV (tampilan kandidat)',posisi:'Posisi & Bobot',alur:'Alur & cara kerja'};
+
+  function md(t){
+    var lines=esc(t).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').split('\n'), out='', inList=false;
+    lines.forEach(function(l){
+      var m=l.match(/^\s*(?:[-•*]|\d+[.)])\s+(.*)/);
+      if(m){if(!inList){out+='<ul>';inList=true;}out+='<li>'+m[1]+'</li>';}
+      else{if(inList){out+='</ul>';inList=false;}if(l.trim())out+='<p>'+l+'</p>';}
+    });
+    if(inList)out+='</ul>';
+    return out;
+  }
+  function addMsg(kind,html){var d=document.createElement('div');d.className='msg '+kind;d.innerHTML=html;log.appendChild(d);log.scrollTop=log.scrollHeight;return d;}
+  function addNode(node){log.appendChild(node);log.scrollTop=log.scrollHeight;}
+
+  function snapshot(){
+    return ROWS.map(function(r){
+      var c=CANDS[r.id], a=c&&c.status==='done'&&c.ai?c.ai:null, ar=a?calc(a.scores):null;
+      return {id:r.id,nama:r.n,posisi:r.p,sumber:r.s,masuk:r.d,tahap:r.stage,cv_terupload:r.file,
+        status_ai:r.proc?'menganalisis':(r.ai!=null||ar?'selesai':(r.file?'belum':'tidak ada CV')),
+        skor_ai:ar?ar.percent:r.ai, verdict_ai:ar?ar.verdict:(r.ai!=null?(r.ai>=75?'Lolos':r.ai>=60?'Pertimbangkan':'Tidak Lolos'):null),
+        skor_hr:r.hr?r.hr.percent:null, verdict_hr:r.hr?r.hr.verdict:null,
+        ringkasan:a?a.summary:null, kekuatan:a?a.strengths:null, perlu_digali:a?a.concerns:null};
+    });
+  }
+
+  // --- aksi yang bisa dipanggil asisten ---
+  function goView(v){if(!VIEW_NAMES[v])throw new Error('Layar tidak dikenal: '+v);location.hash='#'+v;route();return 'Layar dibuka: '+VIEW_NAMES[v];}
+  function openCand(id){
+    id=String(id||'').toLowerCase();
+    if(!CANDS[id]){var r=ROWS.filter(function(x){return x.id===id;})[0];throw new Error(r?r.n+' tidak ada di menu Penilaian CV prototipe ini (sudah dinilai HR: '+(r.hr?r.hr.percent+'%':'belum')+').':'Kandidat tidak ditemukan: '+id);}
+    goView('penilaian');var sel=document.getElementById('sel-cand');sel.value=id;sel.onchange({target:sel});
+    var c=CANDS[id];return 'CV '+id+' dibuka. File: '+(c.file||'belum ada')+'. Status AI: '+c.status+'.';
+  }
+  function applyAi(id){
+    openCand(id);var c=CANDS[String(id).toLowerCase()];
+    if(c.status!=='done'||!c.ai)throw new Error('Draft AI untuk kandidat ini belum siap (status: '+c.status+').');
+    document.getElementById('btn-apply').click();
+    var r=calc(scores);return 'Skor AI diterapkan ke form: '+r.percent+'% ('+r.verdict+'), '+r.filled+'/10 kriteria. Belum disimpan; HR perlu klik Simpan.';
+  }
+  function openBulk(){goView('kandidat');document.getElementById('btn-bulk').click();return 'Jendela Upload CV massal dibuka.';}
+  function buildReport(title){
+    var s=snapshot(), withCv=s.filter(function(x){return x.cv_terupload;}).length;
+    var done=s.filter(function(x){return x.skor_ai!=null;}), need=s.filter(function(x){return x.skor_ai!=null&&x.skor_hr==null;});
+    var rated=s.filter(function(x){return x.skor_hr!=null;}).length;
+    var cnt={Lolos:0,Pertimbangkan:0,'Tidak Lolos':0};done.forEach(function(x){var k=x.verdict_hr||x.verdict_ai;cnt[k]=(cnt[k]||0)+1;});
+    var src={};s.forEach(function(x){src[x.sumber]=(src[x.sumber]||0)+1;});
+    var maxSrc=Math.max.apply(null,Object.keys(src).map(function(k){return src[k];}));
+    var top=done.slice().sort(function(a,b){return (b.skor_hr||b.skor_ai)-(a.skor_hr||a.skor_ai);});
+    var el=document.createElement('div');el.className='report';
+    el.innerHTML='<h5>'+esc(title||'Laporan Screening CV')+' · 7 Nov 2026</h5>'+
+      '<div class="kpis"><div class="kpi"><b>'+s.length+'</b><span>kandidat</span></div><div class="kpi"><b>'+withCv+'</b><span>CV masuk</span></div><div class="kpi"><b>'+done.length+'</b><span>dianalisis AI</span></div><div class="kpi"><b>'+need.length+'</b><span>perlu dinilai</span></div></div>'+
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px"><span class="chip ok">Lolos '+cnt.Lolos+'</span><span class="chip hold">Pertimbangkan '+cnt.Pertimbangkan+'</span><span class="chip no">Tidak Lolos '+cnt['Tidak Lolos']+'</span><span class="chip neutral">Sudah dinilai HR '+rated+'</span></div>'+
+      '<b style="font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--ink-soft)">Sumber CV</b>'+
+      Object.keys(src).map(function(k){return '<div class="srcrow"><span>'+esc(k)+'</span><div class="bar"><i style="width:'+Math.round(src[k]/maxSrc*100)+'%"></i></div><b style="text-align:right">'+src[k]+'</b></div>';}).join('')+
+      '<div class="table-wrap" style="margin-top:8px"><table><thead><tr><th>Kandidat</th><th>Posisi</th><th>Skor</th></tr></thead><tbody>'+
+      top.map(function(x){var p=x.skor_hr!=null?x.skor_hr:x.skor_ai,v=x.verdict_hr||x.verdict_ai;return '<tr><td>'+esc(x.nama)+'</td><td>'+esc(x.posisi)+'</td><td class="nowrap"><span class="chip '+vClass(v)+'">'+(x.skor_hr!=null?'':'AI ')+p+'%</span></td></tr>';}).join('')+
+      '</tbody></table></div><div class="hint" style="margin-top:6px">Skor "AI" = draft, belum diputuskan HR. Data contoh prototipe.</div>';
+    addNode(el);
+    return {total:s.length,cv_masuk:withCv,dianalisis_ai:done.length,perlu_dinilai:need.map(function(x){return x.nama;}),verdict:cnt,sumber:src};
+  }
+
+  var TOOLS=[
+    {name:'go_to_screen',description:'Pindah layar di aplikasi. view salah satu: penilaian, kandidat, upload-kandidat, posisi, alur. Mengembalikan konfirmasi.',
+     inputSchema:{type:'object',properties:{view:{type:'string',enum:['penilaian','kandidat','upload-kandidat','posisi','alur']}},required:['view']},
+     execute:function(i){return goView(String(i.view));}},
+    {name:'open_candidate_cv',description:'Buka layar Penilaian CV untuk satu kandidat (preview CV + draft AI). id: budi, sari, atau raka.',
+     inputSchema:{type:'object',properties:{id:{type:'string'}},required:['id']},
+     execute:function(i){return openCand(i.id);}},
+    {name:'apply_ai_scores',description:'Buka CV kandidat lalu isi form penilaian dengan skor draft AI (tidak menyimpan; HR tetap klik Simpan). Hanya jika status AI selesai.',
+     inputSchema:{type:'object',properties:{id:{type:'string'}},required:['id']},
+     execute:function(i){return applyAi(i.id);}},
+    {name:'open_bulk_upload',description:'Buka jendela Upload CV massal di Daftar Kandidat.',execute:function(){return openBulk();}},
+    {name:'show_report',description:'Tampilkan kartu laporan screening di chat (KPI, jumlah per verdict, per sumber, peringkat skor) dan kembalikan ringkasan angkanya.',
+     inputSchema:{type:'object',properties:{title:{type:'string'}}},
+     execute:function(i){return buildReport(i.title?String(i.title):'');}}
+  ];
+
+  function rules(){
+    return 'Kamu "Asisten Screening" di Kurma HR Recruitment Toolkit (prototipe MVP, data contoh). Bantu HR: navigasi aplikasi, membaca hasil screening CV, dan membuat laporan.\n'+
+      'Aturan:\n- Jawab dalam Bahasa Indonesia yang santai tapi jelas, singkat (maks. ~120 kata), boleh pakai bullet "- " dan **tebal**.\n'+
+      '- Skor AI hanya draft; jangan pernah bilang kandidat ditolak/diterima oleh AI. Keputusan di HR.\n'+
+      '- Jangan menilai berdasarkan nama, gender, usia, agama, suku, foto, atau alamat.\n'+
+      '- Gunakan tools untuk aksi: pindah layar, buka CV, pakai skor AI, buka upload massal, tampilkan laporan. Untuk permintaan laporan, panggil show_report lalu beri 2-4 poin insight.\n'+
+      '- Hanya gunakan data di bawah; jangan mengarang kandidat atau angka.\n'+
+      'Layar aktif: '+VIEW_NAMES[(location.hash||'#penilaian').slice(1)]+'. Kandidat terpilih di Penilaian CV: '+cur+'.\n'+
+      'Bobot posisi Marketing: '+JSON.stringify(W)+'. Ambang verdict: >=75 Lolos, 60-74 Pertimbangkan, <60 Tidak Lolos. Skor dihitung dari kriteria yang sudah dinilai saja (kriteria tidak ada info tidak dihitung 0); jika bobot yang dinilai <60% hasilnya "Data belum cukup".\n'+
+      'Data kandidat (JSON):\n'+JSON.stringify(snapshot());
+  }
+
+  // --- mode tanpa Claude: pencocokan kata kunci ---
+  function offline(q){
+    var t=q.toLowerCase(), s=snapshot(), m;
+    if(/laporan|report|rekap|ringkasan screening/.test(t)){var r=buildReport('');return 'Ini laporannya. **'+r.perlu_dinilai.length+' kandidat** punya draft AI tapi belum dinilai HR: '+r.perlu_dinilai.join(', ')+'.';}
+    if(/massal|bulk|banyak cv/.test(t)){openBulk();return 'Jendela **Upload CV massal** sudah saya buka. Pilih posisi, sumber, lalu file CV-nya.';}
+    if((m=t.match(/budi|sari|raka/))){
+      if(/pakai|terapkan|isi skor|nilai/.test(t)){try{return applyAi(m[0]);}catch(e){openCand(m[0]);return e.message;}}
+      return openCand(m[0]);
+    }
+    if(/dewi/.test(t))return 'Dewi Anggraini sudah dinilai HR: **81% (Lolos)** dan sekarang di tahap Psikotes.';
+    if(/perlu|belum dinilai|antri|siapa/.test(t)){var n=s.filter(function(x){return x.skor_hr==null;});return 'Yang belum dinilai HR:\n'+n.map(function(x){return '- **'+x.nama+'** ('+x.posisi+') · '+(x.skor_ai!=null?'draft AI '+x.skor_ai+'%':x.status_ai);}).join('\n');}
+    if(/banding|compare/.test(t)){var mk=s.filter(function(x){return x.posisi==='Marketing';});return 'Kandidat Marketing:\n'+mk.map(function(x){return '- **'+x.nama+'**: '+(x.skor_hr!=null?'HR '+x.skor_hr+'%':'AI '+x.skor_ai+'%')+(x.perlu_digali?' · perlu digali: '+x.perlu_digali.join(', '):'');}).join('\n');}
+    if(/posisi|bobot|kualifikasi/.test(t)){goView('posisi');return 'Layar **Posisi & Bobot** dibuka.';}
+    if(/kandidat|daftar/.test(t)){goView('kandidat');return 'Layar **Daftar Kandidat** dibuka.';}
+    if(/alur|cara kerja/.test(t)){goView('alur');return 'Layar **Alur & cara kerja** dibuka.';}
+    if(/penilaian|nilai cv/.test(t)){goView('penilaian');return 'Layar **Penilaian CV** dibuka.';}
+    return 'Saya bisa: buka layar (kandidat, penilaian, posisi), buka CV Budi/Sari/Raka, pakai skor AI, buka upload massal, dan membuat laporan screening. Coba salah satu tombol di bawah.';
+  }
+
+  function setBusy(b){busy=b;sendBtn.hidden=b;stopBtn.hidden=!b||!aiOn;cin.disabled=b;}
+
+  async function ask(q){
+    if(busy||!q.trim())return;
+    addMsg('me',esc(q));cin.value='';
+    if(!aiOn){addMsg('bot',md(offline(q)));return;}
+    turns.push({role:'user',content:q});
+    var bubble=addMsg('bot','<span class="typing">Sedang berpikir…</span>');
+    setBusy(true);ctl=new AbortController();
+    try{
+      var res=await sample([{role:'user',content:rules()}].concat(turns.slice(-8)),{
+        modelTier:'quick',tools:TOOLS,signal:ctl.signal,
+        onText:function(u){bubble.innerHTML=md(u.text);log.scrollTop=log.scrollHeight;}
+      });
+      bubble.innerHTML=md(res.text);
+      turns.push({role:'assistant',content:res.text});
+      log.appendChild(bubble);log.scrollTop=log.scrollHeight;
+    }catch(e){
+      turns.pop();
+      if(e&&e.code==='cancelled'){bubble.innerHTML=e.text?md(e.text):'<span class="typing">Dihentikan.</span>';}
+      else if(e&&['not_granted','sampling_disabled','not_declared','capability_disabled','capability_removed','tools_unavailable'].indexOf(e.code)>=0){
+        aiOn=false;modeEl.textContent='Mode jawaban otomatis (Claude tidak diizinkan di tampilan ini).';
+        bubble.innerHTML=md(offline(q));
+      } else if(e&&e.code==='rate_limited'){bubble.innerHTML='Terlalu banyak permintaan. Coba lagi sebentar lagi.';}
+      else {bubble.innerHTML=(e&&e.text?md(e.text):'')+'<p class="typing">Jawaban terputus. Kirim ulang pertanyaannya untuk mencoba lagi.</p>';}
+    }finally{setBusy(false);cin.focus();}
+  }
+
+  fab.onclick=function(){chat.hidden=false;fab.hidden=true;cin.focus();};
+  document.getElementById('chat-x').onclick=function(){chat.hidden=true;fab.hidden=false;};
+  stopBtn.onclick=function(){if(ctl)ctl.abort();};
+  document.getElementById('chat-form').onsubmit=function(e){e.preventDefault();ask(cin.value);};
+  document.querySelectorAll('#chat-chips button').forEach(function(b){b.onclick=function(){ask(b.dataset.q);};});
+
+  addMsg('bot',md('Halo! Saya bisa bantu **pindah layar**, **buka dan nilai CV** pakai draft AI, dan **membuat laporan** hasil screening. Ketik perintah atau pilih tombol di bawah.'));
+  modeEl.textContent='Mode jawaban otomatis · menunggu Claude…';
+  if(window.claude&&window.claude.use){
+    window.claude.use('sample').then(function(s){
+      if(!s){modeEl.textContent='Mode jawaban otomatis (Claude tidak tersedia di tampilan ini).';return;}
+      return s.limits().then(function(l){
+        if(!l||!l.tools){modeEl.textContent='Mode jawaban otomatis (tampilan ini belum mendukung aksi asisten).';return;}
+        sample=s;aiOn=true;modeEl.textContent='Dijawab Claude memakai akun Claude kamu · bisa menjalankan aksi di halaman';
+      });
+    }).catch(function(){modeEl.textContent='Mode jawaban otomatis.';});
+  } else modeEl.textContent='Mode jawaban otomatis (Claude tidak tersedia di tampilan ini).';
+
+  // ===== Tema =====
+  var root=document.documentElement, thL=document.getElementById('th-light'), thD=document.getElementById('th-dark');
+  var mq=window.matchMedia?window.matchMedia('(prefers-color-scheme: dark)'):null;
+  function effTheme(){var t=root.getAttribute('data-theme');if(t==='dark'||t==='light')return t;return mq&&mq.matches?'dark':'light';}
+  function syncTheme(){var t=effTheme();thL.setAttribute('aria-pressed',String(t==='light'));thD.setAttribute('aria-pressed',String(t==='dark'));}
+  function setTheme(t){root.setAttribute('data-theme',t);try{localStorage.setItem('kurma-hr-theme',t);}catch(e){}syncTheme();}
+  thL.onclick=function(){setTheme('light');};
+  thD.onclick=function(){setTheme('dark');};
+  if(mq&&mq.addEventListener)mq.addEventListener('change',syncTheme);
+  if(window.MutationObserver)new MutationObserver(syncTheme).observe(root,{attributes:true,attributeFilter:['data-theme']});
+  syncTheme();
+
+  render();renderTable();renderW();route();
+})();
+</script>
+</body></html>

@@ -7,6 +7,9 @@ import { getPositions } from '@/lib/db'
 import { loadQuestions } from '@/lib/questions'
 import { calcDiscGraphs } from '@/lib/disc-scoring'
 import ExamModal, { type ExamResult } from '@/components/exam-modal'
+import CandidatePicker from '@/components/candidate-picker'
+import LocalTestTabs from '@/components/local-test-tabs'
+import { IconMonitor, IconPlay, IconCheck } from '@/components/icons'
 import type { Candidate, Position, DiscQuestion, DiscLetter, DiscAnswer } from '@/lib/types'
 
 export default function HrTesDiscPage() {
@@ -101,28 +104,23 @@ function HrTesDiscContent() {
 
   return (
     <>
-      <div className="selectbar no-print">
-        <label className="fld" style={{ margin: 0 }}>Kandidat</label>
-        <select value={selId} onChange={e => setSelId(e.target.value)}>
-          <option value="">— Pilih kandidat —</option>
-          {candidates.map(c => (
-            <option key={c.id} value={c.id}>{c.nama} · {(positions.find(p => p.id === c.posisi)?.name || '—')}</option>
-          ))}
-        </select>
-        <span className="hint">Terjawab {answered}/{discQuestions.length}</span>
-        <div className="track" style={{ flex: 1, minWidth: 120 }}><i style={{ width: progressPct + '%', background: 'var(--violet)' }}></i></div>
-        <span className="pct">{progressPct}%</span>
-      </div>
+      <LocalTestTabs active="disc" candidateId={selId} />
+      <CandidatePicker value={selId} onChange={setSelId} defaultFilter="todo"
+        labels={{ todo: 'Belum tes DISC', done: 'Sudah tes DISC' }}
+        items={candidates.map(x => ({
+          id: x.id, nama: x.nama, posisi: positions.find(p => p.id === x.posisi)?.name || '—',
+          todo: !(!!x.psikotes_result?.disc), done: !!x.psikotes_result?.disc, hasCv: !!x.has_cv_file,
+          score: x.psikotes_result?.disc ? `Tipe ${x.psikotes_result.disc.adapted.pattern.type}` : null, scoreKind: 'violet' as const,
+        }))}
+        extra={<><span>Terjawab {answered}/{discQuestions.length}</span><div className="track" style={{ width: 90 }}><i style={{ width: progressPct + '%', background: 'var(--violet)' }}></i></div><span className="pct">{progressPct}%</span></>} />
 
-      {/* Mode pengerjaan kandidat */}
-      <div className="card card-p" style={{ marginBottom: 16, border: '1.5px solid var(--violet)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-          <div style={{ minWidth: 240, flex: 1 }}>
-            <h3 style={{ margin: '0 0 3px' }}>▶ Mode Pengerjaan Kandidat — Tes DISC</h3>
-            <div className="hint" style={{ margin: 0 }}>Buka tes layar penuh agar <b>kandidat mengerjakan sendiri</b>.</div>
-          </div>
-          <button className="btn primary" onClick={() => setExamOpen(true)}>Mulai Tes DISC</button>
+      {/* Mode pengerjaan kandidat di PC HRD */}
+      <div className="card card-p exam-cta no-print">
+        <div style={{ minWidth: 240, flex: 1 }}>
+          <h3><IconMonitor size={18} />Kandidat mengerjakan Tes DISC di PC ini</h3>
+          <div className="hint" style={{ margin: 0 }}>{c ? <>Tes layar penuh untuk <b>{c.nama}</b>. Serahkan komputer ke kandidat setelah klik mulai.</> : 'Pilih kandidat dulu, atau isi nama kandidat di layar tes.'}</div>
         </div>
+        <button className="btn primary" onClick={() => setExamOpen(true)}><IconPlay size={14} />Mulai tes di PC ini</button>
       </div>
 
       <div className="card card-p">
@@ -135,7 +133,7 @@ function HrTesDiscContent() {
           const done = ans.most && ans.least
           return (
             <div className="q" key={q.no}>
-              <div className="qn"><span className="num">{q.no}</span>{done && <span className="hint">✓</span>}</div>
+              <div className="qn"><span className="num">{q.no}</span>{done && <span className="hint" style={{ color: 'var(--ok)' }}><IconCheck size={14} title="Terjawab" /></span>}</div>
               {letters.map(letter => {
                 const isMost = ans.most === letter
                 const isLeast = ans.least === letter

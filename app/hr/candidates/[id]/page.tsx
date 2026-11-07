@@ -13,6 +13,7 @@ import IqResult from '@/components/results/iq-result'
 import InterviewResult from '@/components/results/interview-result'
 import OnboardingResult from '@/components/results/onboarding-result'
 import type { Candidate, Position, IqQuestion } from '@/lib/types'
+import { IconPaperclip } from '@/components/icons'
 
 export default function HrCandidateDetailPage() {
   const router = useRouter()
@@ -78,6 +79,7 @@ export default function HrCandidateDetailPage() {
             </div>
           </div>
           <div className="no-print" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {c.has_cv_file && <a className="btn ghost sm" href={`/api/cv-file?candidateId=${encodeURIComponent(c.id)}`} target="_blank" rel="noreferrer"><IconPaperclip size={14} />Lihat CV</a>}
             <button className="btn ghost sm" onClick={() => router.push(`/hr/cv?candidateId=${c.id}`)}>Nilai CV</button>
             <button className="btn ghost sm" onClick={() => router.push(`/hr/tes-disc?candidateId=${c.id}`)}>Form Tes DISC</button>
             <button className="btn ghost sm" onClick={() => router.push(`/hr/tes-iq?candidateId=${c.id}`)}>Form Tes IQ</button>

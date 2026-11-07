@@ -4,9 +4,15 @@ import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getPositions } from '@/lib/db'
 import type { Candidate, Position, PositionWeight } from '@/lib/types'
-import { STAGES, CV_CRITERIA } from '@/lib/constants'
+import { STAGES, CV_CRITERIA, rejectReasonLabel } from '@/lib/constants'
+import { IconPaperclip, IconEye, IconEdit, IconTrash } from '@/components/icons'
 import { isValidPhone, PHONE_ERROR, PHONE_HINT } from '@/lib/phone'
 import { v4 as uuidv4 } from 'uuid'
+import { CV_ACCEPT, CV_FORMAT_HINT, CV_MAX_BYTES } from '@/lib/cv-file'
+
+const SUMBER_OPTIONS = ['LinkedIn', 'Instagram/TikTok', 'Glints', 'KitaLulus', 'JobStreet', 'Referensi', 'Walk-in', 'Lainnya']
+
+type BulkItem = { name: string; status: 'antri' | 'upload' | 'ok' | 'gagal'; msg?: string }
 
 function slugifyPosition(name: string) {
   const slug = name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30) || 'posisi'
@@ -28,6 +34,13 @@ export default function HrCandidatesPage() {
   const [showAddPos, setShowAddPos] = useState(false)
   const [newPosName, setNewPosName] = useState('')
   const [savingPos, setSavingPos] = useState(false)
+
+  const [showBulk, setShowBulk] = useState(false)
+  const [bulkPos, setBulkPos] = useState('')
+  const [bulkSumber, setBulkSumber] = useState('Glints')
+  const [bulkFiles, setBulkFiles] = useState<File[]>([])
+  const [bulkItems, setBulkItems] = useState<BulkItem[]>([])
+  const [bulkRunning, setBulkRunning] = useState(false)
 
   const load = async () => {
     const res = await fetch('/api/candidates', { credentials: 'include' })
@@ -52,6 +65,14 @@ export default function HrCandidatesPage() {
           setNewPosName('')
           setShowModal(true)
         }
+        // Dibuka oleh Asisten Screening dari halaman lain
+        if (sessionStorage.getItem('open-bulk-upload') === '1') {
+          sessionStorage.removeItem('open-bulk-upload')
+          setBulkPos(pos[0]?.id || '')
+          setBulkFiles([])
+          setBulkItems([])
+          setShowBulk(true)
+        }
       } catch { /* abaikan */ }
     })()
     // Dibuka via tombol topbar saat sudah di halaman ini
@@ -62,8 +83,18 @@ export default function HrCandidatesPage() {
       setNewPosName('')
       setShowModal(true)
     }
+    const bulkHandler = () => {
+      setBulkPos(positionsRef.current[0]?.id || '')
+      setBulkFiles([])
+      setBulkItems([])
+      setShowBulk(true)
+    }
     window.addEventListener('open-add-candidate', handler)
-    return () => window.removeEventListener('open-add-candidate', handler)
+    window.addEventListener('open-bulk-upload', bulkHandler)
+    return () => {
+      window.removeEventListener('open-add-candidate', handler)
+      window.removeEventListener('open-bulk-upload', bulkHandler)
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -212,6 +243,54 @@ export default function HrCandidatesPage() {
     await load()
   }
 
+  const openBulk = () => {
+    setBulkPos(positions[0]?.id || '')
+    setBulkFiles([])
+    setBulkItems([])
+    setShowBulk(true)
+  }
+
+  const pickBulkFiles = (list: FileList | null) => {
+    const files = Array.from(list || [])
+    setBulkFiles(files)
+    setBulkItems(files.map(f => ({
+      name: f.name,
+      status: f.size > CV_MAX_BYTES ? 'gagal' : 'antri',
+      msg: f.size > CV_MAX_BYTES ? 'Lebih dari 5 MB' : undefined,
+    })))
+  }
+
+  const runBulk = async () => {
+    if (!bulkPos) { alert('Pilih posisi dulu'); return }
+    if (bulkFiles.length === 0) { alert('Pilih file CV dulu'); return }
+    setBulkRunning(true)
+    const update = (i: number, patch: Partial<BulkItem>) =>
+      setBulkItems(prev => prev.map((it, j) => j === i ? { ...it, ...patch } : it))
+    try {
+      for (let i = 0; i < bulkFiles.length; i++) {
+        const f = bulkFiles[i]
+        if (f.size > CV_MAX_BYTES) continue
+        update(i, { status: 'upload' })
+        const fd = new FormData()
+        fd.append('file', f)
+        fd.append('posisi', bulkPos)
+        fd.append('sumber', bulkSumber)
+        try {
+          const res = await fetch('/api/cv-bulk', { method: 'POST', credentials: 'include', body: fd })
+          const d = await res.json().catch(() => ({}))
+          if (res.ok) update(i, { status: 'ok', msg: d.ai === 'processing' ? 'Tersimpan · AI menganalisis' : 'Tersimpan' })
+          else update(i, { status: 'gagal', msg: d.error || String(res.status) })
+        } catch {
+          update(i, { status: 'gagal', msg: 'Koneksi gagal' })
+        }
+      }
+    } finally {
+      setBulkRunning(false)
+      setBulkFiles([]) // cegah upload ganda bila tombol diklik lagi
+      await load()
+    }
+  }
+
   const scoreChip = (v: string, txt: string) => {
     const m: Record<string, string> = { Lolos: 'ok', Pertimbangkan: 'hold', 'Tidak Lolos': 'no', Rekomendasikan: 'ok', Tidak: 'no' }
     return <span className={`chip ${m[v] || 'neutral'}`}>{txt}</span>
@@ -221,6 +300,7 @@ export default function HrCandidatesPage() {
     <>
       <div style={{ marginBottom: 14 }}>
         <button className="btn primary" onClick={openAdd}>＋ Kandidat Baru</button>
+        <button className="btn" style={{ marginLeft: 8 }} onClick={openBulk}>⬆ Upload CV massal</button>
       </div>
 
       {candidates.length === 0 ? (
@@ -230,46 +310,100 @@ export default function HrCandidatesPage() {
       ) : (
         <div className="card card-p">
           <div className="table-wrap">
-            <table className="tbl">
-            <thead><tr><th>Nama</th><th>Posisi</th><th>Sumber</th><th>Tahap</th><th>CV</th><th>DISC</th><th>IQ</th><th>Interview</th><th>Undangan</th><th></th></tr></thead>
+            <table className="tbl tbl-fit cand-table">
+            <thead><tr><th>Kandidat</th><th>Tahap</th><th>Hasil seleksi</th><th>Akun</th><th><span className="sr-only">Aksi</span></th></tr></thead>
             <tbody>
               {candidates.map(c => (
                 <tr key={c.id}>
-                  <td className="cand-name nowrap" onClick={() => router.push(`/hr/candidates/${c.id}`)}>
-                    {c.nama}<div className="hint">{c.tanggal || ''}</div>
+                  <td className="cell-cand">
+                    <button type="button" className="cand-name linkish" onClick={() => router.push(`/hr/candidates/${c.id}`)}>{c.nama}</button>
+                    <div className="hint">{posName(c.posisi)} · {c.sumber || '—'}{c.tanggal ? ` · ${c.tanggal}` : ''}</div>
                   </td>
-                  <td>{posName(c.posisi)}</td>
-                  <td className="nowrap">{c.sumber || '—'}</td>
                   <td>
-                    <select value={c.stage} onChange={e => setStage(c.id, e.target.value)}
-                      style={{ width: 'auto', padding: '3px 8px', fontSize: 11, fontWeight: 700, borderRadius: 999, border: '1px solid var(--line)' }}>
+                    <select value={c.stage} onChange={e => setStage(c.id, e.target.value)} aria-label={`Tahap ${c.nama}`}
+                      className={`stage-select s-${c.stage}`}
+                      title={c.stage === 'rejected' && c.cv?.reject_reason ? `Alasan: ${rejectReasonLabel(c.cv.reject_reason)}` : undefined}>
                       {Object.entries(STAGES).map(([k, v]) => (
                         <option key={k} value={k}>{v}</option>
                       ))}
                     </select>
                   </td>
-                  <td>{c.cv ? scoreChip(c.cv.verdict, c.cv.percent + '%') : <span className="hint">—</span>}</td>
-                  <td className="nowrap">{c.psikotes_result?.disc ? <b>{c.psikotes_result.disc.adapted.pattern.type}</b> : <span className="hint">—</span>}</td>
-                  <td className="nowrap">{c.psikotes_result?.iq ? <b>{c.psikotes_result.iq.percent}%</b> : <span className="hint">—</span>}</td>
-                  <td>{c.interview ? scoreChip(c.interview.verdict, c.interview.avg.toFixed(1)) : <span className="hint">—</span>}</td>
+                  <td>
+                    <div className="results">
+                      <span className="res" title={c.has_cv_file ? 'CV sudah diupload' : 'CV belum diupload'}>
+                        <span className="k">CV</span>
+                        {c.has_cv_file && <IconPaperclip size={13} />}
+                        {c.cv ? scoreChip(c.cv.verdict, c.cv.percent + '%')
+                          : c.ai_percent != null ? <span className="chip neutral" title="Draft AI, belum dinilai HR">AI {c.ai_percent}%</span>
+                          : <span className="hint">—</span>}
+                      </span>
+                      <span className="res"><span className="k">DISC</span>{c.psikotes_result?.disc ? <b>{c.psikotes_result.disc.adapted.pattern.type}</b> : <span className="hint">—</span>}</span>
+                      <span className="res"><span className="k">IQ</span>{c.psikotes_result?.iq ? <b>{c.psikotes_result.iq.percent}%</b> : <span className="hint">—</span>}</span>
+                      <span className="res"><span className="k">Interview</span>{c.interview ? scoreChip(c.interview.verdict, c.interview.avg.toFixed(1)) : <span className="hint">—</span>}</span>
+                    </div>
+                  </td>
                   <td className="nowrap">
                     {c.user_id ? (
                       <span className="chip ok">Terdaftar</span>
                     ) : (
-                      <button className="btn sm ghost" onClick={() => generateInvite(c)}>
-                        {c.invite_token ? 'Kirim Ulang' : 'Kirim'}
+                      <button className="btn sm ghost" onClick={() => generateInvite(c)} title="Kirim undangan akun ke kandidat">
+                        {c.invite_token ? 'Kirim ulang' : 'Undang'}
                       </button>
                     )}
                   </td>
                   <td className="actions">
-                    <button className="btn sm" onClick={() => router.push(`/hr/candidates/${c.id}`)}>Detail</button>
-                    <button className="btn sm ghost" onClick={() => openEdit(c)}>Edit</button>
-                    <button className="btn sm danger" onClick={() => deleteC(c.id)}>Hapus</button>
+                    <button className="btn sm icon-btn" onClick={() => router.push(`/hr/candidates/${c.id}`)} aria-label={`Detail ${c.nama}`} title="Detail"><IconEye size={15} /></button>
+                    <button className="btn sm icon-btn" onClick={() => openEdit(c)} aria-label={`Edit ${c.nama}`} title="Edit"><IconEdit size={15} /></button>
+                    <button className="btn sm danger icon-btn" onClick={() => deleteC(c.id)} aria-label={`Hapus ${c.nama}`} title="Hapus"><IconTrash size={15} /></button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+          </div>
+        </div>
+      )}
+
+      {showBulk && (
+        <div className="modal-bg show" onClick={() => { if (!bulkRunning) setShowBulk(false) }}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <h3>Upload CV Massal</h3>
+            <div className="body">
+              <div className="hint" style={{ marginBottom: 12 }}>
+                Setiap file CV menjadi satu kandidat baru (tahap Screening CV). Kalau screening otomatis aktif, nama, email, dan no. HP diisi dari CV, lalu draft skor AI muncul di menu Penilaian CV.
+              </div>
+              <div className="grid2">
+                <div className="field"><label className="fld">Posisi dilamar *</label>
+                  <select value={bulkPos} onChange={e => setBulkPos(e.target.value)} disabled={bulkRunning}>
+                    {positions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                  </select></div>
+                <div className="field"><label className="fld">Sumber</label>
+                  <select value={bulkSumber} onChange={e => setBulkSumber(e.target.value)} disabled={bulkRunning}>
+                    {SUMBER_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select></div>
+              </div>
+              <div className="field"><label className="fld">File CV</label>
+                <input type="file" multiple accept={CV_ACCEPT} disabled={bulkRunning} onChange={e => pickBulkFiles(e.target.files)} />
+                <div className="hint" style={{ marginTop: 4 }}>{CV_FORMAT_HINT}</div></div>
+              {bulkItems.length > 0 && (
+                <div style={{ maxHeight: 220, overflowY: 'auto', borderTop: '1px solid var(--line-soft)', paddingTop: 8 }}>
+                  {bulkItems.map((it, i) => (
+                    <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13, padding: '4px 0' }}>
+                      <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.name}</span>
+                      <span className={`chip ${it.status === 'ok' ? 'ok' : it.status === 'gagal' ? 'no' : it.status === 'upload' ? 'hold' : 'neutral'}`}>
+                        {it.status === 'upload' ? 'Mengupload…' : it.msg || (it.status === 'antri' ? 'Antri' : it.status)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="foot">
+              <button className="btn" disabled={bulkRunning} onClick={() => setShowBulk(false)}>Tutup</button>
+              <button className="btn primary" disabled={bulkRunning || bulkFiles.length === 0} onClick={runBulk}>
+                {bulkRunning ? 'Memproses…' : `Upload ${bulkFiles.length || ''} CV`}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -301,7 +435,7 @@ export default function HrCandidatesPage() {
                     )}</div>
                 <div className="field"><label className="fld">Sumber</label>
                   <select value={form.sumber} onChange={e => setForm({ ...form, sumber: e.target.value })}>
-                    {['LinkedIn', 'Instagram/TikTok', 'JobStreet', 'Glints', 'Referensi', 'Walk-in', 'Lainnya'].map(s =>
+                    {(SUMBER_OPTIONS.includes(form.sumber) ? SUMBER_OPTIONS : [...SUMBER_OPTIONS, form.sumber]).map(s =>
                       <option key={s} value={s}>{s}</option>
                     )}
                   </select></div>

@@ -72,9 +72,50 @@ ALTER TABLE candidates ADD COLUMN IF NOT EXISTS iq_time_limit INTEGER DEFAULT NU
 ALTER TABLE candidates ADD COLUMN IF NOT EXISTS disc_started_at TIMESTAMPTZ DEFAULT NULL;
 ALTER TABLE candidates ADD COLUMN IF NOT EXISTS iq_started_at TIMESTAMPTZ DEFAULT NULL;
 
+-- File CV kandidat (upload kandidat/HR) + hasil screening AI (draft, bukan keputusan final).
+-- Tabel terpisah agar SELECT * FROM candidates tidak ikut menarik data biner.
+CREATE TABLE IF NOT EXISTS candidate_cv_files (
+  candidate_id TEXT PRIMARY KEY REFERENCES candidates(id) ON DELETE CASCADE,
+  filename TEXT NOT NULL,
+  mime TEXT NOT NULL,
+  size INTEGER NOT NULL,
+  data BYTEA NOT NULL,
+  uploaded_by UUID DEFAULT NULL,
+  uploaded_at TIMESTAMPTZ DEFAULT now(),
+  ai_status TEXT DEFAULT 'none',
+  ai_result JSONB DEFAULT NULL,
+  ai_error TEXT DEFAULT NULL
+);
+-- Kualifikasi / deskripsi posisi — konteks untuk screening CV otomatis.
+ALTER TABLE positions ADD COLUMN IF NOT EXISTS description TEXT DEFAULT '';
+
+-- Riwayat penilaian CV oleh HR (append-only) — tiap Simpan menambah satu baris,
+-- supaya revisi penilaian bisa diaudit. Penilaian terkini tetap di candidates.cv;
+-- hasil AI tetap terpisah di candidate_cv_files.ai_result.
+-- Rollback: scripts/migrations/2026-11-07-cv-assessment.down.sql
+CREATE TABLE IF NOT EXISTS cv_assessment_history (
+  id BIGSERIAL PRIMARY KEY,
+  candidate_id TEXT NOT NULL REFERENCES candidates(id) ON DELETE CASCADE,
+  position_id TEXT DEFAULT NULL,
+  scores JSONB NOT NULL,
+  weights_snapshot JSONB NOT NULL,
+  percent INTEGER NOT NULL,
+  floor_percent INTEGER NOT NULL,
+  verdict TEXT NOT NULL,
+  decision TEXT NOT NULL CHECK (decision IN ('lanjut','tahan','tolak')),
+  reject_reason TEXT DEFAULT NULL,
+  notes TEXT DEFAULT '',
+  ai_percent INTEGER DEFAULT NULL,
+  stage_before TEXT DEFAULT NULL,
+  stage_after TEXT DEFAULT NULL,
+  assessed_by UUID DEFAULT NULL,
+  assessed_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS cv_assessment_history_cand_idx ON cv_assessment_history (candidate_id, assessed_at DESC);
+
 -- Insert default positions
 INSERT INTO positions (id, name, weights) VALUES
-  ('marketing', 'Marketing', '{"exp":2,"skill":2,"portfolio":2,"achiev":2,"edu":2,"stability":2,"fit":2,"salary":2,"cvquality":2,"soft":2}'),
+  ('marketing', 'Marketing', '{"exp":3,"skill":3,"portfolio":2,"achiev":2,"edu":1,"stability":2,"fit":2,"salary":2,"cvquality":1,"soft":2}'),
   ('operasional', 'Operasional', '{"exp":2,"skill":2,"portfolio":2,"achiev":2,"edu":2,"stability":2,"fit":2,"salary":2,"cvquality":2,"soft":2}'),
   ('copywriter', 'Copywriter', '{"exp":2,"skill":2,"portfolio":2,"achiev":2,"edu":2,"stability":2,"fit":2,"salary":2,"cvquality":2,"soft":2}'),
   ('manager-marketing', 'Manager Marketing', '{"exp":2,"skill":2,"portfolio":2,"achiev":2,"edu":2,"stability":2,"fit":2,"salary":2,"cvquality":2,"soft":2}'),

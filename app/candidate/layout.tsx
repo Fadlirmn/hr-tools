@@ -60,7 +60,7 @@ export default function CandidateLayout({ children }: { children: React.ReactNod
         <nav className="nav">
           {role === 'dev' && (
             <button onClick={() => router.push('/hr/dashboard')}
-              style={{ background: 'rgba(255,255,255,.08)', color: '#fff', marginBottom: 6 }}>
+              style={{ background: 'var(--side-hover)', color: 'var(--side-strong)', marginBottom: 6 }}>
               <span className="ico">←</span> Ke Dashboard HR
             </button>
           )}
@@ -77,14 +77,14 @@ export default function CandidateLayout({ children }: { children: React.ReactNod
         </nav>
         <div className="side-foot">
           <div style={{ marginBottom: 6 }}>
-            <div style={{ fontWeight: 600, color: '#fff', fontSize: 12 }}>{candidate?.nama || 'Kandidat'}</div>
-            <div style={{ color: '#9c98bf', fontSize: 10.5, marginTop: 1 }}>{candidate?.email || ''}</div>
+            <div style={{ fontWeight: 600, color: 'var(--side-strong)', fontSize: 12 }}>{candidate?.nama || 'Kandidat'}</div>
+            <div style={{ color: 'var(--side-muted)', fontSize: 10.5, marginTop: 1 }}>{candidate?.email || ''}</div>
           </div>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
             {role === 'dev' && <span style={{ color: 'var(--accent)', fontWeight: 700, fontSize: 10 }}>DEV</span>}
             <span style={{ flex: 1 }}></span>
             <span style={{ cursor: 'pointer' }} onClick={() => router.push('/candidate/profile')}>Profil</span>
-            <span style={{ color: '#9c98bf' }}>·</span>
+            <span style={{ color: 'var(--side-muted)' }}>·</span>
             <span style={{ cursor: 'pointer' }} onClick={handleLogout}>Keluar</span>
           </div>
         </div>

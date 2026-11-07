@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { getCurrentUser } from '@/lib/auth-client'
 import { getCandidateByUserId, getPositions } from '@/lib/db'
 import CvResult from '@/components/results/cv-result'
+import CvUpload from '@/components/cv-upload'
 import type { Candidate, Position } from '@/lib/types'
 
 export default function CandidateHasilCvPage() {
@@ -25,5 +26,10 @@ export default function CandidateHasilCvPage() {
 
   const posName = positions.find(p => p.id === candidate.posisi)?.name || '—'
 
-  return <CvResult cv={candidate.cv} posName={posName} />
+  return (
+    <>
+      <CvUpload />
+      <CvResult cv={candidate.cv} posName={posName} />
+    </>
+  )
 }

@@ -24,6 +24,8 @@ export interface Position {
   id: string
   name: string
   weights: PositionWeight
+  // Kualifikasi / deskripsi posisi — konteks screening CV otomatis (opsional)
+  description?: string
 }
 
 export type CandidateStage =
@@ -34,6 +36,7 @@ export type CandidateStage =
   | 'onboarding'
   | 'hired'
   | 'rejected'
+  | 'hold' // "Ditahan" — keputusan Tahan dari Penilaian CV
 
 export interface Candidate {
   id: string
@@ -65,21 +68,85 @@ export interface Candidate {
   iq_started_at: string | null
   interview: InterviewAssessment | null
   onboarding: OnboardingProgress | null
+  // Field turunan dari GET /api/candidates (bukan kolom tabel candidates)
+  has_cv_file?: boolean
+  ai_percent?: number | null
+  ai_status?: CvAiStatus | null
 }
 
 export interface CvScores {
   [key: string]: number
 }
 
+export type CvVerdict = 'Lolos' | 'Pertimbangkan' | 'Tidak Lolos' | 'Data belum cukup'
+export type CvDecision = 'lanjut' | 'tahan' | 'tolak'
+
+// Penilaian CV final oleh HR (kolom candidates.cv). Field bertanda ? baru ada
+// sejak penilaian dengan keputusan; data lama tetap terbaca.
 export interface CvAssessment {
   scores: CvScores
   got: number
   max: number
+  maxFilled?: number
   percent: number
+  floor?: number
   verdict: string
   filled: number
   notes: string
   date: string
+  position_id?: string | null
+  weights_snapshot?: Record<string, number>
+  decision?: CvDecision
+  reject_reason?: string | null
+  assessed_by?: string | null
+  assessed_at?: string
+}
+
+// Hasil screening CV otomatis (AI) — DRAFT untuk HR, bukan keputusan final.
+export interface CvAiCriterion {
+  id: string
+  score: number | null // null = info tidak ada di CV, HR yang menilai
+  evidence: string
+  reason: string
+}
+
+export interface CvAiResult {
+  model: string
+  analyzed_at: string
+  extracted: {
+    nama: string
+    email: string
+    telepon: string
+    ringkasan: string
+    pengalaman_tahun: number | null
+    pendidikan_terakhir: string
+    skills: string[]
+  }
+  criteria: CvAiCriterion[]
+  strengths: string[]
+  concerns: string[]
+  interview_questions: string[]
+  scores: CvScores
+  got: number
+  max: number
+  maxFilled?: number
+  percent: number
+  floor?: number
+  verdict: string
+  filled: number
+}
+
+export type CvAiStatus = 'none' | 'processing' | 'done' | 'error'
+
+export interface CvFileMeta {
+  candidate_id: string
+  filename: string
+  mime: string
+  size: number
+  uploaded_at: string
+  ai_status: CvAiStatus
+  ai_result: CvAiResult | null
+  ai_error: string | null
 }
 
 export interface PsikotesResult {

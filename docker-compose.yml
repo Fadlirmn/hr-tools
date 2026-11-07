@@ -24,6 +24,11 @@ services:
       - HR_NOTIFY_EMAIL=${HR_NOTIFY_EMAIL}
       - EMAIL_SERVICE_URL=${EMAIL_SERVICE_URL:-http://email_web:3000}
       - EMAIL_SERVICE_API_KEY=${EMAIL_SERVICE_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - CV_AI_BASE_URL=${CV_AI_BASE_URL:-}
+      - CV_AI_MODEL=${CV_AI_MODEL:-}
+      - CV_AI_API_KEY=${CV_AI_API_KEY:-}
+      - CV_AI_PDF_MODE=${CV_AI_PDF_MODE:-text}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:

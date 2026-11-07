@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { fetchCandidates } from '@/lib/db-hr'
 import { getPositions } from '@/lib/db'
 import type { Candidate, Position } from '@/lib/types'
+import { STAGES } from '@/lib/constants'
 
 type AccessStatus = 'belum' | 'aktif' | 'kadaluarsa' | 'selesai'
 type TestType = 'disc' | 'iq'
@@ -197,7 +198,6 @@ export default function HrPsikotesAksesPage() {
       case 'selesai':
         return (
           <div style={{ display: 'flex', gap: 6 }}>
-            <span className="hint" style={{ fontSize: 11, lineHeight: '30px' }}>Selesai</span>
             <button className="btn sm" onClick={() => closeAccess(candidate, type)}>Reset</button>
           </div>
         )
@@ -244,30 +244,31 @@ export default function HrPsikotesAksesPage() {
       </div>
 
       <div className="table-wrap">
-        <table className="tbl">
+        <table className="tbl tbl-fit access-table">
           <thead>
             <tr>
-              <th>Nama</th>
-              <th>Posisi</th>
-              <th>Stage</th>
-              <th>Status DISC</th>
-              <th>Aksi DISC</th>
-              <th>Status IQ</th>
-              <th>Aksi IQ</th>
+              <th>Kandidat</th>
+              <th>Tes DISC</th>
+              <th>Tes IQ</th>
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 ? (
-              <tr><td colSpan={7} className="empty-cell">Belum ada kandidat.</td></tr>
+              <tr><td colSpan={3} className="empty-cell">Belum ada kandidat.</td></tr>
             ) : rows.map(({ c, posName, discStatus, iqStatus }) => (
               <tr key={c.id}>
-                <td><b>{c.nama}</b></td>
-                <td>{posName}</td>
-                <td><span className="chip neutral">{c.stage}</span></td>
-                <td><span className={`chip ${statusLabel[discStatus].cls}`}>{statusLabel[discStatus].text}</span></td>
-                <td>{actionCell(c, 'disc', discStatus)}</td>
-                <td><span className={`chip ${statusLabel[iqStatus].cls}`}>{statusLabel[iqStatus].text}</span></td>
-                <td>{actionCell(c, 'iq', iqStatus)}</td>
+                <td className="cell-cand">
+                  <b>{c.nama}</b>
+                  <div className="hint">{posName} · <span className={`stagepill s-${c.stage}`}>{STAGES[c.stage] || c.stage}</span></div>
+                </td>
+                {([['disc', discStatus], ['iq', iqStatus]] as const).map(([t, st]) => (
+                  <td key={t}>
+                    <div className="access-cell">
+                      <span className={`chip ${statusLabel[st].cls}`}>{statusLabel[st].text}</span>
+                      {actionCell(c, t, st)}
+                    </div>
+                  </td>
+                ))}
               </tr>
             ))}
           </tbody>

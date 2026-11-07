@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import CandidatePicker from '@/components/candidate-picker'
+import { IconInfo } from '@/components/icons'
 import { fetchCandidates } from '@/lib/db-hr'
 import { getPositions } from '@/lib/db'
 import type { Candidate, Position, InterviewAssessment } from '@/lib/types'
@@ -73,17 +75,16 @@ export default function HrInterviewPage() {
 
   return (
     <>
-      <div className="selectbar no-print">
-        <label className="fld" style={{ margin: 0 }}>Kandidat</label>
-        <select value={selId} onChange={e => setSelId(e.target.value)}>
-          <option value="">— Pilih kandidat —</option>
-          {candidates.map(c => (
-            <option key={c.id} value={c.id}>{c.nama} · {(positions.find(p => p.id === c.posisi)?.name || '—')}</option>
-          ))}
-        </select>
-      </div>
+      <CandidatePicker value={selId} onChange={setSelId} defaultFilter="todo"
+        labels={{ todo: 'Belum interview', done: 'Sudah interview' }}
+        items={candidates.map(x => ({
+          id: x.id, nama: x.nama, posisi: positions.find(p => p.id === x.posisi)?.name || '—',
+          todo: !x.interview && !['rejected', 'hired', 'screening'].includes(x.stage), done: !!x.interview, hasCv: !!x.has_cv_file,
+          score: x.interview ? `${x.interview.avg.toFixed(1)} · ${x.interview.verdict}` : null,
+          scoreKind: x.interview ? (x.interview.verdict === 'Rekomendasikan' ? 'ok' : x.interview.verdict === 'Pertimbangkan' ? 'hold' : 'no') : 'neutral',
+        }))} />
 
-      <div className="notice">ℹ️ Nilai tiap kompetensi <b>1–5</b> berdasarkan jawaban & sikap saat wawancara. Skor akhir adalah rata-rata.</div>
+      <div className="notice"><IconInfo size={16} style={{ marginTop: 1, color: 'var(--violet)' }} /><span>Nilai tiap kompetensi <b>1–5</b> berdasarkan jawaban & sikap saat wawancara. Skor akhir adalah rata-rata.</span></div>
 
       <div className="card card-p">
         <div className="section-head" style={{ marginTop: 0 }}>

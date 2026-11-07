@@ -6,6 +6,9 @@ import { fetchCandidates } from '@/lib/db-hr'
 import { getPositions } from '@/lib/db'
 import { loadQuestions } from '@/lib/questions'
 import ExamModal, { type ExamResult } from '@/components/exam-modal'
+import CandidatePicker from '@/components/candidate-picker'
+import LocalTestTabs from '@/components/local-test-tabs'
+import { IconMonitor, IconPlay } from '@/components/icons'
 import { calcIq, estimateIq, classifyIq, IQ_CATEGORIES } from '@/lib/iq-scoring'
 import type { Candidate, Position, IqQuestion } from '@/lib/types'
 
@@ -101,28 +104,23 @@ function HrTesIqContent() {
 
   return (
     <>
-      <div className="selectbar no-print">
-        <label className="fld" style={{ margin: 0 }}>Kandidat</label>
-        <select value={selId} onChange={e => setSelId(e.target.value)}>
-          <option value="">— Pilih kandidat —</option>
-          {candidates.map(c => (
-            <option key={c.id} value={c.id}>{c.nama} · {(positions.find(p => p.id === c.posisi)?.name || '—')}</option>
-          ))}
-        </select>
-        <span className="hint">Terjawab {answered}/{iqCalc.total}</span>
-        <div className="track" style={{ flex: 1, minWidth: 120 }}><i style={{ width: totalPct + '%', background: 'var(--violet)' }}></i></div>
-        <span className="pct">{totalPct}%</span>
-      </div>
+      <LocalTestTabs active="iq" candidateId={selId} />
+      <CandidatePicker value={selId} onChange={setSelId} defaultFilter="todo"
+        labels={{ todo: 'Belum tes IQ', done: 'Sudah tes IQ' }}
+        items={candidates.map(x => ({
+          id: x.id, nama: x.nama, posisi: positions.find(p => p.id === x.posisi)?.name || '—',
+          todo: !(!!x.psikotes_result?.iq), done: !!x.psikotes_result?.iq, hasCv: !!x.has_cv_file,
+          score: x.psikotes_result?.iq ? `IQ ${x.psikotes_result.iq.percent}%` : null, scoreKind: 'violet' as const,
+        }))}
+        extra={<><span>Terjawab {answered}/{iqCalc.total}</span><div className="track" style={{ width: 90 }}><i style={{ width: totalPct + '%', background: 'var(--violet)' }}></i></div><span className="pct">{totalPct}%</span></>} />
 
-      {/* Mode pengerjaan kandidat */}
-      <div className="card card-p" style={{ marginBottom: 16, border: '1.5px solid var(--violet)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-          <div style={{ minWidth: 240, flex: 1 }}>
-            <h3 style={{ margin: '0 0 3px' }}>▶ Mode Pengerjaan Kandidat — Tes IQ</h3>
-            <div className="hint" style={{ margin: 0 }}>Buka tes layar penuh agar <b>kandidat mengerjakan sendiri</b>.</div>
-          </div>
-          <button className="btn primary" onClick={() => setExamOpen(true)}>Mulai Tes IQ</button>
+      {/* Mode pengerjaan kandidat di PC HRD */}
+      <div className="card card-p exam-cta no-print">
+        <div style={{ minWidth: 240, flex: 1 }}>
+          <h3><IconMonitor size={18} />Kandidat mengerjakan Tes IQ di PC ini</h3>
+          <div className="hint" style={{ margin: 0 }}>{c ? <>Tes layar penuh untuk <b>{c.nama}</b>. Serahkan komputer ke kandidat setelah klik mulai.</> : 'Pilih kandidat dulu, atau isi nama kandidat di layar tes.'}</div>
         </div>
+        <button className="btn primary" onClick={() => setExamOpen(true)}><IconPlay size={14} />Mulai tes di PC ini</button>
       </div>
 
       <div className="card card-p">

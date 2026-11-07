@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import "./globals.css"
+import { THEME_INIT_SCRIPT } from "@/components/theme-toggle"
 
 export const metadata: Metadata = {
   title: "HR Recruitment Toolkit",
@@ -13,8 +14,9 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="id" className="h-full">
+    <html lang="id" className="h-full" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />

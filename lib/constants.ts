@@ -8,12 +8,33 @@ export const STAGES: Record<string, string> = {
   onboarding: 'Onboarding',
   hired: 'Diterima',
   rejected: 'Ditolak',
+  // Ditaruh paling akhir: dashboard kandidat memakai urutan Object.values(STAGES)
+  hold: 'Ditahan',
 }
+
+// --- Keputusan Penilaian CV (dipilih HR, tidak pernah oleh AI) ---
+export const CV_DECISIONS: { id: 'lanjut' | 'tahan' | 'tolak'; label: string; stage: 'psikotes' | 'hold' | 'rejected' }[] = [
+  { id: 'lanjut', label: 'Lanjut Psikotes', stage: 'psikotes' },
+  { id: 'tahan', label: 'Tahan', stage: 'hold' },
+  { id: 'tolak', label: 'Tidak lanjut', stage: 'rejected' },
+]
+
+// Kode alasan Tidak lanjut — disimpan sebagai kode supaya bisa direkap di laporan.
+export const CV_REJECT_REASONS: { code: string; label: string }[] = [
+  { code: 'exp_irrelevant', label: 'Pengalaman kurang relevan' },
+  { code: 'skill_mismatch', label: 'Skill teknis belum sesuai' },
+  { code: 'salary_over_budget', label: 'Ekspektasi gaji di luar budget' },
+  { code: 'location_wfo', label: 'Tidak bersedia WFO / domisili tidak cocok' },
+  { code: 'portfolio_weak', label: 'Portofolio kurang meyakinkan' },
+  { code: 'other', label: 'Lainnya (tulis di catatan)' },
+]
+export const rejectReasonLabel = (code?: string | null) =>
+  CV_REJECT_REASONS.find(r => r.code === code)?.label || ''
 
 export const POSITIONS_DEFAULT: PositionDefault[] = [
   {
     id: 'marketing', name: 'Marketing',
-    weights: { exp: 2, skill: 2, portfolio: 2, achiev: 2, edu: 2, stability: 2, fit: 2, salary: 2, cvquality: 2, soft: 2 },
+    weights: { exp: 3, skill: 3, portfolio: 2, achiev: 2, edu: 1, stability: 2, fit: 2, salary: 2, cvquality: 1, soft: 2 },
   },
   {
     id: 'operasional', name: 'Operasional',

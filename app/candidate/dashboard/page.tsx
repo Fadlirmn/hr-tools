@@ -36,7 +36,7 @@ export default function CandidateDashboardPage() {
   const cards: { label: string; hint: string; score: string; href: string }[] = [
     {
       label: '📄 Penilaian CV',
-      hint: 'Skor kelayakan berkas',
+      hint: 'Upload CV kamu & lihat skor kelayakan berkas',
       score: candidate.cv ? `${candidate.cv.percent}% · ${candidate.cv.verdict}` : 'Belum dinilai',
       href: '/candidate/hasil-cv',
     },

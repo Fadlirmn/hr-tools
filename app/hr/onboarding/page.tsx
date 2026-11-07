@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import CandidatePicker from '@/components/candidate-picker'
 import { fetchCandidates } from '@/lib/db-hr'
 import { getPositions } from '@/lib/db'
 import type { Candidate, Position } from '@/lib/types'
@@ -53,16 +54,15 @@ export default function HrOnboardingPage() {
 
   if (!c) {
     return (
-      <div className="selectbar no-print">
-        <label className="fld" style={{ margin: 0 }}>Kandidat</label>
-        <select value={selId} onChange={e => setSelId(e.target.value)}>
-          <option value="">— Pilih kandidat —</option>
-          {candidates.map(c => (
-            <option key={c.id} value={c.id}>{c.nama} · {(positions.find(p => p.id === c.posisi)?.name || '—')}</option>
-          ))}
-        </select>
-        <span className="hint">Onboarding dijalankan untuk karyawan yang sudah diterima.</span>
-      </div>
+      <CandidatePicker value={selId} onChange={setSelId} defaultFilter="todo"
+        labels={{ todo: 'Sedang onboarding', done: 'Selesai' }}
+        items={candidates.map(x => ({
+          id: x.id, nama: x.nama, posisi: positions.find(p => p.id === x.posisi)?.name || '—',
+          todo: ['offer', 'onboarding'].includes(x.stage) && (x.onboarding?.progress ?? 0) < 100,
+          done: (x.onboarding?.progress ?? 0) >= 100,
+          score: x.onboarding ? `${x.onboarding.progress}%` : null, scoreKind: 'violet' as const,
+        }))}
+        extra={!selId ? <span>Onboarding dijalankan untuk karyawan yang sudah diterima.</span> : undefined} />
     )
   }
 
@@ -70,14 +70,15 @@ export default function HrOnboardingPage() {
 
   return (
     <>
-      <div className="selectbar no-print">
-        <label className="fld" style={{ margin: 0 }}>Kandidat</label>
-        <select value={selId} onChange={e => setSelId(e.target.value)}>
-          {candidates.map(c => (
-            <option key={c.id} value={c.id}>{c.nama} · {(positions.find(p => p.id === c.posisi)?.name || '—')}</option>
-          ))}
-        </select>
-      </div>
+      <CandidatePicker value={selId} onChange={setSelId} defaultFilter="todo"
+        labels={{ todo: 'Sedang onboarding', done: 'Selesai' }}
+        items={candidates.map(x => ({
+          id: x.id, nama: x.nama, posisi: positions.find(p => p.id === x.posisi)?.name || '—',
+          todo: ['offer', 'onboarding'].includes(x.stage) && (x.onboarding?.progress ?? 0) < 100,
+          done: (x.onboarding?.progress ?? 0) >= 100,
+          score: x.onboarding ? `${x.onboarding.progress}%` : null, scoreKind: 'violet' as const,
+        }))}
+        extra={!selId ? <span>Onboarding dijalankan untuk karyawan yang sudah diterima.</span> : undefined} />
 
       <div className="card card-p">
         <div className="section-head" style={{ marginTop: 0 }}>

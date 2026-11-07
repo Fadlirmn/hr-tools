@@ -19,13 +19,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  const { id, name, weights } = await req.json()
+  const { id, name, weights, description } = await req.json()
   if (!id) return NextResponse.json({ error: 'id wajib ada' }, { status: 400 })
+  // description opsional: bila tidak dikirim, nilai lama dipertahankan
+  const desc = typeof description === 'string' ? description.slice(0, 4000) : null
 
   await query(
-    `INSERT INTO positions (id, name, weights) VALUES ($1, $2, $3)
-     ON CONFLICT (id) DO UPDATE SET name = $2, weights = $3`,
-    [id, name, weights]
+    `INSERT INTO positions (id, name, weights, description) VALUES ($1, $2, $3, COALESCE($4, ''))
+     ON CONFLICT (id) DO UPDATE SET name = $2, weights = $3, description = COALESCE($4, positions.description)`,
+    [id, name, weights, desc]
   )
   return NextResponse.json({ ok: true })
 }
