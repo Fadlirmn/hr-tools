@@ -113,6 +113,32 @@ ${JSON.stringify(all)}
 </data_kandidat>`
 }
 
+export interface Mention { id: string; nama: string; posisi: string }
+
+/**
+ * Kandidat yang disebut di jawaban asisten: nama lengkap, atau nama depan bila unik.
+ * Ditambah kandidat yang dibuka lewat aksi. Urutan = kemunculan pertama di teks.
+ */
+export function findMentions(text: string, all: Pick<Snap, 'id' | 'nama' | 'posisi'>[], actionIds: string[] = []): Mention[] {
+  const t = text.toLowerCase()
+  const esc = (x: string) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const firstCount = new Map<string, number>()
+  for (const c of all) { const f = c.nama.toLowerCase().split(/\s+/)[0]; firstCount.set(f, (firstCount.get(f) || 0) + 1) }
+  const found: { m: Mention; at: number }[] = []
+  for (const c of all) {
+    const full = c.nama.toLowerCase().trim()
+    const first = full.split(/\s+/)[0]
+    let at = full.length >= 3 ? t.indexOf(full) : -1
+    if (at < 0 && first.length >= 3 && firstCount.get(first) === 1) {
+      const m = new RegExp(`(^|[^\\p{L}])${esc(first)}(?![\\p{L}])`, 'u').exec(t)
+      if (m) at = m.index + m[1].length
+    }
+    if (at < 0 && actionIds.includes(c.id)) at = Number.MAX_SAFE_INTEGER
+    if (at >= 0) found.push({ m: { id: c.id, nama: c.nama, posisi: c.posisi }, at })
+  }
+  return found.sort((a, b) => a.at - b.at).slice(0, 8).map(x => x.m)
+}
+
 export interface ChatTurn { role: 'user' | 'assistant'; content: string }
 
 export async function chat(turns: ChatTurn[], ctx: { path?: string; candidateId?: string }) {
@@ -123,6 +149,8 @@ export async function chat(turns: ChatTurn[], ctx: { path?: string; candidateId?
   const actions: AssistantAction[] = []
   const messages: Anthropic.MessageParam[] = turns.map(t => ({ role: t.role, content: t.content }))
   const system = systemPrompt(all, ctx)
+
+  const openedIds = () => actions.flatMap(a => a.type === 'open_cv' ? [a.id] : [])
 
   const run = (name: string, input: Record<string, unknown>): string => {
     if (name === 'go_to_screen') {
@@ -151,7 +179,7 @@ export async function chat(turns: ChatTurn[], ctx: { path?: string; candidateId?
     const toolUses = res.content.filter((b): b is Anthropic.ToolUseBlock => b.type === 'tool_use')
     const text = res.content.map(b => (b.type === 'text' ? b.text : '')).join('').trim()
     if (res.stop_reason !== 'tool_use' || toolUses.length === 0) {
-      return { text: text || 'Selesai.', actions, mode: 'ai' as const }
+      return { text: text || 'Selesai.', actions, mode: 'ai' as const, mentions: findMentions(text, all, openedIds()) }
     }
     messages.push({ role: 'assistant', content: res.content })
     messages.push({
@@ -162,5 +190,5 @@ export async function chat(turns: ChatTurn[], ctx: { path?: string; candidateId?
       }),
     })
   }
-  return { text: 'Aksi sudah dijalankan.', actions, mode: 'ai' as const }
+  return { text: 'Aksi sudah dijalankan.', actions, mode: 'ai' as const, mentions: findMentions('', all, openedIds()) }
 }

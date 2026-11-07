@@ -36,6 +36,8 @@ export default function HrCandidatesPage() {
   const [savingPos, setSavingPos] = useState(false)
 
   const [showBulk, setShowBulk] = useState(false)
+  // Baris yang disorot (dibuka dari Asisten Screening: ?highlight=<id>)
+  const [hl, setHl] = useState('')
   const [bulkPos, setBulkPos] = useState('')
   const [bulkSumber, setBulkSumber] = useState('Glints')
   const [bulkFiles, setBulkFiles] = useState<File[]>([])
@@ -51,6 +53,17 @@ export default function HrCandidatesPage() {
     return pos
   }
 
+
+  const focusRow = (id: string) => {
+    setHl(id)
+    // tunggu baris ter-render, lalu gulir & fokuskan
+    setTimeout(() => {
+      const row = document.getElementById(`cand-row-${id}`)
+      row?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+      row?.querySelector<HTMLButtonElement>('.cand-name')?.focus({ preventScroll: true })
+    }, 50)
+    setTimeout(() => setHl(cur => (cur === id ? '' : cur)), 4000)
+  }
 
   useEffect(() => {
     ;(async () => {
@@ -74,6 +87,8 @@ export default function HrCandidatesPage() {
           setShowBulk(true)
         }
       } catch { /* abaikan */ }
+      const h = new URLSearchParams(window.location.search).get('highlight')
+      if (h) focusRow(h)
     })()
     // Dibuka via tombol topbar saat sudah di halaman ini
     const handler = () => {
@@ -83,6 +98,8 @@ export default function HrCandidatesPage() {
       setNewPosName('')
       setShowModal(true)
     }
+    const hlHandler = (e: Event) => focusRow((e as CustomEvent<{ id: string }>).detail.id)
+    window.addEventListener('highlight-candidate', hlHandler)
     const bulkHandler = () => {
       setBulkPos(positionsRef.current[0]?.id || '')
       setBulkFiles([])
@@ -94,6 +111,7 @@ export default function HrCandidatesPage() {
     return () => {
       window.removeEventListener('open-add-candidate', handler)
       window.removeEventListener('open-bulk-upload', bulkHandler)
+      window.removeEventListener('highlight-candidate', hlHandler)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -314,7 +332,7 @@ export default function HrCandidatesPage() {
             <thead><tr><th>Kandidat</th><th>Tahap</th><th>Hasil seleksi</th><th>Akun</th><th><span className="sr-only">Aksi</span></th></tr></thead>
             <tbody>
               {candidates.map(c => (
-                <tr key={c.id}>
+                <tr key={c.id} id={`cand-row-${c.id}`} className={hl === c.id ? 'row-hl' : undefined}>
                   <td className="cell-cand">
                     <button type="button" className="cand-name linkish" onClick={() => router.push(`/hr/candidates/${c.id}`)}>{c.nama}</button>
                     <div className="hint">{posName(c.posisi)} · {c.sumber || '—'}{c.tanggal ? ` · ${c.tanggal}` : ''}</div>

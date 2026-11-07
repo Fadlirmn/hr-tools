@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, Fragment, type ReactNode } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { IconSparkle, IconX, IconSend, IconStop, IconAlert } from './icons'
+import { IconSparkle, IconX, IconSend, IconStop, IconAlert, IconMaximize, IconMinimize, IconFileCheck, IconUsers } from './icons'
 
 type Report = {
   title: string; generated_at: string; posisi: string | null; total: number; cv_masuk: number; dianalisis_ai: number
@@ -11,7 +11,8 @@ type Report = {
   peringkat: { id: string; nama: string; posisi: string; skor: number; sumber_skor: 'HR' | 'AI'; verdict: string }[]
 }
 type Action = { type: 'navigate'; href: string } | { type: 'open_cv'; id: string; applyAi: boolean } | { type: 'open_bulk' } | { type: 'report'; data: Report }
-type Msg = { role: 'user' | 'assistant'; content: string; report?: Report; sys?: boolean; warn?: boolean }
+type Mention = { id: string; nama: string; posisi: string }
+type Msg = { role: 'user' | 'assistant'; content: string; report?: Report; sys?: boolean; warn?: boolean; mentions?: Mention[] }
 
 const CHIPS: [string, string][] = [
   ['Perlu dinilai', 'Siapa saja yang perlu saya nilai sekarang?'],
@@ -24,8 +25,15 @@ const CHIPS: [string, string][] = [
 const chipClass = (v: string) => v === 'Lolos' ? 'ok' : v === 'Pertimbangkan' ? 'hold' : v === 'Tidak Lolos' ? 'no' : 'neutral'
 
 /** Markdown minimal: **tebal**, bullet "- ", paragraf. Dirender sebagai elemen React (tanpa innerHTML). */
-function Md({ text }: { text: string }) {
-  const bold = (s: string) => s.split(/(\*\*[^*]+\*\*)/g).map((p, i) => p.startsWith('**') && p.endsWith('**') ? <b key={i}>{p.slice(2, -2)}</b> : <Fragment key={i}>{p}</Fragment>)
+function Md({ text, mentions = [], onOpen }: { text: string; mentions?: Mention[]; onOpen?: (id: string) => void }) {
+  // Nama lengkap kandidat yang disebut → tautan ke Review CV
+  const names = mentions.filter(m => m.nama.length >= 3).sort((a, b) => b.nama.length - a.nama.length)
+  const re = names.length ? new RegExp(`(${names.map(m => m.nama.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`, 'gi') : null
+  const link = (s: string, k: string) => !re || !onOpen ? s : s.split(re).map((part, i) => {
+    const m = names.find(x => x.nama.toLowerCase() === part.toLowerCase())
+    return m ? <button key={`${k}-${i}`} type="button" className="linkish" onClick={() => onOpen(m.id)} title={`Buka Review CV ${m.nama}`}>{part}</button> : <Fragment key={`${k}-${i}`}>{part}</Fragment>
+  })
+  const bold = (s: string) => s.split(/(\*\*[^*]+\*\*)/g).map((p, i) => p.startsWith('**') && p.endsWith('**') ? <b key={i}>{link(p.slice(2, -2), 'b' + i)}</b> : <Fragment key={i}>{link(p, 't' + i)}</Fragment>)
   const out: ReactNode[] = []
   let list: ReactNode[] = []
   const flush = () => { if (list.length) { out.push(<ul key={'u' + out.length}>{list}</ul>); list = [] } }
@@ -38,7 +46,21 @@ function Md({ text }: { text: string }) {
   return <>{out}</>
 }
 
-function ReportCard({ r, onOpen }: { r: Report; onOpen: (id: string) => void }) {
+function MentionLinks({ mentions, onReview, onList }: { mentions: Mention[]; onReview: (id: string) => void; onList: (id: string) => void }) {
+  return (
+    <div className="as-mentions" aria-label="Kandidat yang disebut">
+      {mentions.map(m => (
+        <div key={m.id} className="as-mention">
+          <span className="nm">{m.nama}<small>{m.posisi}</small></span>
+          <button type="button" className="btn sm" onClick={() => onReview(m.id)}><IconFileCheck size={13} />Review CV</button>
+          <button type="button" className="btn sm" onClick={() => onList(m.id)}><IconUsers size={13} />Daftar</button>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function ReportCard({ r, onOpen, onList }: { r: Report; onOpen: (id: string) => void; onList: (id: string) => void }) {
   const maxSrc = Math.max(1, ...Object.values(r.sumber))
   const alasan = Object.entries(r.alasan_tidak_lanjut)
   return (
@@ -62,7 +84,8 @@ function ReportCard({ r, onOpen }: { r: Report; onOpen: (id: string) => void }) 
         <table>
           <thead><tr><th>Kandidat</th><th>Posisi</th><th>Skor</th></tr></thead>
           <tbody>{r.peringkat.map(x => (
-            <tr key={x.id}><td><button type="button" className="linkish" onClick={() => onOpen(x.id)}>{x.nama}</button></td><td>{x.posisi}</td>
+            <tr key={x.id}><td><button type="button" className="linkish" onClick={() => onOpen(x.id)} title="Review CV">{x.nama}</button>
+              {' '}<button type="button" className="linkish sub" onClick={() => onList(x.id)} title="Lihat di Daftar Kandidat">daftar</button></td><td>{x.posisi}</td>
               <td style={{ whiteSpace: 'nowrap' }}><span className={`chip ${chipClass(x.verdict)}`}>{x.sumber_skor === 'AI' ? 'AI ' : ''}{x.skor}%</span></td></tr>
           ))}</tbody>
         </table>
@@ -77,6 +100,7 @@ export default function Assistant() {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const [open, setOpen] = useState(false)
+  const [big, setBig] = useState(false)
   const [msgs, setMsgs] = useState<Msg[]>([{ role: 'assistant', content: 'Halo! Saya bisa bantu **pindah layar**, **membuka dan menilai CV** pakai draft AI, dan **membuat laporan** hasil screening. Ketik perintah atau pilih tombol di bawah.' }])
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
@@ -104,6 +128,10 @@ export default function Assistant() {
   const openCv = (id: string, applyAi: boolean) => {
     if (pathname === '/hr/cv') window.dispatchEvent(new CustomEvent('assistant-open-cv', { detail: { id, applyAi } }))
     else router.push(`/hr/cv?candidateId=${encodeURIComponent(id)}${applyAi ? '&applyAi=1' : ''}`)
+  }
+  const openList = (id: string) => {
+    if (pathname === '/hr/candidates') window.dispatchEvent(new CustomEvent('highlight-candidate', { detail: { id } }))
+    else router.push(`/hr/candidates?highlight=${encodeURIComponent(id)}`)
   }
   const run = (a: Action) => {
     if (a.type === 'navigate') router.push(a.href)
@@ -140,7 +168,7 @@ export default function Assistant() {
       }
       const actions = (d.actions || []) as Action[]
       const report = actions.find((a): a is Extract<Action, { type: 'report' }> => a.type === 'report')?.data
-      setMsgs(m => [...m, { role: 'assistant', content: d.text || '', report }])
+      setMsgs(m => [...m, { role: 'assistant', content: d.text || '', report, mentions: d.mentions || [] }])
       // Jalankan aksi navigasi terakhir saja (laporan dirender di chat)
       const nav = actions.filter(a => a.type !== 'report')
       if (nav.length) run(nav[nav.length - 1])
@@ -164,11 +192,15 @@ export default function Assistant() {
         </button>
       )}
       {open && (
-        <section className="as-panel no-print" aria-label="Asisten Screening" onKeyDown={e => { if (e.key === 'Escape') close() }}>
+        <section className={`as-panel no-print${big ? ' big' : ''}`} aria-label="Asisten Screening" onKeyDown={e => { if (e.key === 'Escape') close() }}>
           <div className="as-head">
             <div className="dot"><IconSparkle size={16} /></div>
             <div><b>Asisten Screening</b><small>Navigasi, bantu nilai CV, dan laporan</small></div>
-            <button type="button" className="x" onClick={close} aria-label="Tutup asisten"><IconX size={16} /></button>
+            <button type="button" className="x" style={{ marginLeft: 'auto' }} onClick={() => setBig(v => !v)}
+              aria-pressed={big} aria-label={big ? 'Perkecil jendela asisten' : 'Perbesar jendela asisten'} title={big ? 'Perkecil' : 'Perbesar'}>
+              {big ? <IconMinimize size={15} /> : <IconMaximize size={15} />}
+            </button>
+            <button type="button" className="x" style={{ marginLeft: 0 }} onClick={close} aria-label="Tutup asisten"><IconX size={16} /></button>
           </div>
           {aiOn === false && (
             <div className="as-warning" role="alert"><IconAlert size={16} /><span>{warning}</span></div>
@@ -176,8 +208,9 @@ export default function Assistant() {
           <div className="as-log" ref={logRef} aria-live="polite">
             {msgs.map((m, i) => (
               <Fragment key={i}>
-                <div className={`as-msg ${m.warn ? 'warn' : m.sys ? 'sys' : m.role === 'user' ? 'me' : 'bot'}`}>{m.warn && <IconAlert size={15} />}{m.role === 'user' ? m.content : <Md text={m.content} />}</div>
-                {m.report && <ReportCard r={m.report} onOpen={id => openCv(id, false)} />}
+                <div className={`as-msg ${m.warn ? 'warn' : m.sys ? 'sys' : m.role === 'user' ? 'me' : 'bot'}`}>{m.warn && <IconAlert size={15} />}{m.role === 'user' ? m.content : <Md text={m.content} mentions={m.mentions} onOpen={id => openCv(id, false)} />}</div>
+                {m.report && <ReportCard r={m.report} onOpen={id => openCv(id, false)} onList={openList} />}
+                {!!m.mentions?.length && <MentionLinks mentions={m.mentions} onReview={id => openCv(id, false)} onList={openList} />}
               </Fragment>
             ))}
             {busy && <div className="as-msg bot"><span className="hint">Sedang berpikir…</span></div>}

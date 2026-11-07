@@ -57,3 +57,5 @@ export const IconMic = (p: P) => <Svg {...p}><rect x="9" y="3" width="6" height=
 export const IconUser = (p: P) => <Svg {...p}><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></Svg>
 export const IconArrowLeft = (p: P) => <Svg {...p}><path d="M19 12H5m6-6-6 6 6 6" /></Svg>
 export const IconAward = (p: P) => <Svg {...p}><circle cx="12" cy="9" r="6" /><path d="m8.5 14-1.5 7 5-3 5 3-1.5-7" /></Svg>
+export const IconMaximize = (p: P) => <Svg {...p}><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7" /></Svg>
+export const IconMinimize = (p: P) => <Svg {...p}><path d="M4 14h6v6M20 10h-6V4M10 14l-7 7M14 10l7-7" /></Svg>

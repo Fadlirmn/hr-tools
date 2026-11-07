@@ -21,3 +21,26 @@ describe('buildReport', () => {
   })
   it('filter posisi', () => expect(buildReport(ALL, 'iklan').total).toBe(1))
 })
+
+import { describe as dM, it as iM, expect as eM } from 'vitest'
+import { findMentions } from './assistant'
+
+dM('findMentions', () => {
+  const all = [
+    { id: 'b', nama: 'Budi Santoso', posisi: 'Marketing' },
+    { id: 's', nama: 'Sari Wulandari', posisi: 'Copywriter' },
+    { id: 's2', nama: 'Sari Dewi', posisi: 'Iklan' },
+    { id: 'r', nama: 'Raka Pratama', posisi: 'Creator' },
+  ]
+  iM('nama lengkap & nama depan unik, urut kemunculan', () => {
+    eM(findMentions('Prioritaskan **Raka**, lalu Budi Santoso.', all).map(m => m.id)).toEqual(['r', 'b'])
+  })
+  iM('nama depan yang tidak unik tidak ditebak', () => {
+    eM(findMentions('Sari belum dinilai', all)).toEqual([])
+    eM(findMentions('Sari Wulandari belum dinilai', all).map(m => m.id)).toEqual(['s'])
+  })
+  iM('tidak cocok sebagian kata, dan kandidat dari aksi ikut', () => {
+    eM(findMentions('Budiman bukan kandidat', all)).toEqual([])
+    eM(findMentions('CV dibuka.', all, ['r']).map(m => m.id)).toEqual(['r'])
+  })
+})

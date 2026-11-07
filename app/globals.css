@@ -636,3 +636,17 @@ button.cand-card:focus-visible{outline:2px solid var(--violet);outline-offset:2p
 .side-foot .side-link{cursor:pointer;background:none;border:none;padding:0;font:inherit;color:inherit}
 .side-foot .side-link:hover{color:var(--side-strong)}
 .nav button.dev-back{background:var(--side-hover);color:var(--side-strong);margin-bottom:6px}
+/* Asisten: mode besar & tautan kandidat */
+.as-panel{transition:width .2s,height .2s}
+.as-panel.big{width:min(960px,calc(100vw - 40px));height:calc(100vh - 40px);max-width:none}
+.as-panel.big .as-msg{max-width:min(720px,88%)}
+.as-mentions{display:flex;flex-direction:column;gap:6px;align-self:stretch}
+.as-mention{display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px 8px}
+.as-mention .nm{flex:1;min-width:120px;font-weight:700;font-size:12.5px}
+.as-mention .nm small{display:block;font-weight:500;color:var(--muted);font-size:11px}
+.as-mention .btn.sm{padding:4px 9px;font-size:11.5px}
+.linkish.sub{font-weight:600;font-size:11px;color:var(--muted)}
+.as-msg .linkish{font-weight:700;text-decoration:underline;text-underline-offset:2px}
+@media (max-width:760px){.as-panel.big{width:100%;height:100vh;border-radius:0}}
+/* Daftar Kandidat: baris yang disorot dari asisten */
+.cand-table tr.row-hl td{background:var(--accent-soft)!important;transition:background .3s}
