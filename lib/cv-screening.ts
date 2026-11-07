@@ -216,7 +216,7 @@ export async function screenCv(candidateId: string, opts: ScreenOptions = {}): P
         ? { type: 'text', text: `<cv_pelamar>\n${text.slice(0, 60000)}\n</cv_pelamar>` }
         : { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: b64 }, title: 'CV pelamar' }
     } else {
-      fileBlock = { type: 'image', source: { type: 'base64', media_type: file.mime as 'image/jpeg' | 'image/png', data: b64 } }
+      fileBlock = { type: 'image', source: { type: 'base64', media_type: file.mime as 'image/jpeg' | 'image/png' | 'image/webp', data: b64 } }
     }
 
     const { out, model } = await callAi(cfg, fileBlock, context)
