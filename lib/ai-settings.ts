@@ -188,3 +188,31 @@ export function publicAiSettings(db: StoredAiSettings | null | undefined, env: E
     },
   }
 }
+
+export interface ModelOption { id: string; name: string }
+
+/** Rapikan daftar model dari endpoint (format Anthropic atau OpenAI/9router): unik, terurut. */
+export function normalizeModelList(items: { id?: unknown; display_name?: unknown }[]): ModelOption[] {
+  const seen = new Map<string, ModelOption>()
+  for (const it of items || []) {
+    const id = typeof it?.id === 'string' ? it.id.trim() : ''
+    if (!id || seen.has(id)) continue
+    const dn = typeof it.display_name === 'string' ? it.display_name.trim() : ''
+    seen.set(id, { id, name: dn && dn !== id ? `${dn} (${id})` : id })
+  }
+  return [...seen.values()].sort((a, b) => a.id.localeCompare(b.id))
+}
+
+/**
+ * Konfigurasi untuk mengambil daftar model dari isian form yang BELUM disimpan:
+ * Base URL dari form (kosong = .env), API key dari form (kosong = key tersimpan / .env).
+ */
+export function configForModelFetch(stored: StoredAiSettings | null | undefined, env: EnvAiSettings,
+  form: { baseURL?: string; apiKey?: string }): AiConfig {
+  const s = stored || {}
+  return mergeAiConfig({
+    ...s,
+    baseURL: typeof form.baseURL === 'string' ? form.baseURL : s.baseURL,
+    apiKey: form.apiKey?.trim() ? form.apiKey : s.apiKey,
+  }, env)
+}

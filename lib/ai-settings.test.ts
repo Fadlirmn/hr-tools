@@ -121,3 +121,19 @@ describe('publicAiSettings', () => {
     expect(out.sources.apiKey).toBe('db')
   })
 })
+
+import { describe as dm, it as im, expect as em } from 'vitest'
+import { normalizeModelList, configForModelFetch, readEnvAiSettings as rea } from './ai-settings'
+
+dm('daftar model', () => {
+  im('unik, terurut, nama tampilan dipakai bila ada', () => {
+    em(normalizeModelList([{ id: 'cc/b' }, { id: 'claude-opus-5-5', display_name: 'Claude Opus 5.5' }, { id: 'cc/b' }, { id: '' }, {}]))
+      .toEqual([{ id: 'cc/b', name: 'cc/b' }, { id: 'claude-opus-5-5', name: 'Claude Opus 5.5 (claude-opus-5-5)' }])
+  })
+  im('ambil model memakai isian form, key kosong = key tersimpan', () => {
+    const env = rea({ CV_AI_BASE_URL: 'http://env:1' })
+    const c = configForModelFetch({ baseURL: '', apiKey: 'sk-db' }, env, { baseURL: 'http://form:2/v1/', apiKey: '' })
+    em(c.baseURL).toBe('http://form:2'); em(c.apiKey).toBe('sk-db'); em(c.custom).toBe(true)
+    em(configForModelFetch(null, env, { baseURL: '' }).baseURL).toBe('http://env:1')
+  })
+})
