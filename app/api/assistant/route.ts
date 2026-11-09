@@ -11,7 +11,7 @@ export async function POST(req: Request) {
   const user = await getSessionUser()
   if (!user || (user.role !== 'hr' && user.role !== 'dev')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-  const body = await req.json().catch(() => null) as { messages?: ChatTurn[]; context?: { path?: string; candidateId?: string } } | null
+  const body = await req.json().catch(() => null) as { messages?: ChatTurn[]; context?: { path?: string; candidateId?: string; uploaded?: unknown } } | null
   const turns = (body?.messages || [])
     .filter(m => (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string' && m.content.trim())
     .slice(-8).map(m => ({ role: m.role, content: m.content.slice(0, 2000) }))
@@ -20,7 +20,10 @@ export async function POST(req: Request) {
   while (turns.length && turns[0].role !== 'user') turns.shift()
 
   try {
-    return NextResponse.json(await chat(turns, body?.context || {}))
+    const ctx = body?.context || {}
+    // id kandidat yang CV-nya baru diunggah di chat (maks. 10)
+    const uploaded = Array.isArray(ctx.uploaded) ? ctx.uploaded.filter((x): x is string => typeof x === 'string').slice(0, 10) : []
+    return NextResponse.json(await chat(turns, { path: ctx.path, candidateId: ctx.candidateId, uploaded }))
   } catch (err) {
     // AI gagal (router mati, key salah, rate limit) → beri peringatan saja, tanpa aksi
     const reason = err instanceof Anthropic.RateLimitError ? 'AI sedang sibuk, coba lagi sebentar lagi.'

@@ -650,3 +650,35 @@ button.cand-card:focus-visible{outline:2px solid var(--violet);outline-offset:2p
 @media (max-width:760px){.as-panel.big{width:100%;height:100vh;border-radius:0}}
 /* Daftar Kandidat: baris yang disorot dari asisten */
 .cand-table tr.row-hl td{background:var(--accent-soft)!important;transition:background .3s}
+
+/* Menu Upload CV: filter tampilan, rangkuman & saran AI */
+.upcv-filter{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.upcv-filter label{font-size:13px;font-weight:700;color:var(--ink-soft)}
+.upcv-filter select{width:auto;min-width:220px}
+.upcv-stats{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+@media(max-width:1100px){.upcv-stats{grid-template-columns:repeat(3,1fr)}}
+.upcv-stats > div{padding:10px 12px;border:1px solid var(--line-soft);border-radius:10px;background:var(--hover)}
+.upcv-stats b{display:block;font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
+.upcv-stats span{font-size:12px;color:var(--muted);font-weight:600}
+.upcv-stats .ok b{color:var(--ok)} .upcv-stats .hold b{color:var(--hold)} .upcv-stats .no b{color:var(--no)}
+.upcv-suggest{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
+@media(max-width:860px){.upcv-stats{grid-template-columns:repeat(2,1fr)}.upcv-suggest{grid-template-columns:1fr}}
+
+/* Daftar Kandidat: seluruh baris bisa diklik untuk buka detail */
+.cand-table tr.row-link{cursor:pointer}
+.cand-table tr.row-link:hover td{background:var(--hover)}
+
+/* Asisten: lampiran CV & kartu hasil analisis */
+.as-panel.drop{outline:2px dashed var(--violet);outline-offset:-6px}
+.as-attach{padding:8px 12px 0;background:var(--card);border-top:1px solid var(--line);display:flex;flex-direction:column;gap:6px}
+.as-attach .files{display:flex;flex-wrap:wrap;gap:6px}
+.as-attach .file{display:inline-flex;align-items:center;gap:5px;max-width:100%;padding:3px 4px 3px 8px;border:1px solid var(--line);border-radius:8px;font-size:12px;background:var(--bg)}
+.as-attach .file .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px}
+.as-attach .file button{border:0;background:transparent;color:var(--muted);cursor:pointer;padding:2px;display:inline-flex}
+.as-attach .opts{display:flex;gap:6px;flex-wrap:wrap}
+.as-attach select{width:auto;flex:1 1 140px;font-size:12px;padding:5px 8px}
+.as-cv{align-self:stretch;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:12.5px;display:flex;flex-direction:column;gap:5px}
+.as-cv .top{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.as-cv .top b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60%}
+.as-cv p{margin:0;font-size:13px}
+.as-cv .acts{display:flex;gap:6px;margin-top:4px}

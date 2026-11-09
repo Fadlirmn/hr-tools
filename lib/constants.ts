@@ -1,5 +1,8 @@
 import type { PositionDefault, CvCriterion, DiscQuestion, DiscQuestionMapping, DiscConversionTable, DiscBehavioralGraphMap, DiscProfileDescriptionMap, IqQuestion, IqCategory, IntCompetency, OnboardingGroup } from './types'
 
+/** Sumber lamaran kandidat */
+export const SUMBER_OPTIONS = ['LinkedIn', 'Instagram/TikTok', 'Glints', 'KitaLulus', 'JobStreet', 'Referensi', 'Walk-in', 'Lainnya']
+
 export const STAGES: Record<string, string> = {
   screening: 'Screening CV',
   psikotes: 'Tes DISC & IQ',

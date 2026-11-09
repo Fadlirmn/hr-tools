@@ -19,6 +19,27 @@ export async function GET(req: NextRequest) {
   }
   if (user.role !== 'hr' && user.role !== 'dev') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
+  // ?list=1 — semua kandidat + ringkasan hasil AI (untuk menu Upload CV, dikelompokkan per posisi di client)
+  if (req.nextUrl.searchParams.get('list') === '1') {
+    const r = await query<Record<string, unknown>>(
+      `SELECT c.id, c.nama, c.posisi, c.stage, c.tanggal, (c.cv IS NOT NULL) AS hr_done,
+         (f.candidate_id IS NOT NULL) AS has_cv_file, f.filename, f.ai_status, f.ai_error,
+         CASE WHEN f.ai_status = 'done' THEN jsonb_build_object(
+           'percent', (f.ai_result->>'percent')::int,
+           'verdict', COALESCE(f.ai_result->>'verdict', ''),
+           'filled', COALESCE((f.ai_result->>'filled')::int, 0),
+           'ringkasan', COALESCE(f.ai_result->'extracted'->>'ringkasan', ''),
+           'pengalaman_tahun', f.ai_result->'extracted'->'pengalaman_tahun',
+           'pendidikan_terakhir', COALESCE(f.ai_result->'extracted'->>'pendidikan_terakhir', ''),
+           'skills', COALESCE(f.ai_result->'extracted'->'skills', '[]'::jsonb),
+           'strengths', COALESCE(f.ai_result->'strengths', '[]'::jsonb),
+           'concerns', COALESCE(f.ai_result->'concerns', '[]'::jsonb)
+         ) END AS ai
+       FROM candidates c LEFT JOIN candidate_cv_files f ON f.candidate_id = c.id
+       ORDER BY c.tanggal DESC, c.id`)
+    return NextResponse.json({ items: r.rows, aiEnabled: await isAiEnabled() })
+  }
+
   const id = req.nextUrl.searchParams.get('candidateId')
   if (!id) return NextResponse.json({ error: 'candidateId wajib ada' }, { status: 400 })
   const r = await query(

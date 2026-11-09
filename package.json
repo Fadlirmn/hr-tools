@@ -29,5 +29,8 @@
     "eslint-config-next": "16.2.10",
     "typescript": "^5",
     "vitest": "^3.2.4"
+  },
+  "engines": {
+    "node": ">=24"
   }
 }

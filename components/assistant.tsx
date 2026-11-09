@@ -2,7 +2,11 @@
 
 import { useEffect, useRef, useState, Fragment, type ReactNode } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { IconSparkle, IconX, IconSend, IconStop, IconAlert, IconMaximize, IconMinimize, IconFileCheck, IconUsers } from './icons'
+import { IconSparkle, IconX, IconSend, IconStop, IconAlert, IconMaximize, IconMinimize, IconFileCheck, IconUsers, IconPaperclip } from './icons'
+import { AttachBar, ChatCvCard, saveCvs, type CvTarget, type SavedCv } from './assistant-cv'
+import { getPositions } from '@/lib/db'
+import { CV_ACCEPT } from '@/lib/cv-file'
+import type { Position } from '@/lib/types'
 
 type Report = {
   title: string; generated_at: string; posisi: string | null; total: number; cv_masuk: number; dianalisis_ai: number
@@ -12,13 +16,14 @@ type Report = {
 }
 type Action = { type: 'navigate'; href: string } | { type: 'open_cv'; id: string; applyAi: boolean } | { type: 'open_bulk' } | { type: 'report'; data: Report }
 type Mention = { id: string; nama: string; posisi: string }
-type Msg = { role: 'user' | 'assistant'; content: string; report?: Report; sys?: boolean; warn?: boolean; mentions?: Mention[] }
+// local: hanya tampilan (upload CV di chat), tidak dikirim sebagai riwayat ke AI
+type Msg = { role: 'user' | 'assistant'; content: string; report?: Report; sys?: boolean; warn?: boolean; local?: boolean; mentions?: Mention[]; cvs?: SavedCv[] }
 
 const CHIPS: [string, string][] = [
   ['Perlu dinilai', 'Siapa saja yang perlu saya nilai sekarang?'],
   ['Laporan screening', 'Buatkan laporan hasil screening hari ini'],
   ['Bandingkan Marketing', 'Bandingkan kandidat Marketing'],
-  ['Upload massal', 'Buka upload CV massal'],
+  ['Upload CV', 'Buka menu upload CV'],
   ['Posisi & bobot', 'Buka pengaturan posisi dan bobot'],
 ]
 
@@ -112,12 +117,28 @@ export default function Assistant() {
   const logRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const fabRef = useRef<HTMLButtonElement>(null)
+  const msgsRef = useRef(msgs)
+  useEffect(() => { msgsRef.current = msgs }, [msgs])
+
+  // Lampiran CV: disimpan dulu sebagai file kandidat, baru dibaca AI
+  const [files, setFiles] = useState<File[]>([])
+  const [positions, setPositions] = useState<Position[]>([])
+  const [target, setTarget] = useState<CvTarget>('new')
+  const [pickPos, setPickPos] = useState('')
+  const [over, setOver] = useState(false)
+  const fileRef = useRef<HTMLInputElement>(null)
+  const currentId = searchParams.get('candidateId') || /^\/hr\/candidates\/([^/]+)$/.exec(pathname)?.[1] || ''
+  const urlPos = searchParams.get('posisi') || ''
+  const posisi = positions.some(p => p.id === pickPos) ? pickPos
+    : positions.some(p => p.id === urlPos) ? urlPos : positions[0]?.id || ''
+  const cvTarget: CvTarget = target === 'current' && currentId ? 'current' : 'new'
 
   useEffect(() => { logRef.current?.scrollTo({ top: logRef.current.scrollHeight }) }, [msgs, open])
   useEffect(() => { if (open) inputRef.current?.focus() }, [open])
 
   const openPanel = async () => {
     setOpen(true)
+    if (!positions.length) void getPositions().then(setPositions).catch(() => {})
     if (aiOn !== null) return
     const d = await fetch('/api/assistant', { credentials: 'include' }).then(r => r.json()).catch(() => null)
     setAiOn(!!d?.aiEnabled)
@@ -136,17 +157,61 @@ export default function Assistant() {
   const run = (a: Action) => {
     if (a.type === 'navigate') router.push(a.href)
     else if (a.type === 'open_cv') openCv(a.id, a.applyAi)
-    else if (a.type === 'open_bulk') {
-      if (pathname === '/hr/candidates') window.dispatchEvent(new CustomEvent('open-bulk-upload'))
-      else { try { sessionStorage.setItem('open-bulk-upload', '1') } catch { /* abaikan */ } router.push('/hr/candidates') }
+    else if (a.type === 'open_bulk') router.push('/hr/upload-cv')
+  }
+
+  const addFiles = (list: FileList | File[] | null) => {
+    const fresh = Array.from(list || [])
+    if (fresh.length) setFiles(prev => [...prev, ...fresh].slice(0, 20))
+  }
+
+  const waitAnalyzed = async (ids: string[]) => {
+    for (let i = 0; i < 40; i++) {
+      const st = await Promise.all(ids.map(id =>
+        fetch(`/api/cv-screen?candidateId=${encodeURIComponent(id)}`, { credentials: 'include' })
+          .then(r => r.ok ? r.json() : null).then(d => d?.file?.ai_status as string | undefined).catch(() => undefined)))
+      if (!st.includes('processing')) return
+      await new Promise(r => setTimeout(r, 3000))
     }
   }
 
-  const ask = async (q: string) => {
+  /** Simpan CV terlampir, tampilkan kartu analisis, lalu (bila ada teks) teruskan pertanyaan ke AI. */
+  const sendFiles = async (q: string) => {
+    const fs = files
+    setFiles([])
+    setInput('')
+    setBusy(true)
+    setMsgs(m => [...m, { role: 'user', content: `📎 ${fs.map(f => f.name).join(', ')}${q ? `\n${q}` : ''}`, local: true }])
+    let uploaded: string[] = []
+    try {
+      if (cvTarget === 'new' && !posisi) {
+        setMsgs(m => [...m, { role: 'assistant', content: 'Belum ada posisi. Tambahkan dulu di Posisi & Bobot.', sys: true }])
+        return
+      }
+      const { saved, failed } = await saveCvs(fs, cvTarget, posisi, currentId)
+      uploaded = saved.map(x => x.id)
+      const posName = positions.find(p => p.id === posisi)?.name || ''
+      const lines = [
+        saved.length ? (cvTarget === 'current'
+          ? `CV **${saved[0].filename}** disimpan ke kandidat ini, lalu dibaca AI.`
+          : `**${saved.length} CV** disimpan sebagai kandidat baru (${posName}), lalu dibaca AI.`) : '',
+        ...failed.map(f => `- Gagal: ${f.filename} — ${f.error}`),
+      ].filter(Boolean)
+      setMsgs(m => [...m, { role: 'assistant', content: lines.join('\n'), cvs: saved, local: true }])
+      // Ada pertanyaan: tunggu AI selesai membaca CV yang tersimpan (maks. ~2 menit), baru dijawab
+      if (q && uploaded.length && aiOn !== false) await waitAnalyzed(uploaded)
+    } finally {
+      setBusy(false)
+    }
+    if (q && aiOn !== false) await ask(q, { uploaded, showUser: false })
+  }
+
+  const ask = async (q: string, opts: { uploaded?: string[]; showUser?: boolean } = {}) => {
     q = q.trim()
     if (!q || busy) return
-    const history = [...msgs, { role: 'user' as const, content: q }]
-    setMsgs(history)
+    const userMsg: Msg = { role: 'user', content: q }
+    const history: Msg[] = [...msgsRef.current, userMsg]
+    if (opts.showUser !== false) setMsgs(m => [...m, userMsg])
     setInput('')
     setBusy(true)
     ctl.current = new AbortController()
@@ -154,8 +219,8 @@ export default function Assistant() {
       const res = await fetch('/api/assistant', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', signal: ctl.current.signal,
         body: JSON.stringify({
-          messages: history.filter(m => !m.sys).map(m => ({ role: m.role, content: m.content })).slice(1),
-          context: { path: pathname, candidateId: searchParams.get('candidateId') || undefined },
+          messages: history.filter(m => !m.sys && !m.local).map(m => ({ role: m.role, content: m.content })).slice(1),
+          context: { path: pathname, candidateId: currentId || undefined, uploaded: opts.uploaded },
         }),
       })
       const d = await res.json().catch(() => ({}))
@@ -192,7 +257,10 @@ export default function Assistant() {
         </button>
       )}
       {open && (
-        <section className={`as-panel no-print${big ? ' big' : ''}`} aria-label="Asisten Screening" onKeyDown={e => { if (e.key === 'Escape') close() }}>
+        <section className={`as-panel no-print${big ? ' big' : ''}${over ? ' drop' : ''}`} aria-label="Asisten Screening" onKeyDown={e => { if (e.key === 'Escape') close() }}
+          onDragOver={e => { if (e.dataTransfer.types.includes('Files')) { e.preventDefault(); setOver(true) } }}
+          onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOver(false) }}
+          onDrop={e => { e.preventDefault(); setOver(false); if (!busy) addFiles(e.dataTransfer.files) }}>
           <div className="as-head">
             <div className="dot"><IconSparkle size={16} /></div>
             <div><b>Asisten Screening</b><small>Navigasi, bantu nilai CV, dan laporan</small></div>
@@ -211,6 +279,7 @@ export default function Assistant() {
                 <div className={`as-msg ${m.warn ? 'warn' : m.sys ? 'sys' : m.role === 'user' ? 'me' : 'bot'}`}>{m.warn && <IconAlert size={15} />}{m.role === 'user' ? m.content : <Md text={m.content} mentions={m.mentions} onOpen={id => openCv(id, false)} />}</div>
                 {m.report && <ReportCard r={m.report} onOpen={id => openCv(id, false)} onList={openList} />}
                 {!!m.mentions?.length && <MentionLinks mentions={m.mentions} onReview={id => openCv(id, false)} onList={openList} />}
+                {m.cvs?.map(cv => <ChatCvCard key={cv.id} cv={cv} onReview={id => openCv(id, false)} onDetail={id => router.push(`/hr/candidates/${id}`)} />)}
               </Fragment>
             ))}
             {busy && <div className="as-msg bot"><span className="hint">Sedang berpikir…</span></div>}
@@ -218,12 +287,19 @@ export default function Assistant() {
           <div className="as-chips">
             {CHIPS.map(([l, q]) => <button key={l} type="button" disabled={busy || aiOn === false} onClick={() => ask(q)}>{l}</button>)}
           </div>
-          <form className="as-form" onSubmit={e => { e.preventDefault(); void ask(input) }}>
-            <input ref={inputRef} type="text" value={input} onChange={e => setInput(e.target.value)} autoComplete="off" disabled={busy || aiOn === false}
-              placeholder="Mis. buka CV Budi dan pakai skor AI" aria-label="Pesan untuk asisten" />
+          <AttachBar files={files} onRemove={i => setFiles(f => f.filter((_, j) => j !== i))}
+            target={cvTarget} onTarget={setTarget} posisi={posisi} onPosisi={setPickPos} positions={positions}
+            currentName={currentId ? 'kandidat yang sedang dibuka' : null} disabled={busy} />
+          <form className="as-form" onSubmit={e => { e.preventDefault(); if (files.length) void sendFiles(input.trim()); else void ask(input) }}>
+            <button type="button" className="btn sm icon-btn" onClick={() => fileRef.current?.click()} disabled={busy}
+              aria-label="Lampirkan CV" title="Lampirkan CV (PDF/JPG/PNG/WEBP)"><IconPaperclip size={15} /></button>
+            <input ref={fileRef} type="file" multiple accept={CV_ACCEPT} hidden tabIndex={-1}
+              onChange={e => { addFiles(e.target.files); e.target.value = '' }} />
+            <input ref={inputRef} type="text" value={input} onChange={e => setInput(e.target.value)} autoComplete="off" disabled={busy || (aiOn === false && !files.length)}
+              placeholder={files.length ? 'Opsional: mis. analisis CV ini' : 'Mis. buka CV Budi dan pakai skor AI'} aria-label="Pesan untuk asisten" />
             {busy
               ? <button type="button" className="btn sm" onClick={() => ctl.current?.abort()}><IconStop size={14} />Stop</button>
-              : <button type="submit" className="btn primary sm" aria-label="Kirim" disabled={aiOn === false}><IconSend size={14} /></button>}
+              : <button type="submit" className="btn primary sm" aria-label="Kirim" disabled={aiOn === false && !files.length}><IconSend size={14} /></button>}
           </form>
           <div className="as-mode">{aiOn === false ? 'Asisten nonaktif sampai AI dikonfigurasi.' : mode || 'Asisten hanya membantu navigasi dan ringkasan. Penilaian tetap disimpan oleh HR.'}</div>
         </section>

@@ -50,7 +50,7 @@ export const NAV: Group[] = [
 export const PAGE_TITLES: Record<string, [string, string]> = {
   dashboard: ['Dashboard', 'Yang perlu dikerjakan & ringkasan rekrutmen'],
   candidates: ['Daftar Kandidat', 'Kelola semua pelamar'],
-  'upload-cv': ['Upload CV', 'Unggah CV kandidat yang sudah terdaftar'],
+  'upload-cv': ['Upload CV', 'Per posisi · upload massal, rangkuman & saran kandidat dari AI'],
   cv: ['Penilaian CV / Resume', 'Skor kelayakan berkas pelamar'],
   'tes-disc': ['Tes DISC', 'Tes di PC HRD · profil kepribadian Most/Least'],
   'tes-iq': ['Tes IQ', 'Tes di PC HRD · logika, numerik, verbal & spasial'],

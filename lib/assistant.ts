@@ -32,6 +32,7 @@ export interface Report {
 export const VIEWS: Record<string, [string, string]> = {
   dashboard: ['/hr/dashboard', 'Dashboard'],
   kandidat: ['/hr/candidates', 'Daftar Kandidat'],
+  'upload-cv': ['/hr/upload-cv', 'Upload CV'],
   penilaian: ['/hr/cv', 'Penilaian CV'],
   'tes-disc': ['/hr/tes-disc', 'Tes DISC'],
   'tes-iq': ['/hr/tes-iq', 'Tes IQ'],
@@ -94,11 +95,33 @@ export const AI_OFF_WARNING = 'Asisten AI belum aktif, jadi perintah tidak dijal
 const TOOLS: Anthropic.Tool[] = [
   { name: 'go_to_screen', description: 'Pindah ke layar aplikasi HR.', input_schema: { type: 'object', properties: { view: { type: 'string', enum: Object.keys(VIEWS) } }, required: ['view'] } },
   { name: 'open_candidate_cv', description: 'Buka layar Penilaian CV untuk satu kandidat (preview CV + draft AI). Jika apply_ai_scores=true, form diisi skor draft AI (tidak disimpan; HR tetap klik Simpan). Hanya bila status_ai kandidat "selesai".', input_schema: { type: 'object', properties: { id: { type: 'string', description: 'id kandidat dari data' }, apply_ai_scores: { type: 'boolean' } }, required: ['id'] } },
-  { name: 'open_bulk_upload', description: 'Buka jendela Upload CV massal di Daftar Kandidat.', input_schema: { type: 'object', properties: {} } },
+  { name: 'open_bulk_upload', description: 'Buka menu Upload CV (upload massal per posisi, rangkuman & saran AI).', input_schema: { type: 'object', properties: {} } },
   { name: 'show_report', description: 'Tampilkan kartu laporan screening di chat (jumlah per verdict, sumber, tahap, alasan tidak lanjut, peringkat skor) dan kembalikan angkanya. posisi opsional untuk memfilter.', input_schema: { type: 'object', properties: { posisi: { type: 'string' }, title: { type: 'string' } } } },
 ]
 
-function systemPrompt(all: Snap[], ctx: { path?: string; candidateId?: string }) {
+export interface ChatContext { path?: string; candidateId?: string; uploaded?: string[] }
+
+/** Detail hasil baca AI untuk CV yang baru diunggah HR di chat (dibaca dari file tersimpan). */
+async function uploadedDetails(ids: string[]) {
+  if (!ids.length) return []
+  const r = await query(
+    `SELECT c.id, c.nama, p.name AS posisi, f.filename, f.ai_status, f.ai_error, f.ai_result
+     FROM candidates c JOIN candidate_cv_files f ON f.candidate_id = c.id LEFT JOIN positions p ON p.id = c.posisi
+     WHERE c.id = ANY($1::text[])`, [ids])
+  return r.rows.map(x => {
+    const a = x.ai_status === 'done' ? x.ai_result : null
+    return {
+      id: x.id, nama: x.nama, posisi: x.posisi || '—', file: x.filename,
+      status_ai: x.ai_status === 'done' ? 'selesai' : x.ai_status === 'processing' ? 'masih dibaca AI' : x.ai_status === 'error' ? `gagal: ${x.ai_error || ''}` : 'belum dianalisis',
+      skor_ai: a?.percent ?? null, verdict_ai: a?.verdict ?? null,
+      ringkasan: a?.extracted?.ringkasan || '', pengalaman_tahun: a?.extracted?.pengalaman_tahun ?? null,
+      pendidikan: a?.extracted?.pendidikan_terakhir || '', skills: (a?.extracted?.skills || []).slice(0, 10),
+      kekuatan: a?.strengths || [], perlu_digali: a?.concerns || [], saran_pertanyaan: a?.interview_questions || [],
+    }
+  })
+}
+
+function systemPrompt(all: Snap[], ctx: ChatContext, uploaded: Awaited<ReturnType<typeof uploadedDetails>> = []) {
   return `Kamu "Asisten Screening" di Kurma HR Recruitment Toolkit. Bantu HR: navigasi aplikasi, membaca hasil screening CV, dan membuat laporan.
 Aturan:
 - Jawab dalam Bahasa Indonesia yang santai tapi jelas dan singkat (maks. ~120 kata). Boleh bullet "- " dan **tebal**.
@@ -110,7 +133,11 @@ Aturan:
 Halaman aktif: ${ctx.path || '-'}${ctx.candidateId ? `, kandidat terbuka: ${ctx.candidateId}` : ''}. Tanggal hari ini: ${new Date().toISOString().slice(0, 10)}.
 <data_kandidat>
 ${JSON.stringify(all)}
-</data_kandidat>`
+</data_kandidat>${uploaded.length ? `
+CV yang baru diunggah HR lewat chat ini sudah disimpan sebagai file kandidat dan dianalisis dari file tersebut. Pakai detail ini untuk menjawab; bila status masih "dibaca AI", katakan hasilnya akan muncul di kartu CV di chat.
+<cv_baru>
+${JSON.stringify(uploaded)}
+</cv_baru>` : ''}`
 }
 
 export interface Mention { id: string; nama: string; posisi: string }
@@ -141,14 +168,14 @@ export function findMentions(text: string, all: Pick<Snap, 'id' | 'nama' | 'posi
 
 export interface ChatTurn { role: 'user' | 'assistant'; content: string }
 
-export async function chat(turns: ChatTurn[], ctx: { path?: string; candidateId?: string }) {
+export async function chat(turns: ChatTurn[], ctx: ChatContext) {
   const cfg = await loadAiConfig()
   if (!configReady(cfg)) return { text: AI_OFF_WARNING, actions: [] as AssistantAction[], mode: 'off' as const }
   const all = await snapshot()
   const model = cfg.model || DEFAULT_MODEL
   const actions: AssistantAction[] = []
   const messages: Anthropic.MessageParam[] = turns.map(t => ({ role: t.role, content: t.content }))
-  const system = systemPrompt(all, ctx)
+  const system = systemPrompt(all, ctx, await uploadedDetails(ctx.uploaded || []))
 
   const openedIds = () => actions.flatMap(a => a.type === 'open_cv' ? [a.id] : [])
 
@@ -165,7 +192,7 @@ export async function chat(turns: ChatTurn[], ctx: { path?: string; candidateId?
       actions.push({ type: 'open_cv', id: c.id, applyAi: apply })
       return `CV ${c.nama} dibuka.${apply ? ` Form diisi skor draft AI ${c.skor_ai}% (${c.verdict_ai}); belum disimpan.` : input.apply_ai_scores ? ' Draft AI belum tersedia, form tidak diisi.' : ''}`
     }
-    if (name === 'open_bulk_upload') { actions.push({ type: 'open_bulk' }); return 'Jendela Upload CV massal dibuka.' }
+    if (name === 'open_bulk_upload') { actions.push({ type: 'open_bulk' }); return 'Menu Upload CV dibuka.' }
     if (name === 'show_report') {
       const r = buildReport(all, input.posisi ? String(input.posisi) : null, input.title ? String(input.title) : undefined)
       actions.push({ type: 'report', data: r })
