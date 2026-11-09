@@ -14,8 +14,13 @@ export async function verifyCvParses(buf: Buffer, mime: CvMime): Promise<string 
     if (pages < 1) return 'PDF tidak berisi halaman.'
     if (pages > MAX_PDF_PAGES) return `PDF terlalu panjang (${pages} halaman, maks. ${MAX_PDF_PAGES}).`
     return null
-  } catch {
-    return 'PDF rusak atau terkunci password. Simpan ulang sebagai PDF biasa.'
+  } catch (err) {
+    const name = (err as { name?: string })?.name
+    if (name === 'PasswordException') return 'PDF terkunci password. Buka kuncinya atau simpan ulang sebagai PDF biasa.'
+    if (name === 'InvalidPDFException') return 'PDF rusak atau tidak lengkap. Simpan ulang sebagai PDF biasa.'
+    // Masalah parser di server (bukan salah file): jangan tolak, header & isi berbahaya sudah dicek
+    console.error('[cv] verifikasi PDF dilewati:', err)
+    return null
   }
 }
 
