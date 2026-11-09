@@ -117,7 +117,7 @@ export function ChatCvCard({ cv, onReview, onDetail }: { cv: SavedCv; onReview: 
       {!file ? <div className="hint">Memuat…</div>
         : file.ai_status === 'processing' ? <div className="hint" style={{ display: 'flex', gap: 6, alignItems: 'center' }}><span className="spinner" aria-hidden="true" />CV tersimpan, AI sedang membaca…</div>
         : file.ai_status === 'error' ? <div className="hint" style={{ color: 'var(--no)' }}>CV tersimpan, tapi analisis gagal: {file.ai_error}</div>
-        : !ai ? <div className="hint">CV tersimpan. {aiEnabled ? 'Analisis AI belum dijalankan.' : 'Analisis AI belum aktif (Admin → Pengaturan AI).'}</div>
+        : !ai ? <div className="hint">CV tersimpan. {aiEnabled ? 'Analisis AI belum dijalankan.' : 'Analisis AI belum aktif (Pengaturan → Pengaturan AI).'}</div>
         : (
           <>
             {ai.extracted.ringkasan && <p>{ai.extracted.ringkasan}</p>}

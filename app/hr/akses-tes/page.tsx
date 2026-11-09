@@ -3,24 +3,15 @@
 import { useEffect, useState } from 'react'
 import { fetchCandidates } from '@/lib/db-hr'
 import { getPositions } from '@/lib/db'
-import type { Candidate, Position } from '@/lib/types'
+import type { Candidate } from '@/lib/types'
 import { STAGES } from '@/lib/constants'
-
-type AccessStatus = 'belum' | 'aktif' | 'kadaluarsa' | 'selesai'
-type TestType = 'disc' | 'iq'
+import { ACCESS_LABEL, accessFields, testStatus, type AccessStatus, type TestType } from '@/lib/test-access'
 
 interface CandidateRow {
   c: Candidate
   posName: string
   discStatus: AccessStatus
   iqStatus: AccessStatus
-}
-
-function computeStatus(hasResult: boolean, openAt: string | null, closeAt: string | null): AccessStatus {
-  const now = new Date()
-  if (hasResult) return 'selesai'
-  if (!openAt || !closeAt) return 'belum'
-  return new Date(closeAt) < now ? 'kadaluarsa' : 'aktif'
 }
 
 export default function HrPsikotesAksesPage() {
@@ -48,8 +39,8 @@ export default function HrPsikotesAksesPage() {
       return {
         c,
         posName,
-        discStatus: computeStatus(!!c.psikotes_result?.disc, c.disc_open_at, c.disc_close_at),
-        iqStatus: computeStatus(!!c.psikotes_result?.iq, c.iq_open_at, c.iq_close_at),
+        discStatus: testStatus(c, 'disc'),
+        iqStatus: testStatus(c, 'iq'),
       }
     })
 
@@ -57,14 +48,20 @@ export default function HrPsikotesAksesPage() {
     setLoading(false)
   }
 
+  // Dibuka dari Detail Kandidat (?highlight=<id>): sorot & gulir ke baris kandidat
+  const [hl, setHl] = useState('')
   useEffect(() => {
-    ;(async () => { await load() })()
+    ;(async () => {
+      await load()
+      const h = new URLSearchParams(window.location.search).get('highlight')
+      if (!h) return
+      setHl(h)
+      setTimeout(() => document.getElementById(`akses-row-${h}`)?.scrollIntoView({ block: 'center', behavior: 'smooth' }), 50)
+      setTimeout(() => setHl(cur => (cur === h ? '' : cur)), 4000)
+    })()
   }, [])
 
-  const fieldsFor = (type: TestType, openAt: string | null, closeAt: string | null, timeLimit: number | null) =>
-    type === 'disc'
-      ? { disc_open_at: openAt, disc_close_at: closeAt, disc_time_limit: timeLimit, disc_started_at: null }
-      : { iq_open_at: openAt, iq_close_at: closeAt, iq_time_limit: timeLimit, iq_started_at: null }
+  const fieldsFor = accessFields
 
   const openAccessDialog = (candidate: Candidate, type: TestType) => {
     setAccessTimeLimit('30')
@@ -154,13 +151,24 @@ export default function HrPsikotesAksesPage() {
     await load()
   }
 
-  const closeAccess = async (candidate: Candidate, type: TestType) => {
-    await fetch('/api/candidates', {
+  /** Hapus hasil tes jenis ini + akses-nya, agar kandidat bisa mengerjakan ulang. */
+  const resetTest = async (candidate: Candidate, type: TestType) => {
+    const label = type === 'disc' ? 'Tes DISC' : 'Tes IQ'
+    if (!confirm(`Reset ${label} ${candidate.nama}?\nHasil ${label} akan dihapus dan akses kembali ke "Belum Dibuka".`)) return
+    const res = await fetch('/api/candidates', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify({ id: candidate.id, ...fieldsFor(type, null, null, null) }),
+      body: JSON.stringify({
+        id: candidate.id,
+        psikotes_result: {
+          disc: type === 'disc' ? null : candidate.psikotes_result?.disc ?? null,
+          iq: type === 'iq' ? null : candidate.psikotes_result?.iq ?? null,
+        },
+        ...fieldsFor(type, null, null, null),
+      }),
     })
+    if (!res.ok) { const d = await res.json().catch(() => ({})); alert('Gagal reset: ' + (d.error || res.status)); return }
     await load()
   }
 
@@ -175,12 +183,7 @@ export default function HrPsikotesAksesPage() {
     await load()
   }
 
-  const statusLabel: Record<AccessStatus, { text: string; cls: string }> = {
-    belum: { text: 'Belum Dibuka', cls: 'neutral' },
-    aktif: { text: 'Aktif', cls: 'ok' },
-    kadaluarsa: { text: 'Kadaluarsa', cls: 'no' },
-    selesai: { text: 'Selesai', cls: 'hold' },
-  }
+  const statusLabel = ACCESS_LABEL
 
   const actionCell = (candidate: Candidate, type: TestType, status: AccessStatus) => {
     switch (status) {
@@ -198,7 +201,7 @@ export default function HrPsikotesAksesPage() {
       case 'selesai':
         return (
           <div style={{ display: 'flex', gap: 6 }}>
-            <button className="btn sm" onClick={() => closeAccess(candidate, type)}>Reset</button>
+            <button className="btn sm" onClick={() => resetTest(candidate, type)}>Reset</button>
           </div>
         )
     }
@@ -256,10 +259,11 @@ export default function HrPsikotesAksesPage() {
             {rows.length === 0 ? (
               <tr><td colSpan={3} className="empty-cell">Belum ada kandidat.</td></tr>
             ) : rows.map(({ c, posName, discStatus, iqStatus }) => (
-              <tr key={c.id}>
+              <tr key={c.id} id={`akses-row-${c.id}`} className={hl === c.id ? 'row-hl' : undefined}>
                 <td className="cell-cand">
                   <b>{c.nama}</b>
                   <div className="hint">{posName} · <span className={`stagepill s-${c.stage}`}>{STAGES[c.stage] || c.stage}</span></div>
+                  {!c.user_id && <div className="hint" style={{ color: 'var(--hold)' }} title="Kandidat perlu akun untuk mengerjakan tes online. Kirim undangan dari Daftar Kandidat atau Detail.">Belum punya akun</div>}
                 </td>
                 {([['disc', discStatus], ['iq', iqStatus]] as const).map(([t, st]) => (
                   <td key={t}>

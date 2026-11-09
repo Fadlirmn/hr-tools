@@ -3,190 +3,159 @@
 import { useEffect, useState } from 'react'
 import { getPositions } from '@/lib/db'
 import { fetchCandidates } from '@/lib/db-hr'
-import type { Position, PositionWeight } from '@/lib/types'
+import type { Candidate, Position, PositionWeight } from '@/lib/types'
 import { CV_CRITERIA, POSITIONS_DEFAULT } from '@/lib/constants'
-import { v4 as uuidv4 } from 'uuid'
+import { newPosition, savePosition } from '@/lib/positions'
+import { IconInfo } from '@/components/icons'
 
-export default function HrSettingsPage() {
+// Posisi & Kualifikasi: kualifikasi dipakai AI saat membaca CV, bobot dipakai skor CV.
+export default function HrPositionsPage() {
   const [positions, setPositions] = useState<Position[]>([])
-  const [newPosName, setNewPosName] = useState('')
+  const [counts, setCounts] = useState<Record<string, number>>({})
+  const [newName, setNewName] = useState('')
+  const [newDesc, setNewDesc] = useState('')
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
 
   const load = async () => {
-    setPositions(await getPositions())
+    const [pos, cands] = await Promise.all([getPositions(), fetchCandidates() as Promise<Candidate[]>])
+    // Terbaru di atas; posisi lama (tanggal sama) urut abjad
+    setPositions([...pos].sort((a, b) => (b.created_at || '').localeCompare(a.created_at || '') || a.name.localeCompare(b.name)))
+    const m: Record<string, number> = {}
+    for (const c of cands) if (c.posisi) m[c.posisi] = (m[c.posisi] || 0) + 1
+    setCounts(m)
   }
 
   useEffect(() => {
     ;(async () => { await load() })()
   }, [])
 
-  const upsertPosition = (p: Position) =>
-    fetch('/api/positions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify(p),
-    })
-
-  const deletePosition = (id: string) =>
-    fetch('/api/positions', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ id }),
-    })
-
-  const setWeight = async (pid: string, cid: string, n: number) => {
-    const pos = positions.find(p => p.id === pid)
-    if (!pos) return
-    pos.weights[cid as keyof typeof pos.weights] = n
-    await upsertPosition(pos)
-    setPositions([...positions])
-  }
-
-  const rename = async (pid: string, name: string) => {
-    const pos = positions.find(p => p.id === pid)!
-    const newName = name.trim() || 'Posisi'
-    await upsertPosition({ ...pos, name: newName })
-    setPositions(positions.map(p => p.id === pid ? { ...p, name: newName } : p))
-  }
-
-  const setDescription = async (pid: string, description: string) => {
-    const pos = positions.find(p => p.id === pid)
-    if (!pos || (pos.description || '') === description) return
-    await upsertPosition({ ...pos, description })
-    setPositions(positions.map(p => p.id === pid ? { ...p, description } : p))
-  }
-
-  const slugifyPosition = (name: string) =>
-    name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30) || 'posisi'
-
-  const addPosManual = async () => {
-    const name = newPosName.trim()
-    if (!name) { alert('Isi nama posisi dulu'); return }
-    if (positions.some(p => p.name.toLowerCase() === name.toLowerCase())) { alert('Nama posisi sudah ada'); return }
-    let id = `${slugifyPosition(name)}-${uuidv4().slice(0, 4)}`
-    if (positions.some(p => p.id === id)) id = `${slugifyPosition(name)}-${uuidv4().slice(0, 4)}`
-    const newPos: Position = {
-      id, name,
-      weights: Object.fromEntries(CV_CRITERIA.map(c => [c.id, 2])) as unknown as PositionWeight,
+  /** Simpan posisi; tampilkan hasil singkat. */
+  const persist = async (p: Position, okText: string) => {
+    try {
+      await savePosition(p)
+      setPositions(prev => prev.map(x => x.id === p.id ? p : x))
+      setMsg({ ok: true, text: okText })
+      return true
+    } catch (e) {
+      setMsg({ ok: false, text: 'Gagal menyimpan: ' + (e as Error).message })
+      return false
     }
-    await upsertPosition(newPos)
-    setPositions([...positions, newPos])
-    setNewPosName('')
   }
 
-  const delPos = async (pid: string) => {
-    if (positions.length <= 1) { alert('Minimal harus ada 1 posisi'); return }
-    if (!confirm('Hapus posisi ini?')) return
-    await deletePosition(pid)
-    setPositions(positions.filter(p => p.id !== pid))
+  const setWeight = (p: Position, cid: string, n: number) =>
+    persist({ ...p, weights: { ...p.weights, [cid]: n } as PositionWeight }, `Bobot ${p.name} tersimpan.`)
+
+  const rename = (p: Position, name: string) => {
+    const v = name.trim()
+    if (!v || v === p.name) return
+    void persist({ ...p, name: v }, `Nama posisi diubah jadi ${v}.`)
+  }
+
+  const setDescription = (p: Position, description: string) => {
+    if ((p.description || '') === description) return
+    void persist({ ...p, description }, `Kualifikasi ${p.name} tersimpan.`)
+  }
+
+  const add = async () => {
+    const name = newName.trim()
+    if (!name) { setMsg({ ok: false, text: 'Isi nama posisi dulu.' }); return }
+    if (!newDesc.trim()) { setMsg({ ok: false, text: 'Isi kualifikasi posisi dulu, AI memakainya untuk menilai CV.' }); return }
+    if (positions.some(p => p.name.toLowerCase() === name.toLowerCase())) { setMsg({ ok: false, text: 'Nama posisi sudah ada.' }); return }
+    const p = newPosition(name, newDesc, positions)
+    try {
+      await savePosition(p)
+      setPositions(prev => [{ ...p, created_at: new Date().toISOString() }, ...prev])
+      setNewName('')
+      setNewDesc('')
+      setMsg({ ok: true, text: `Posisi ${p.name} ditambahkan.` })
+    } catch (e) {
+      setMsg({ ok: false, text: 'Gagal menambah posisi: ' + (e as Error).message })
+    }
+  }
+
+  const remove = async (p: Position) => {
+    if (positions.length <= 1) { setMsg({ ok: false, text: 'Minimal harus ada 1 posisi.' }); return }
+    const n = counts[p.id] || 0
+    if (!confirm(`Hapus posisi "${p.name}"?${n ? `\n${n} kandidat di posisi ini akan menjadi tanpa posisi.` : ''}`)) return
+    const res = await fetch('/api/positions', {
+      method: 'DELETE', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ id: p.id }),
+    })
+    if (!res.ok) { setMsg({ ok: false, text: 'Gagal menghapus posisi.' }); return }
+    setPositions(prev => prev.filter(x => x.id !== p.id))
+    setMsg({ ok: true, text: `Posisi ${p.name} dihapus.` })
   }
 
   const resetPos = async () => {
-    if (!confirm('Kembalikan 6 posisi bawaan? Posisi custom manual tidak dihapus.')) return
-    for (const oldId of ['videoeditor', 'sosmed', 'designer', 'admin']) {
-      await deletePosition(oldId)
-    }
-    const defaults = JSON.parse(JSON.stringify(POSITIONS_DEFAULT))
-    for (const p of defaults) await upsertPosition(p)
-    await load()
-  }
-
-  const exportData = async () => {
-    const candidates = await fetchCandidates()
-    const pos = await getPositions()
-    const blob = new Blob([JSON.stringify({ candidates, positions: pos }, null, 2)], { type: 'application/json' })
-    const a = document.createElement('a')
-    a.href = URL.createObjectURL(blob)
-    a.download = 'hr-data-' + new Date().toISOString().slice(0, 10) + '.json'
-    a.click()
-  }
-
-  const importData = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0]
-    if (!f) return
-    const text = await f.text()
+    if (!confirm('Kembalikan nama & bobot 6 posisi bawaan? Kualifikasi yang sudah diisi dan posisi buatan sendiri tetap ada.')) return
     try {
-      const d = JSON.parse(text)
-      if (d.candidates?.length) {
-        for (const c of d.candidates) {
-          await fetch('/api/candidates', {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify(c),
-          })
-        }
+      for (const oldId of ['videoeditor', 'sosmed', 'designer', 'admin']) {
+        await fetch('/api/positions', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ id: oldId }) })
       }
-      if (d.positions?.length) {
-        for (const p of d.positions) await upsertPosition(p)
-      }
+      for (const p of JSON.parse(JSON.stringify(POSITIONS_DEFAULT)) as Position[]) await savePosition(p)
       await load()
-      alert('Data berhasil diimpor')
-    } catch { alert('File tidak valid') }
-  }
-
-  const wipe = async () => {
-    if (!confirm('Yakin hapus SEMUA data kandidat? Tindakan ini tidak bisa dibatalkan.')) return
-    await fetch('/api/candidates', { method: 'DELETE', credentials: 'include' })
-    setPositions([...positions])
+      setMsg({ ok: true, text: 'Posisi bawaan dikembalikan.' })
+    } catch (e) {
+      setMsg({ ok: false, text: 'Gagal: ' + (e as Error).message })
+    }
   }
 
   return (
     <>
-      <div className="notice">ℹ️ Atur bobot tiap kriteria CV per posisi (skala 1–3). Bobot lebih tinggi = kriteria lebih menentukan skor akhir.</div>
+      <div className="notice" style={{ marginBottom: 14 }}>
+        <IconInfo size={16} style={{ marginTop: 1, color: 'var(--violet)' }} />
+        <div><b>Kualifikasi</b> dibaca AI saat menilai CV pelamar posisi itu. <b>Bobot</b> (1–3) menentukan seberapa besar tiap kriteria memengaruhi skor CV. Perubahan tersimpan otomatis.</div>
+      </div>
+      {msg && <div className="hint" role="status" style={{ margin: '0 0 12px', color: msg.ok ? 'var(--ok)' : 'var(--no)' }}>{msg.text}</div>}
+
+      <div className="card card-p" style={{ marginBottom: 16 }}>
+        <h4 className="blk" style={{ marginTop: 0 }}>Tambah posisi</h4>
+        <div className="field"><label className="fld" htmlFor="new-pos">Nama posisi *</label>
+          <input id="new-pos" type="text" value={newName} onChange={e => setNewName(e.target.value)} style={{ maxWidth: 340 }} /></div>
+        <div className="field"><label className="fld" htmlFor="new-desc">Kualifikasi *</label>
+          <textarea id="new-desc" value={newDesc} onChange={e => setNewDesc(e.target.value)}
+            placeholder="Pengalaman, skill, pendidikan, dan syarat lain yang dicari untuk posisi ini." /></div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button className="btn primary" onClick={add}>＋ Tambah posisi</button>
+          <button className="btn" onClick={resetPos}>Kembalikan posisi bawaan</button>
+        </div>
+      </div>
 
       {positions.map(p => (
         <div className="card card-p" style={{ marginBottom: 14 }} key={p.id}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-            <input type="text" defaultValue={p.name}
-              onBlur={e => rename(p.id, e.target.value)}
+            <input type="text" defaultValue={p.name} aria-label="Nama posisi" onBlur={e => rename(p, e.target.value)}
               style={{ maxWidth: 340, fontWeight: 700 }} />
-            <button className="btn sm danger" onClick={() => delPos(p.id)}>Hapus posisi</button>
+            <span className="hint" style={{ marginLeft: 'auto' }}>{counts[p.id] || 0} kandidat</span>
+            <button className="btn sm danger" onClick={() => remove(p)}>Hapus posisi</button>
           </div>
           <div className="field" style={{ marginTop: 12, marginBottom: 0 }}>
-            <label className="fld">Kualifikasi / deskripsi posisi <span className="hint">(dipakai screening CV otomatis)</span></label>
-            <textarea defaultValue={p.description || ''} onBlur={e => setDescription(p.id, e.target.value.trim())}
-              placeholder="cth. Min. 1 tahun pengalaman digital marketing, menguasai Meta Ads & TikTok Ads, punya portofolio kampanye, domisili Jakarta/bisa WFO." />
+            <label className="fld" htmlFor={`desc-${p.id}`}>Kualifikasi <span className="hint">(dibaca AI saat menilai CV)</span></label>
+            <textarea id={`desc-${p.id}`} defaultValue={p.description || ''} onBlur={e => setDescription(p, e.target.value.trim())}
+              placeholder="Pengalaman, skill, pendidikan, dan syarat lain yang dicari untuk posisi ini." />
+            {!p.description?.trim() && <div className="hint" style={{ marginTop: 4, color: 'var(--hold)' }}>Belum diisi: AI menilai CV dengan standar umum.</div>}
           </div>
-          <div style={{ marginTop: 14 }}>
-            {CV_CRITERIA.map(cr => {
-              const w = p.weights[cr.id as keyof PositionWeight] || 1
-              return (
-                <div className="seg" key={cr.id}>
-                  <span className="lbl">{cr.name}</span>
-                  <div className="rate" style={{ gap: 5 }}>
-                    {[1, 2, 3].map(n => (
-                      <button key={n} className={w === n ? 'on' : ''}
-                        style={{ width: 32, height: 32 }}
-                        onClick={() => setWeight(p.id, cr.id, n)}>{n}</button>
-                    ))}
+          <details style={{ marginTop: 12 }}>
+            <summary style={{ cursor: 'pointer', fontSize: 13, fontWeight: 700, color: 'var(--ink-soft)' }}>Bobot kriteria CV</summary>
+            <div style={{ marginTop: 8 }}>
+              {CV_CRITERIA.map(cr => {
+                const w = p.weights[cr.id as keyof PositionWeight] || 1
+                return (
+                  <div className="seg" key={cr.id}>
+                    <span className="lbl">{cr.name}</span>
+                    <div className="rate" style={{ gap: 5 }}>
+                      {[1, 2, 3].map(n => (
+                        <button key={n} type="button" className={w === n ? 'on' : ''} style={{ width: 32, height: 32 }}
+                          aria-label={`${cr.name} bobot ${n}`} onClick={() => setWeight(p, cr.id, n)}>{n}</button>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )
-            })}
-          </div>
+                )
+              })}
+            </div>
+          </details>
         </div>
       ))}
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
-        <input type="text" value={newPosName} onChange={e => setNewPosName(e.target.value)}
-          placeholder="cth. Marketing" style={{ maxWidth: 340 }} />
-        <button className="btn primary" onClick={addPosManual}>＋ Tambah manual</button>
-        <button className="btn" onClick={resetPos}>Reset ke bawaan</button>
-      </div>
-
-      <div className="card card-p" style={{ marginTop: 22 }}>
-        <h4 className="blk" style={{ marginTop: 0 }}>Backup & Pemulihan Data</h4>
-        <p className="hint" style={{ marginBottom: 16 }}>Data tersimpan otomatis di database. Untuk cadangan aman, ekspor ke file JSON.</p>
-        <button className="btn primary" onClick={exportData}>⤓ Ekspor data (.json)</button>
-        <label className="btn" style={{ marginLeft: 8, cursor: 'pointer' }}>
-          ⤒ Impor data
-          <input type="file" accept="application/json" style={{ display: 'none' }} onChange={importData} />
-        </label>
-        <hr style={{ border: 'none', borderTop: '1px solid var(--line)', margin: '22px 0' }} />
-        <button className="btn danger" onClick={wipe}>Hapus semua data kandidat</button>
-      </div>
     </>
   )
 }

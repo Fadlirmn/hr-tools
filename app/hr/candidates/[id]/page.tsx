@@ -13,7 +13,9 @@ import IqResult from '@/components/results/iq-result'
 import InterviewResult from '@/components/results/interview-result'
 import OnboardingResult from '@/components/results/onboarding-result'
 import type { Candidate, Position, IqQuestion, CvFileMeta } from '@/lib/types'
-import { IconPaperclip, IconEdit, IconTrash, IconExternal } from '@/components/icons'
+import { IconEdit, IconTrash, IconExternal } from '@/components/icons'
+import { inviteCandidate } from '@/lib/invite-client'
+import { ACCESS_LABEL, testStatus } from '@/lib/test-access'
 import CandidateFormModal from '@/components/candidate-form-modal'
 import HrCvDrop from '@/components/hr-cv-drop'
 
@@ -99,6 +101,18 @@ export default function HrCandidateDetailPage() {
 
   const ai = file?.ai_status === 'done' ? file.ai_result : null
 
+  const setStage = async (stage: string) => {
+    const res = await fetch('/api/candidates', {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+      body: JSON.stringify({ id: c.id, stage }),
+    })
+    if (!res.ok) { const d = await res.json().catch(() => ({})); alert('Gagal mengubah tahap: ' + (d.error || res.status)); return }
+    await loadCandidate()
+  }
+
+  const invite = async () => { if (await inviteCandidate(c)) await loadCandidate() }
+  const go = (path: string) => router.push(`${path}?candidateId=${encodeURIComponent(c.id)}`)
+
   const downloadPdf = () => {
     const prevTitle = document.title
     document.title = `Hasil Test - ${c.nama}`
@@ -121,18 +135,48 @@ export default function HrCandidateDetailPage() {
               </div>
             </div>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-              <span className={`stagepill s-${c.stage}`}>{STAGES[c.stage]}</span>
+              <span className={`stagepill s-${c.stage} print-only`}>{STAGES[c.stage]}</span>
               <span className="hint">{posName}</span>
               <span className="hint">· Sumber: {c.sumber || '—'}</span>
               <span className="hint">· Masuk: {c.tanggal || '—'}</span>
             </div>
           </div>
-          <div className="no-print" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {c.has_cv_file && <a className="btn ghost sm" href={`/api/cv-file?candidateId=${encodeURIComponent(c.id)}`} target="_blank" rel="noreferrer"><IconPaperclip size={14} />Lihat CV</a>}
-            <button className="btn ghost sm" onClick={() => router.push(`/hr/cv?candidateId=${c.id}`)}>Nilai CV</button>
-            <button className="btn ghost sm" onClick={() => router.push(`/hr/tes-disc?candidateId=${c.id}`)}>Form Tes DISC</button>
-            <button className="btn ghost sm" onClick={() => router.push(`/hr/tes-iq?candidateId=${c.id}`)}>Form Tes IQ</button>
-            <button className="btn primary sm" onClick={downloadPdf}>⬇ Download PDF</button>
+        </div>
+
+        {/* Proses: semua aksi untuk kandidat ini di satu tempat */}
+        <div className="cand-process no-print">
+          <div className="pitem">
+            <label className="l" htmlFor="det-stage">Tahap</label>
+            <select id="det-stage" value={c.stage} onChange={e => setStage(e.target.value)} className={`stage-select s-${c.stage}`}>
+              {Object.entries(STAGES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            </select>
+          </div>
+          <div className="pitem">
+            <span className="l">Akun kandidat</span>
+            {c.user_id
+              ? <span className="chip ok">Terdaftar</span>
+              : <button type="button" className="btn sm" onClick={invite} title="Salin link undangan untuk membuat akun kandidat">{c.invite_token ? 'Kirim ulang undangan' : 'Undang'}</button>}
+          </div>
+          <div className="pitem">
+            <span className="l">Tes online</span>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+              {(['disc', 'iq'] as const).map(t => {
+                const st = ACCESS_LABEL[testStatus(c, t)]
+                return <span key={t} className={`chip ${st.cls}`}>{t === 'disc' ? 'DISC' : 'IQ'}: {st.text}</span>
+              })}
+              <button type="button" className="btn sm" onClick={() => router.push(`/hr/akses-tes?highlight=${encodeURIComponent(c.id)}`)}>Atur akses</button>
+            </div>
+          </div>
+          <div className="pitem wide">
+            <span className="l">Lanjutkan proses</span>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              <button type="button" className="btn sm" onClick={() => go('/hr/cv')}>Nilai CV</button>
+              <button type="button" className="btn sm" onClick={() => go('/hr/tes-disc')}>Tes DISC di PC HRD</button>
+              <button type="button" className="btn sm" onClick={() => go('/hr/tes-iq')}>Tes IQ di PC HRD</button>
+              <button type="button" className="btn sm" onClick={() => go('/hr/interview')}>Interview</button>
+              <button type="button" className="btn sm" onClick={() => go('/hr/onboarding')}>Onboarding</button>
+              <button type="button" className="btn primary sm" onClick={downloadPdf}>⬇ Download PDF</button>
+            </div>
           </div>
         </div>
 

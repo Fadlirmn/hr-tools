@@ -119,7 +119,10 @@ export async function POST(req: Request) {
     try {
       if (isCandidate) {
         await query(
-          `UPDATE candidates SET psikotes_result = $1, stage = 'interview' WHERE id = $2`,
+          // Maju ke interview hanya dari screening/psikotes (sama dengan lib/stages.ts stageAfterTest)
+          `UPDATE candidates SET psikotes_result = $1,
+             stage = CASE WHEN stage IN ('screening', 'psikotes') THEN 'interview' ELSE stage END
+           WHERE id = $2`,
           [nextPsikotesResult, candidateId]
         )
       } else {

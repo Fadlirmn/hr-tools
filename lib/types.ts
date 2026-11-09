@@ -26,6 +26,7 @@ export interface Position {
   weights: PositionWeight
   // Kualifikasi / deskripsi posisi — konteks screening CV otomatis (opsional)
   description?: string
+  created_at?: string
 }
 
 export type CandidateStage =

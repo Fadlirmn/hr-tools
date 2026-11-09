@@ -46,13 +46,16 @@ export default function HrCvDrop({ candidateId, currentFilename, onUploaded, com
     }
   }
 
-  // Tempel file/gambar dari clipboard (kecuali saat mengetik di input/textarea)
+  // Tempel file/gambar dari clipboard: hanya saat kursor di atas kotak ini atau kotak sedang fokus,
+  // agar Ctrl+V di bagian lain halaman tidak mengupload CV tanpa sengaja.
   const uploadRef = useRef(upload)
   useEffect(() => { uploadRef.current = upload })
+  const hoverRef = useRef(false)
+  const boxRef = useRef<HTMLLabelElement>(null)
   useEffect(() => {
     const onPaste = (e: ClipboardEvent) => {
-      const t = e.target as HTMLElement | null
-      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return
+      const focused = !!boxRef.current && boxRef.current.contains(document.activeElement)
+      if (!hoverRef.current && !focused) return
       const f = Array.from(e.clipboardData?.files || [])[0]
       if (!f) return
       e.preventDefault()
@@ -64,7 +67,9 @@ export default function HrCvDrop({ candidateId, currentFilename, onUploaded, com
 
   return (
     <div>
-      <label className={`cv-drop${over ? ' over' : ''}`}
+      <label ref={boxRef} tabIndex={0} className={`cv-drop${over ? ' over' : ''}`}
+        onMouseEnter={() => { hoverRef.current = true }} onMouseLeave={() => { hoverRef.current = false }}
+        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); boxRef.current?.querySelector('input')?.click() } }}
         style={{ display: 'block', opacity: busy ? 0.6 : 1, padding: compact ? 14 : undefined }}
         onDragOver={e => { e.preventDefault(); setOver(true) }}
         onDragLeave={() => setOver(false)}
@@ -73,7 +78,7 @@ export default function HrCvDrop({ candidateId, currentFilename, onUploaded, com
           <IconUpload size={16} />
           {busy ? 'Mengupload…' : currentFilename ? 'Klik atau seret file untuk mengganti CV' : 'Klik atau seret file CV ke sini'}
         </div>
-        <div className="hint" style={{ marginTop: 4 }}>{CV_FORMAT_HINT} Bisa juga tempel (Ctrl+V).</div>
+        <div className="hint" style={{ marginTop: 4 }}>{CV_FORMAT_HINT} Bisa juga tempel: arahkan kursor ke kotak ini lalu Ctrl+V.</div>
         <input type="file" accept={CV_ACCEPT} style={{ display: 'none' }} disabled={busy}
           onChange={e => { void upload(e.target.files?.[0]); e.target.value = '' }} />
       </label>

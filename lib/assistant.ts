@@ -37,7 +37,13 @@ export const VIEWS: Record<string, [string, string]> = {
   'tes-disc': ['/hr/tes-disc', 'Tes DISC'],
   'tes-iq': ['/hr/tes-iq', 'Tes IQ'],
   interview: ['/hr/interview', 'Interview'],
-  posisi: ['/hr/settings', 'Posisi & Bobot'],
+  'akses-tes': ['/hr/akses-tes', 'Akses Tes Online'],
+  onboarding: ['/hr/onboarding', 'Onboarding'],
+  posisi: ['/hr/settings', 'Posisi & Kualifikasi'],
+  'bank-soal': ['/hr/questions', 'Bank Soal'],
+  'pengaturan-ai': ['/hr/ai-settings', 'Pengaturan AI'],
+  user: ['/hr/users', 'Manajemen User'],
+  data: ['/hr/data', 'Data & Backup'],
 }
 
 export async function snapshot(): Promise<Snap[]> {
@@ -90,7 +96,7 @@ export function buildReport(all: Snap[], posisi?: string | null, title?: string)
   }
 }
 
-export const AI_OFF_WARNING = 'Asisten AI belum aktif, jadi perintah tidak dijalankan. Minta admin mengaktifkan dan mengisi menu Admin → Pengaturan AI (atau CV_AI_BASE_URL + CV_AI_MODEL / ANTHROPIC_API_KEY di .env). Sementara itu, gunakan menu di sidebar.'
+export const AI_OFF_WARNING = 'Asisten AI belum aktif, jadi perintah tidak dijalankan. Aktifkan dan isi menu Pengaturan → Pengaturan AI (atau CV_AI_BASE_URL + CV_AI_MODEL / ANTHROPIC_API_KEY di .env). Sementara itu, gunakan menu di sidebar.'
 
 const TOOLS: Anthropic.Tool[] = [
   { name: 'go_to_screen', description: 'Pindah ke layar aplikasi HR.', input_schema: { type: 'object', properties: { view: { type: 'string', enum: Object.keys(VIEWS) } }, required: ['view'] } },

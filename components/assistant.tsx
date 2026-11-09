@@ -24,7 +24,7 @@ const CHIPS: [string, string][] = [
   ['Laporan screening', 'Buatkan laporan hasil screening hari ini'],
   ['Bandingkan Marketing', 'Bandingkan kandidat Marketing'],
   ['Upload CV', 'Buka menu upload CV'],
-  ['Posisi & bobot', 'Buka pengaturan posisi dan bobot'],
+  ['Posisi & kualifikasi', 'Buka pengaturan posisi dan kualifikasi'],
 ]
 
 const chipClass = (v: string) => v === 'Lolos' ? 'ok' : v === 'Pertimbangkan' ? 'hold' : v === 'Tidak Lolos' ? 'no' : 'neutral'
@@ -185,7 +185,7 @@ export default function Assistant() {
     let uploaded: string[] = []
     try {
       if (cvTarget === 'new' && !posisi) {
-        setMsgs(m => [...m, { role: 'assistant', content: 'Belum ada posisi. Tambahkan dulu di Posisi & Bobot.', sys: true }])
+        setMsgs(m => [...m, { role: 'assistant', content: 'Belum ada posisi. Tambahkan dulu di Pengaturan → Posisi & Kualifikasi.', sys: true }])
         return
       }
       const { saved, failed } = await saveCvs(fs, cvTarget, posisi, currentId)

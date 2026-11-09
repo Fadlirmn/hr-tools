@@ -98,7 +98,7 @@ function UploadCvContent() {
 
   if (!loaded) return <div className="hint">Memuat...</div>
   if (!positions.length) {
-    return <div className="card card-p"><div className="hint">Belum ada posisi. Tambahkan dulu di <Link href="/hr/settings">Posisi &amp; Bobot</Link>.</div></div>
+    return <div className="card card-p"><div className="hint">Belum ada posisi. Tambahkan dulu di <Link href="/hr/settings">Posisi &amp; Kualifikasi</Link>.</div></div>
   }
 
   return (
@@ -110,7 +110,7 @@ function UploadCvContent() {
           <span className="meta">Tiap file jadi kandidat baru, lalu dibaca AI</span>
         </div>
         <CvBulkUpload positions={positions} defaultPosisi={posId || undefined} onProgress={load} onRunningChange={setBulkRunning} />
-        {!aiEnabled && <div className="hint" style={{ marginTop: 8 }}>Analisis AI belum aktif (atur di Admin → Pengaturan AI). CV tetap tersimpan.</div>}
+        {!aiEnabled && <div className="hint" style={{ marginTop: 8 }}>Analisis AI belum aktif (atur di Pengaturan → Pengaturan AI). CV tetap tersimpan.</div>}
       </div>
 
       {/* Filter tampilan */}
@@ -144,7 +144,7 @@ function UploadCvContent() {
                     ? <>AI menilai tiap CV terhadap kualifikasi posisinya masing-masing. Pilih satu posisi di filter untuk melihat kualifikasinya.</>
                     : pos.description?.trim()
                     ? <>AI menilai terhadap kualifikasi posisi ini: <i>{pos.description.trim().slice(0, 220)}{pos.description.trim().length > 220 ? '…' : ''}</i></>
-                    : <>Kualifikasi posisi belum diisi, jadi AI memakai standar umum. Isi di <Link href="/hr/settings">Posisi &amp; Bobot</Link> agar saran lebih tepat.</>}
+                    : <>Kualifikasi posisi belum diisi, jadi AI memakai standar umum. Isi di <Link href="/hr/settings">Posisi &amp; Kualifikasi</Link> agar saran lebih tepat.</>}
                 </div>
               </div>
             </div>

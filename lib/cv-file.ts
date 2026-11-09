@@ -57,4 +57,4 @@ export async function readCvFile(file: unknown): Promise<{ ok: true; buf: Buffer
 }
 
 // Konfigurasi AI screening (server-side) ada di lib/ai-config.ts (loadAiConfig / isAiEnabled):
-// pengaturan dari halaman Admin → Pengaturan AI menimpa .env.
+// pengaturan dari halaman Pengaturan → Pengaturan AI menimpa .env.

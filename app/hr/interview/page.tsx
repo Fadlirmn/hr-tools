@@ -1,5 +1,6 @@
 'use client'
 
+import { INTERVIEW_RECS, stageAfterInterview } from '@/lib/stages'
 import { useEffect, useState } from 'react'
 import CandidatePicker from '@/components/candidate-picker'
 import { IconInfo } from '@/components/icons'
@@ -67,7 +68,7 @@ export default function HrInterviewPage() {
       body: JSON.stringify({
         id: c.id,
         interview: intData,
-        stage: c.stage === 'interview' ? 'offer' : c.stage,
+        stage: stageAfterInterview(c.stage, rec),
       }),
     })
     await load()
@@ -134,8 +135,7 @@ export default function HrInterviewPage() {
             <input type="text" value={by} onChange={e => setBy(e.target.value)} placeholder="Nama pewawancara" /></div>
           <div className="field"><label className="fld">Rekomendasi tahap selanjutnya</label>
             <select value={rec} onChange={e => setRec(e.target.value)}>
-              <option>Lanjut ke offering</option><option>Interview tahap 2</option>
-              <option>Tahan / pertimbangkan</option><option>Tidak dilanjutkan</option>
+              {INTERVIEW_RECS.map(x => <option key={x}>{x}</option>)}
             </select></div>
         </div>
 

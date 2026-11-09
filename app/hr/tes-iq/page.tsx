@@ -1,5 +1,6 @@
 'use client'
 
+import { stageAfterTest } from '@/lib/stages'
 import { useEffect, useState, useMemo, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { fetchCandidates } from '@/lib/db-hr'
@@ -72,7 +73,7 @@ function HrTesIqContent() {
       body: JSON.stringify({
         id: c.id,
         psikotes_result: { disc: c.psikotes_result?.disc ?? null, iq: result },
-        stage: (c.stage === 'screening' || c.stage === 'psikotes') ? 'interview' : c.stage,
+        stage: stageAfterTest(c.stage),
       }),
     })
     await load()
@@ -88,7 +89,8 @@ function HrTesIqContent() {
         body: JSON.stringify({
           id: res.candidateId,
           psikotes_result: { disc: current?.psikotes_result?.disc ?? null, iq: res },
-          stage: 'interview',
+          // Kandidat baru dari modal belum ada di daftar: tahapnya sudah interview
+          ...(current ? { stage: stageAfterTest(current.stage) } : {}),
         }),
       })
       await load()

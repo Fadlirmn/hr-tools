@@ -74,59 +74,36 @@ export default function HrLayout({ children }: { children: React.ReactNode }) {
             <div><h1>Recruitment Toolkit</h1><p>Screening → Onboarding</p></div>
           </div>
         </div>
-        <HrNav active={activeTab.split('/')[0]} isAdmin={role === 'hr' || role === 'dev'} onNavigate={navigate} />
+        <HrNav active={activeTab.split('/')[0]} onNavigate={navigate} />
         <div className="side-foot">
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            {/* Avatar circle */}
-            <div
-              onClick={() => navigate('profile')}
-              title="Pengaturan Profil"
-              style={{
+            {/* Avatar + nama → Profil Saya */}
+            <button type="button" onClick={() => navigate('profile')} title="Profil Saya" aria-label="Profil Saya"
+              style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0, background: 'none', border: 0, padding: 0, cursor: 'pointer', textAlign: 'left', font: 'inherit' }}>
+              <div style={{
                 width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
                 background: 'linear-gradient(135deg, var(--accent), #7c3aed)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: '#fff', fontWeight: 800, fontSize: 15,
-                cursor: 'pointer', userSelect: 'none',
-                transition: 'opacity .15s',
-              }}
-              onMouseEnter={e => (e.currentTarget.style.opacity = '0.8')}
-              onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
-            >
-              {(userName || userEmail).charAt(0).toUpperCase()}
-            </div>
-
-            {/* Name + email */}
-            <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
-              <div style={{
-                fontWeight: 600, color: 'var(--side-strong)', fontSize: 12,
-                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                color: '#fff', fontWeight: 800, fontSize: 15, userSelect: 'none',
               }}>
-                {userName || userEmail}
+                {(userName || userEmail).charAt(0).toUpperCase()}
               </div>
-              <div style={{
-                color: 'var(--side-muted)', fontSize: 10, marginTop: 1,
-                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-              }}>
-                {role === 'dev' && <span style={{ color: 'var(--accent)', fontWeight: 700, marginRight: 4 }}>DEV</span>}
-                {role === 'hr' && <span style={{ color: '#22c55e', fontWeight: 700, marginRight: 4 }}>HR</span>}
-                {userEmail}
+              <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+                <div style={{
+                  fontWeight: 600, color: 'var(--side-strong)', fontSize: 12,
+                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                }}>
+                  {userName || userEmail}
+                </div>
+                <div style={{
+                  color: 'var(--side-muted)', fontSize: 10, marginTop: 1,
+                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                }}>
+                  {role === 'dev' && <span style={{ color: 'var(--accent)', fontWeight: 700, marginRight: 4 }}>DEV</span>}
+                  {role === 'hr' && <span style={{ color: '#22c55e', fontWeight: 700, marginRight: 4 }}>HR</span>}
+                  {userEmail}
+                </div>
               </div>
-            </div>
-
-            {/* Profile settings icon */}
-            <button
-              onClick={() => navigate('profile')}
-              title="Pengaturan Profil"
-              style={{
-                background: 'var(--side-hover)', border: 'none', borderRadius: 8,
-                width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer', color: 'var(--side-muted)', fontSize: 15, flexShrink: 0,
-                transition: 'background .15s, color .15s',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'var(--btn-hover)'; e.currentTarget.style.color = 'var(--side-strong)' }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'var(--side-hover)'; e.currentTarget.style.color = 'var(--side-muted)' }}
-            >
-              ⚙
             </button>
 
             {/* Logout icon */}

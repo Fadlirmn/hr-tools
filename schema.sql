@@ -88,6 +88,8 @@ CREATE TABLE IF NOT EXISTS candidate_cv_files (
 );
 -- Kualifikasi / deskripsi posisi — konteks untuk screening CV otomatis.
 ALTER TABLE positions ADD COLUMN IF NOT EXISTS description TEXT DEFAULT '';
+-- Waktu posisi dibuat — halaman Posisi & Kualifikasi menampilkan yang terbaru di atas.
+ALTER TABLE positions ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT now();
 
 -- Riwayat penilaian CV oleh HR (append-only) — tiap Simpan menambah satu baris,
 -- supaya revisi penilaian bisa diaudit. Penilaian terkini tetap di candidates.cv;

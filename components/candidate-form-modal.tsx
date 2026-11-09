@@ -2,13 +2,10 @@
 
 import { useState } from 'react'
 import { v4 as uuidv4 } from 'uuid'
-import { CV_CRITERIA, SUMBER_OPTIONS } from '@/lib/constants'
+import { SUMBER_OPTIONS } from '@/lib/constants'
 import { isValidPhone, PHONE_ERROR, PHONE_HINT } from '@/lib/phone'
-import type { Candidate, Position, PositionWeight } from '@/lib/types'
-
-function slugifyPosition(name: string) {
-  return name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30) || 'posisi'
-}
+import { newPosition, savePosition } from '@/lib/positions'
+import type { Candidate, Position } from '@/lib/types'
 
 interface Props {
   /** Kandidat yang diedit; null = kandidat baru */
@@ -26,6 +23,7 @@ export default function CandidateFormModal({ editing, positions, onPositionsChan
     : { nama: '', posisi: positions[0]?.id || '', sumber: 'LinkedIn', email: '', telepon: '', catatan: '' })
   const [showAddPos, setShowAddPos] = useState(false)
   const [newPosName, setNewPosName] = useState('')
+  const [newPosDesc, setNewPosDesc] = useState('')
   const [savingPos, setSavingPos] = useState(false)
   const [saving, setSaving] = useState(false)
   const origPosisi = editing?.posisi || ''
@@ -34,24 +32,19 @@ export default function CandidateFormModal({ editing, positions, onPositionsChan
   const saveQuickPosition = async () => {
     const name = newPosName.trim()
     if (!name) { alert('Isi nama posisi dulu'); return }
+    if (!newPosDesc.trim()) { alert('Isi kualifikasi posisi dulu, AI memakainya untuk menilai CV.'); return }
     if (positions.some(p => p.name.toLowerCase() === name.toLowerCase())) { alert('Nama posisi sudah ada'); return }
     setSavingPos(true)
     try {
-      let id = `${slugifyPosition(name)}-${uuidv4().slice(0, 4)}`
-      if (positions.some(p => p.id === id)) id = `${slugifyPosition(name)}-${uuidv4().slice(0, 4)}`
-      const newPos = {
-        id, name,
-        weights: Object.fromEntries(CV_CRITERIA.map(c => [c.id, 2])) as unknown as PositionWeight,
-      }
-      const res = await fetch('/api/positions', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-        body: JSON.stringify(newPos),
-      })
-      if (!res.ok) { const d = await res.json().catch(() => ({ error: 'gagal' })); alert('Gagal tambah posisi: ' + (d.error || res.status)); return }
-      onPositionsChange([...positions, newPos as Position])
-      setForm(prev => ({ ...prev, posisi: id }))
+      const p = newPosition(name, newPosDesc, positions)
+      await savePosition(p)
+      onPositionsChange([...positions, p])
+      setForm(prev => ({ ...prev, posisi: p.id }))
       setNewPosName('')
+      setNewPosDesc('')
       setShowAddPos(false)
+    } catch (e) {
+      alert('Gagal tambah posisi: ' + (e as Error).message)
     } finally {
       setSavingPos(false)
     }
@@ -107,9 +100,11 @@ export default function CandidateFormModal({ editing, positions, onPositionsChan
               </div>
               {positions.length === 0 && <div className="hint" style={{ marginTop: 6 }}>Belum ada posisi — tambah manual dulu.</div>}
               {showAddPos && (
-                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                  <input type="text" value={newPosName} onChange={e => setNewPosName(e.target.value)} placeholder="cth. Marketing" style={{ flex: 1 }} />
-                  <button type="button" className="btn sm primary" disabled={savingPos} onClick={saveQuickPosition}>{savingPos ? '...' : 'Simpan'}</button>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
+                  <input type="text" value={newPosName} onChange={e => setNewPosName(e.target.value)} placeholder="Nama posisi baru" aria-label="Nama posisi baru" />
+                  <textarea value={newPosDesc} onChange={e => setNewPosDesc(e.target.value)} rows={3} aria-label="Kualifikasi posisi baru"
+                    placeholder="Kualifikasi (wajib): pengalaman, skill, pendidikan yang dicari. Dibaca AI saat menilai CV." />
+                  <button type="button" className="btn sm primary" style={{ alignSelf: 'flex-start' }} disabled={savingPos} onClick={saveQuickPosition}>{savingPos ? '...' : 'Simpan posisi'}</button>
                 </div>
               )}
               {editing && form.posisi !== origPosisi && (

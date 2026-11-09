@@ -52,7 +52,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: Request) {
   const user = await getSessionUser()
   if (!user || (user.role !== 'hr' && user.role !== 'dev')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  if (!(await isAiEnabled())) return NextResponse.json({ error: 'Screening otomatis belum aktif — atur di menu Admin → Pengaturan AI (atau .env).' }, { status: 400 })
+  if (!(await isAiEnabled())) return NextResponse.json({ error: 'Screening otomatis belum aktif — atur di menu Pengaturan → Pengaturan AI (atau .env).' }, { status: 400 })
 
   const { candidateId } = await req.json().catch(() => ({}))
   if (!candidateId) return NextResponse.json({ error: 'candidateId wajib ada' }, { status: 400 })
