@@ -7,12 +7,12 @@ import { getPositions } from '@/lib/db'
 import type { Candidate, Position, CvScores, CvFileMeta, CvDecision, CvAssessment } from '@/lib/types'
 import { CV_CRITERIA, CV_DECISIONS, CV_REJECT_REASONS, STAGES } from '@/lib/constants'
 import { calcCvScore, defaultWeights, suggestDecision } from '@/lib/cv-score'
-import { CV_ACCEPT, CV_FORMAT_HINT, CV_MAX_BYTES } from '@/lib/cv-file'
 import CandidatePicker from '@/components/candidate-picker'
+import HrCvDrop from '@/components/hr-cv-drop'
 import type { PickerItem } from '@/lib/candidate-filter'
 import {
   IconCheck, IconDownload, IconExternal, IconInfo, IconPlay,
-  IconRefresh, IconSave, IconArrowRight, IconTrash, IconUpload, IconFile,
+  IconRefresh, IconSave, IconArrowRight, IconTrash, IconFile,
 } from '@/components/icons'
 
 export default function HrCvPage() {
@@ -46,8 +46,6 @@ function HrCvContent() {
   const [file, setFile] = useState<CvFileMeta | null>(null)
   const [aiEnabled, setAiEnabled] = useState(true)
   const [fileVer, setFileVer] = useState(0)
-  const [uploading, setUploading] = useState(false)
-  const fileInput = useRef<HTMLInputElement>(null)
   const candidatesRef = useRef<Candidate[]>([])
   // Diminta Asisten Screening: isi form dengan skor AI begitu draft AI kandidat termuat
   const [pendingApply, setPendingApply] = useState(false)
@@ -201,26 +199,6 @@ function HrCvContent() {
     else setMsg({ text: 'Draft AI untuk kandidat ini belum tersedia, nilai secara manual.', kind: 'warn' })
   }
 
-  const upload = async (f: File | undefined) => {
-    if (!f || !c) return
-    if (f.size > CV_MAX_BYTES) { alert('Ukuran file maksimal 5 MB'); return }
-    if (file && !confirm(`Ganti CV "${file.filename}" dengan "${f.name}"?`)) return
-    setUploading(true)
-    try {
-      const fd = new FormData()
-      fd.append('file', f)
-      fd.append('candidateId', c.id)
-      const res = await fetch('/api/cv-file', { method: 'POST', credentials: 'include', body: fd })
-      const d = await res.json().catch(() => ({}))
-      if (!res.ok) { alert('Gagal upload: ' + (d.error || res.status)); return }
-      setFileVer(v => v + 1)
-      await loadFile(c.id)
-      await load()
-    } finally {
-      setUploading(false)
-    }
-  }
-
   const reanalyze = async () => {
     if (!c) return
     const res = await fetch('/api/cv-screen', {
@@ -283,13 +261,12 @@ function HrCvContent() {
                 )}
               </>
             ) : (
-              <div className="empty"><div className="big"><IconFile size={34} /></div><div style={{ fontWeight: 700 }}>CV belum diupload</div><div className="hint">{CV_FORMAT_HINT}</div></div>
+              <div className="empty"><div className="big"><IconFile size={34} /></div><div style={{ fontWeight: 700 }}>CV belum diupload</div></div>
             )}
-            <button type="button" className="btn primary sm" style={{ marginTop: 12 }} disabled={uploading} onClick={() => fileInput.current?.click()}>
-              <IconUpload size={14} />{uploading ? 'Mengupload…' : file ? 'Ganti CV' : 'Upload CV'}
-            </button>
-            <input ref={fileInput} type="file" accept={CV_ACCEPT} hidden tabIndex={-1}
-              onChange={e => { void upload(e.target.files?.[0]); e.target.value = '' }} />
+            <div style={{ marginTop: 12 }}>
+              <HrCvDrop compact candidateId={c.id} currentFilename={file?.filename}
+                onUploaded={async () => { setFileVer(v => v + 1); await loadFile(c.id); await load() }} />
+            </div>
           </div>
 
           {/* ===== Kanan ===== */}

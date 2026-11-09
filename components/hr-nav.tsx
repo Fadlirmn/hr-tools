@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react'
 import {
   IconHome, IconUsers, IconFileCheck, IconMonitor, IconClipboard, IconRocket, IconSettings,
-  IconKey, IconBook, IconSliders, IconShield, IconSparkle,
+  IconKey, IconBook, IconSliders, IconShield, IconSparkle, IconUpload,
 } from './icons'
 
 type Leaf = { tab: string; label: string; icon: ReactNode }
@@ -23,6 +23,7 @@ export const NAV: Group[] = [
     { tab: 'candidates', label: 'Daftar Kandidat', icon: <IconUsers size={17} /> },
   ] },
   { group: 'Seleksi', items: [
+    { tab: 'upload-cv', label: 'Upload CV', icon: <IconUpload size={17} /> },
     { tab: 'cv', label: 'Penilaian CV', icon: <IconFileCheck size={17} /> },
     { tab: 'akses-tes', label: 'Akses Tes Online', icon: <IconKey size={17} /> },
     { id: 'tes-lokal', label: 'Tes di PC HRD', icon: <IconMonitor size={17} />, children: [
@@ -49,6 +50,7 @@ export const NAV: Group[] = [
 export const PAGE_TITLES: Record<string, [string, string]> = {
   dashboard: ['Dashboard', 'Yang perlu dikerjakan & ringkasan rekrutmen'],
   candidates: ['Daftar Kandidat', 'Kelola semua pelamar'],
+  'upload-cv': ['Upload CV', 'Unggah CV kandidat yang sudah terdaftar'],
   cv: ['Penilaian CV / Resume', 'Skor kelayakan berkas pelamar'],
   'tes-disc': ['Tes DISC', 'Tes di PC HRD · profil kepribadian Most/Least'],
   'tes-iq': ['Tes IQ', 'Tes di PC HRD · logika, numerik, verbal & spasial'],

@@ -318,7 +318,7 @@ export default function HrCandidatesPage() {
     <>
       <div style={{ marginBottom: 14 }}>
         <button className="btn primary" onClick={openAdd}>＋ Kandidat Baru</button>
-        <button className="btn" style={{ marginLeft: 8 }} onClick={openBulk}>⬆ Upload CV massal</button>
+        <button className="btn" style={{ marginLeft: 8 }} onClick={openBulk}>⬆ Upload CV massal (kandidat baru)</button>
       </div>
 
       {candidates.length === 0 ? (
@@ -388,7 +388,7 @@ export default function HrCandidatesPage() {
             <h3>Upload CV Massal</h3>
             <div className="body">
               <div className="hint" style={{ marginBottom: 12 }}>
-                Setiap file CV menjadi satu kandidat baru (tahap Screening CV). Kalau screening otomatis aktif, nama, email, dan no. HP diisi dari CV, lalu draft skor AI muncul di menu Penilaian CV.
+                Setiap file CV menjadi satu kandidat baru (tahap Screening CV). Kalau screening otomatis aktif, nama, email, dan no. HP diisi dari CV, lalu draft skor AI muncul di menu Penilaian CV. Untuk kandidat yang sudah terdaftar, pakai menu Upload CV.
               </div>
               <div className="grid2">
                 <div className="field"><label className="fld">Posisi dilamar *</label>
